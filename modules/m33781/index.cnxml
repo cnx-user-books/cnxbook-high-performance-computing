@@ -1,0 +1,15 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Introduction</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33781</md:content-id>
+  <md:title>Introduction</md:title>
+  <md:abstract/>
+  <md:uuid>6530b24d-62a7-423f-8017-63805b9c349c</md:uuid>
+</metadata>
+
+<content>
+    <para id="id1171603653487">A message-passing interface is a set of function and subroutine calls for C or FORTRAN that give you a way to split an application for parallel execution. Data is divided and passed out to other processors as messages. The receiving processors unpack them, do some work, and send the results back or pass them along to other processors in the parallel computer.</para>
+    <para id="id1171607549799">In some ways, message passing is the “assembly language” of parallel processing. You get ultimate responsibility, and if you are talented (and your problem cooperates), you get ultimate performance. If you have a nice scalable problem and are not satisfied with the resulting performance, you pretty much have yourself to blame. The compiler is completely unaware of the parallel aspects of the program.</para>
+    <para id="id1171606561758">The two most popular message-passing environments are <emphasis effect="italics">parallel virtual machine</emphasis> (PVM) and <emphasis effect="italics">message-passing interface</emphasis> (MPI). Most of the important features are available in either environment. Once you have mastered message passing, moving from PVM to MPI won’t cause you much trouble. You may also operate on a system that provides only a vendor-specific message-passing interface. However, once you understand message passing concepts and have properly decomposed your application, usually it’s not that much more effort to move from one message-passing library to another.<footnote id="id1171602881510">Notice I said “not that much more effort.”</footnote></para>
+  </content>
+</document>

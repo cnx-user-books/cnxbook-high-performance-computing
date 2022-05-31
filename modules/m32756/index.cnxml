@@ -1,0 +1,103 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>IEEE Operations</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32756</md:content-id>
+  <md:title>IEEE Operations</md:title>
+  <md:abstract/>
+  <md:uuid>f86dbd01-63e9-4d1e-b5fd-65bb39f65b83</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id4299723">The IEEE standard specifies how computations are to be performed on floating- point values on the following operations:</para>
+      <list id="id8384496" list-type="bulleted">
+        <item>Addition</item>
+        <item>Subtraction</item>
+        <item>Multiplication</item>
+        <item>Division</item>
+        <item>Square root</item>
+        <item>Remainder (modulo)</item>
+        <item>Conversion to/from integer</item>
+        <item>Conversion to/from printed base-10</item>
+      </list>
+      <para id="id15739929">These operations are specified in a machine-independent manner, giving flexibility to the CPU designers to implement the operations as efficiently as possible while maintaining compliance with the standard. During operations, the IEEE standard requires the maintenance of two guard digits and a sticky bit for intermediate values. The guard digits above and the sticky bit are used to indicate if any of the bits beyond the second guard digit is nonzero.</para>
+      <figure id="id5800144"><title>Computation using guard and sticky bits</title><media id="id5800144_media" alt="This figure shows a large addition equation of two numbers with high numbers of decimal places. Outermost portion of the decimals are greyed out and labeled unstorable. The nearer decimal places, five six and seven spots to the right of the decimal point, are greyed out and labeled ggs. The sum below the equation is labeled Infinite precision sum. Below the sum is another line with the sum repeated, leaving off the outermost decimal places, and labeled sun plus guard plus stick. Pointing at the ggs section of this number is an arrow titled, guard bits tie, sticky bit breaks tie. Below this sum is a final line with the sum, including a rounding up of one ten thousandth, and is labeled stored value.">
+          <image mime-type="image/png" src="../../media/graphics1-b2ff.png" id="id5800144__onlineimage" height="331" width="600"/>
+        </media>
+      </figure>
+      
+      <para id="id14557306">In <link target-id="id5800144"/>, we have five bits of normal precision, two guard digits, and a sticky bit. Guard bits simply operate as normal bits — as if the significand were 25 bits. Guard bits participate in rounding as the extended operands are added. The sticky bit is set to 1 if any of the bits beyond the guard bits is nonzero in either operand.<footnote id="id8813705">If you are somewhat hardware-inclined and you think about it for a moment, you will soon come up with a way to properly maintain the sticky bit without ever computing the full “infinite precision sum.” You just have to keep track as things get shifted around.</footnote> Once the extended sum is computed, it is rounded so that the value stored in memory is the closest possible value to the extended sum including the guard digits. <link target-id="id8874726"/> shows all eight possible values of the two guard digits and the sticky bit and the resulting stored value with an explanation as to why.</para>
+      
+      <table id="id8874726" summary="Extended Sums and Their Stored Values">
+<tgroup cols="3"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <colspec colnum="3" colname="c3"/>
+          <tbody>
+            <row>
+              <entry>Extended Sum</entry>
+              <entry>Stored Value</entry>
+              <entry>Why</entry>
+            </row>
+            <row>
+              <entry>1.0100 000</entry>
+              <entry>1.0100</entry>
+              <entry>Truncated based on guard digits</entry>
+            </row>
+            <row>
+              <entry>1.0100 001</entry>
+              <entry>1.0100</entry>
+              <entry>Truncated based on guard digits</entry>
+            </row>
+            <row>
+              <entry>1.0100 010</entry>
+              <entry>1.0100</entry>
+              <entry>Rounded down based on guard digits</entry>
+            </row>
+            <row>
+              <entry>1.0100 011</entry>
+              <entry>1.0100</entry>
+              <entry>Rounded down based on guard digits</entry>
+            </row>
+            <row>
+              <entry>1.0100 100</entry>
+              <entry>1.0100</entry>
+              <entry>Rounded down based on sticky bit</entry>
+            </row>
+<row>
+              <entry>1.0100 101</entry>
+              <entry>1.0101</entry>
+              <entry>Rounded up based on sticky bit</entry>
+            </row>
+            <row>
+              <entry>1.0100 110</entry>
+              <entry>1.0101</entry>
+              <entry>Rounded up based on guard digits</entry>
+            </row>
+            <row>
+              <entry>1.0100 111</entry>
+              <entry>1.0101</entry>
+              <entry>Rounded up based on guard digits</entry>
+            </row>
+          </tbody>
+        
+
+
+
+</tgroup><caption>Extended Sums and Their Stored Values</caption>
+</table>
+      
+      
+      
+      <para id="id12796767">The first priority is to check the guard digits. Never forget that the sticky bit is just a hint, not a real digit. So if we can make a decision without looking at the sticky bit, that is good. The only decision we are making is to round the last storable bit up or down. When that stored value is retrieved for the next computation, its guard digits are set to zeros. It is sometimes helpful to think of the stored value as having the guard digits, but set to zero.</para>
+      
+      <para id="id12558141">Two guard digits and the sticky bit in the IEEE format insures that operations yield the same rounding as if the intermediate result were computed using unlimited precision and then rounded to fit within the limits of precision of the final computed value. </para>
+      <para id="id8848279">At this point, you might be asking, “Why do I care about this minutiae?” At some level, unless you are a hardware designer, you don’t care. But when you examine details like this, you can be assured of one thing: when they developed the IEEE floating-point standard, they looked at the details <emphasis effect="italics">very</emphasis> carefully. The goal was to produce the most accurate possible floating-point standard within the constraints of a fixed-length 32- or 64-bit format. Because they did such a good job, it’s one less thing you have to worry about. Besides, this stuff makes great exam questions.</para>
+  </content>
+</document>

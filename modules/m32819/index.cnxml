@@ -1,0 +1,63 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32819</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>d694827e-50a1-4d69-aff3-b845d0026eb1</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<exercise id="id1166569476079">
+        <problem id="oo-id1166572440818">
+          <para id="id1166583054598">Take a static, highly parallel program with a relative large inner loop. Compile the application for parallel execution. Execute the application increasing the threads. Examine the behavior when the number of threads exceed the available processors. See if different iteration scheduling approaches make a difference.</para>
+        </problem>
+      </exercise>
+      <exercise id="id1166566982908">
+        <problem id="oo-id1166581841643">
+          <para id="id1166583410823">Take the following loop and execute with several different iteration scheduling choices. For chunk-based scheduling, use a large chunk size, perhaps 100,000. See if any approach performs better than static scheduling:</para>
+      <code id="id1166576873905" display="block"><newline/>
+      DO I=1,4000000
+        A(I) = B(I) * 2.34
+      ENDDO
+    </code>
+        </problem>
+      </exercise>
+
+      <exercise id="id1166572729007">
+        <problem id="oo-id1166579356397">
+          <para id="id1166580951094">Execute the following loop for a range of values for N from 1 to 16 million:</para>
+      <code id="id1166570509194" display="block"><newline/>
+      DO I=1,N
+        A(I) = B(I) * 2.34
+      ENDDO
+    </code>
+      <para id="id1166569333911">Run the loop in a single processor. Then force the loop to run in parallel. At what point do you get better performance on multiple processors? Do the number of threads affect your observations?</para>
+        </problem>
+      </exercise>
+
+      <exercise id="id1166582385958">
+        <problem id="oo-id1166575186141">
+          <para id="id1166572528510">Use an explicit parallelization directive to execute the following loop in parallel with a chunk size of 1:</para>
+        <code id="id1166566912091" display="block"><newline/>
+      J = 0 
+C$OMP PARALLEL DO PRIVATE(I) SHARED(J) SCHEDULE(DYNAMIC) 
+      DO I=1,1000000
+       J = J + 1 
+      ENDDO
+      PRINT *, J
+C$OMP END PARALLEL DO
+    </code>
+      <para id="id1166580519804">Execute the loop with a varying number of threads, including one. Also compile and execute the code in serial. Compare the output and execution times. What do the results tell you about cache coherency? About the cost of moving data from one cache to another, and about critical section costs?</para>
+            </problem>
+      </exercise>
+  </content>
+</document>

@@ -1,0 +1,23 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Programs That Require More Memory Than You Have</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33770</md:content-id>
+  <md:title>Programs That Require More Memory Than You Have</md:title>
+  <md:abstract/>
+  <md:uuid>888d6590-ac73-4009-a924-1b063485f08f</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1169374686179">People occasionally have programs whose memory size requirements are so great that the data can’t fit in memory all at once. At any time, some of the data has to reside outside of main memory on secondary (usually disk) storage. These out-of- core solutions fall into two categories:</para>
+      <list id="id1169375527724" list-type="bulleted">
+        <item>Software-managed, out-of-core solutions</item>
+        <item>Virtual memory–managed, out-of-core solutions</item>
+      </list>
+      <para id="id1169376136102">With a software-managed approach, the programmer has recognized that the problem is too big and has modified the source code to move sections of the data out to disk for retrieval at a later time. The other method depends on the computer’s memory system handling the secondary storage requirements on its own, some- times at a great cost in runtime.</para>
+      <section id="id1169376166695">
+        <title>Software-Managed, Out-of-Core Solutions</title>
+        <para id="id1169378312036">Most codes with software-managed, out-of-core solutions have adjustments; you can tell the program how much memory it has to work with, and it takes care of the rest. It is important to make sure the adjustment is set correctly. Code that was tuned for a machine with limited memory could have been ported to another without taking into account the storage available. Perhaps the whole problem will fit easily.</para>
+        <para id="id1169380163952">If we are writing an out-of-core solution, the trick is to group memory references together so that they are localized. This usually occurs naturally as a side effect of partitioning, say, a matrix factorization into groups of columns. Blocking references the way we did in the previous section also corrals memory references together so you can treat them as memory “pages.” Knowing when to ship them off to disk entails being closely involved with what the program is doing.</para>
+      </section>
+  </content>
+</document>

@@ -1,0 +1,153 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Branches With Loops</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33723</md:content-id>
+  <md:title>Branches With Loops</md:title>
+  <md:abstract/>
+  <md:uuid>f62ebac8-d28d-4e45-a746-0a9a405f9e2a</md:uuid>
+</metadata>
+
+<content>
+        <para id="id6477287">Numerical codes usually spend most of their time in loops, so you don’t want anything inside a loop that doesn’t have to be there, especially an if-statement. Not only do if-statements gum up the works with extra instructions, they can force a strict order on the iterations of a loop. Of course, you can’t always avoid conditionals. Sometimes, though, people place them in loops to process events that could have been handled outside, or even ignored.</para>
+      <para id="id6704913">To take you back a few years, the following code shows a loop with a test for a value close to zero:</para>
+      <code id="id3134512" display="block"><newline/>
+      PARAMETER (SMALL = 1.E-20) 
+      DO I=1,N
+        IF (ABS(A(I)) .GE. SMALL) THEN 
+          B(I) = B(I) + A(I) * C
+        ENDIF 
+      ENDDO
+    </code>
+      <para id="id5848159">The idea was that if the multiplier, <code display="inline">A(I)</code>, were reasonably small, there would be no reason to perform the math in the center of the loop. Because floating-point operations weren’t pipelined on many machines, a comparison and a branch was cheaper; the test would save time. On an older CISC or early RISC processor, a comparison and branch is probably still a savings. But on other architectures, it costs a lot less to just perform the math and skip the test. Eliminating the branch eliminates a control dependency and allows the compiler to pipeline more arithmetic operations. Of course, the answer could change slightly if the test is eliminated. It then becomes a question of whether the difference is significant. Here’s another example where a branch isn’t necessary. The loop finds the absolute value of each element in an array:</para>
+      <code id="id4610500" display="block"><newline/>
+      DO I=1,N
+        IF (A(I) .LT. 0.) A(I) = -A(I) 
+      ENDDO
+    </code>
+      <para id="id7520485">But why perform the test at all? On most machines, it’s quicker to perform the <code display="inline">abs()</code> operation on every element of the array.</para>
+      <para id="id6712685">We do have to give you a warning, though: if you are coding in C, the absolute value, <code display="inline">fabs()</code>, is a subroutine call. In this particular case, you are better off leaving the conditional in the loop.<footnote id="id5901682">The machine representation of a floating-point number starts with a sign bit. If the bit is 0, the number is positive. If it is 1, the number is negative. The fastest absolute value function is one that merely “ands” out the sign bit. See macros in <emphasis effect="italics">/usr/include/macros.h</emphasis> and <emphasis effect="italics">/usr/include/math.h</emphasis>.</footnote></para>
+      <para id="id5938273">When you can’t always throw out the conditional, there are things you can do to minimize negative performance. First, we have to learn to recognize which conditionals within loops can be restructured and which cannot. Conditionals in loops fall into several categories:</para>
+      <list id="id6516314" list-type="bulleted">
+        <item>Loop invariant conditionals</item>
+        <item>Loop index dependent conditionals</item>
+        <item>Independent loop conditionals</item>
+        <item>Dependent loop conditionals</item>
+        <item>Reductions</item>
+        <item>Conditionals that transfer control</item>
+      </list>
+      <para id="id2341252">Let’s look at these types in turn.</para>
+      <section id="id6404040">
+        <title>Loop Invariant Conditionals</title>
+        <para id="id7338036">The following loop contains an <emphasis effect="italics">invariant</emphasis> test:</para>
+        <code id="id6806921" display="block"><newline/>
+      DO I=1,K
+        IF (N .EQ. 0) THEN
+          A(I) = A(I) + B(I) * C 
+        ELSE
+          A(I) = 0. 
+        ENDIF
+      ENDDO
+    </code>
+        <para id="id6550619">“Invariant” means that the outcome is always the same. Regardless of what happens to the variables <code display="inline">A</code>, <code display="inline">B</code>, <code display="inline">C</code>, and <code display="inline">I</code>, the value of <code display="inline">N</code> won’t change, so neither will the outcome of the test.</para>
+        <para id="id6395163">You can recast the loop by making the test outside and replicating the loop body twice — once for when the test is true, and once for when it is false, as in the following example:</para>
+        <code id="id7473977" display="block"><newline/>
+      IF (N .EQ. 0) THEN 
+        DO I=1,K
+          A(I) = A(I) + B(I) * C 
+        ENDDO
+      ELSE
+        DO I=1,K 
+          A(I) = 0
+        ENDDO 
+      ENDIF
+    </code>
+        <para id="id7954759">The effect on the runtime is dramatic. Not only have we eliminated <code display="inline">K-1</code> copies of the test, we have also assured that the computations in the middle of the loop are not control-dependent on the if-statement, and are therefore much easier for the compiler to pipeline.</para>
+        <para id="id8057287">We remember helping someone optimize a program with loops containing similar conditionals. They were checking to see whether debug output should be printed each iteration inside an otherwise highly optimizable loop. We can’t fault the person for not realizing how much this slowed the program down. Performance wasn’t important at the time. The programmer was just trying to get the code to produce good answers. But later on, when performance mattered, by cleaning up invariant conditionals, we were able to speed up the program by a factor of 100.</para>
+      </section>
+      <section id="id6775051">
+        <title>Loop Index Dependent Conditionals</title>
+        <para id="id7928426">For <emphasis effect="italics">loop index dependent</emphasis> conditionals, the test is true for certain ranges of the loop index variables. It isn’t always true or always false, like the conditional we just looked at, but it does change with a predictable pattern, and one that we can use to our advantage. The following loop has two index variables, <code display="inline">I</code> and <code display="inline">J</code>.</para>
+        <code id="id7840269" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (J .LT. I)
+            A(J,I) = A(J,I) + B(J,I) * C 
+          ELSE
+            A(J,I) = 0.0
+          ENDIF 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id8221207">Notice how the if-statement partitions the iterations into distinct sets: those for which it is true and those for which it is false. You can take advantage of the predictability of the test to restructure the loop into several loops — each custom-made for a different partition:</para>
+        <code id="id6527899" display="block"><newline/>
+      DO I=1,N
+        DO J=1,I-1
+            A(J,I) = A(J,I) + B(J,I) * C 
+        ENDDO
+        DO J=I,N
+            A(J,I) = 0.0
+        ENDDO 
+      ENDDO
+    </code>
+        <para id="id6756027">The new version will almost always be faster. A possible exception is when <code display="inline">N</code> is a small value, like 3, in which case we have created more clutter. But then, the loop probably has such a small impact on the total runtime that it won’t matter which way it’s coded.</para>
+      </section>
+      <section id="id5911037">
+        <title>Independent Loop Conditionals</title>
+        <para id="id6564381">It would be nice if you could optimize every loop by partitioning it. But more often than not, the conditional doesn’t directly depend on the value of the index variables. Although an index variable may be involved in addressing an array, it doesn’t create a recognizable pattern in advance — at least not one you can see when you are writing the program. Here’s such a loop:</para>
+        <code id="id2970370" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (B(J,I) .GT. 1.0) A(J,I) = A(J,I) + B(J,I) * C 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id6635290">There is not much you can do about this type of conditional. But because every iteration is independent, the loop can be unrolled or can be performed in parallel.</para>
+      </section>
+      <section id="id8853630">
+        <title>Dependent Loop Conditionals</title>
+        <para id="id1518136">When the conditional is based on a value that changes with each iteration of the loop, the compiler has no choice but to execute the code exactly as written. For instance, the following loop has an if-statement with built-in scalar recursion:</para>
+        <code id="id4392016" display="block"><newline/>
+      DO I=1,N
+        IF (X .LT. A(I)) X = X + B(I)*2. 
+      ENDDO
+    </code>
+        <para id="id4167738">You can’t know which way the branch will go for the next iteration until you are done with the current iteration. To recognize the dependency, try to unroll the loop slightly by hand. If you can’t start the second test until the first has finished, you have a <emphasis effect="italics">dependent loop</emphasis> conditional. You may want to look at these types of loops to see if you can eliminate the iteration-to-iteration value.</para>
+      </section>
+      <section id="id4513739">
+        <title>Reductions</title>
+        <para id="id8105011">Keep an eye out for loops in which the if-statement is performing a max or min function on a array. This is a <emphasis effect="italics">reduction</emphasis>, so called because it reduces a array to a scalar result (the previous example was a reduction too, by the way). Again, we are getting a little bit ahead of ourselves, but since we are talking about if-statements in loops, I want to introduce a trick for restructuring reductions <code>max</code> and min to expose more parallelism. The following loop searches for the maximum value, <code>z</code>, in the array <code>a</code> by going through the elements one at a time:</para>
+        <code id="id6436847" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          z = a[i] &gt; z ? a[i] : z;
+    </code>
+        <para id="id7686028">As written, it’s recursive like the loop from the previous section. You need the result of a given iteration before you can proceed to the next. However, since we are looking for the greatest element in the whole array, and since that will be the same element (essentially) no matter how we go about looking for it, we can restructure the loop to check several elements at a time (we assume n is evenly divisible by 2 and do not include the preconditioning loop):</para>
+        <code id="id4638846" display="block"><newline/>
+      z0 = 0.;
+      z1 = 0.;
+      for (i=0; i&lt; n-1; i+=2) {
+        z0 = z0 &lt; a[i] ? a[i] : z0;
+        z1 = z1 &lt; a[i+1] ? a[i+1] : z1;
+      }
+      z = z0 &lt; z1 ? z1 : z0;
+    </code>
+        <para id="id3266634">Do you see how the new loop calculates two new maximum values each iteration? These maximums are then compared with one another, and the winner becomes the new official <emphasis effect="italics">max</emphasis>. It’s analogous to a play-off arrangement in a Ping-Pong tournament. Whereas the old loop was more like two players competing at a time while the rest sat around, the new loop runs several matches side by side. In general this particular optimization is not a good one to code by hand. On parallel processors, the compiler performs the reduction in its own way. If you hand-code similar to this example, you may inadvertently limit the compiler’s flexibility on a parallel system.</para>
+      </section>
+      <section id="id6252559">
+        <title>Conditionals That Transfer Control</title>
+        <para id="id6806573">Let’s step back a second. Have you noticed a similarity among all the loops so far? We have looked only at a particular type of conditional, <emphasis effect="italics">conditional assignments</emphasis> — based on the outcome of the test, a variable gets reassigned. Of course, not every conditional ends up in an assignment. You can have statements that transfer flow of control, such as subroutine calls or <code display="inline">goto</code> statements. In the following example, the programmer is carefully checking before dividing by zero.</para>
+        <para id="id7528389">However, this test has an extremely negative impact on the performance because it forces the iterations to be done precisely in order:</para>
+        <code id="id6701024" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (B(J,I) .EQ. 0 ) THEN 
+            PRINT *,I,J
+            STOP 
+          ENDIF
+          A(J,I) = A(J,I) / B(J,I) 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id8011545">Avoiding these tests is one of the reasons that the designers of the IEEE floating- point standard added the trap feature for operations such as dividing by zero. These traps allow the programmer in a performance-critical section of the code to achieve maximum performance yet still detect when an error occurs.</para>
+      </section>
+  </content>
+</document>

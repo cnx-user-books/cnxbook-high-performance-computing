@@ -1,0 +1,147 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>History of IEEE Floating-Point Format</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32770</md:content-id>
+  <md:title>History of IEEE Floating-Point Format</md:title>
+  <md:abstract/>
+  <md:uuid>cd645ee4-27ff-4f36-9a50-1d2947da0711</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<section id="seeifthisworks">
+<title>History of IEEE Floating-Point Format</title>
+      <para id="id4650624">Prior to the RISC microprocessor revolution, each vendor had their own floating- point formats based on their designers’ views of the relative importance of range versus accuracy and speed versus accuracy. It was not uncommon for one vendor to carefully analyze the limitations of another vendor’s floating-point format and use this information to convince users that theirs was the only “accurate” floating- point implementation. In reality none of the formats was perfect. The formats were simply imperfect in different ways.</para>
+      <para id="id18753883">During the 1980s the Institute for Electrical and Electronics Engineers (IEEE) produced a standard for the floating-point format. The title of the standard is “IEEE 754-1985 Standard for Binary Floating-Point Arithmetic.” This standard provided the precise definition of a floating-point format and described the operations on floating-point values.</para>
+      <para id="id13834834">Because IEEE 754 was developed after a variety of floating-point formats had been in use for quite some time, the IEEE 754 working group had the benefit of examining the existing floating-point designs and taking the strong points, and avoiding the mistakes in existing designs. The IEEE 754 specification had its beginnings in the design of the Intel i8087 floating-point coprocessor. The i8087 floating-point format improved on the DEC VAX floating-point format by adding a number of significant features.</para>
+      <para id="id18777148">The near universal adoption of IEEE 754 floating-point format has occurred over a 10-year time period. The high performance computing vendors of the mid 1980s (Cray IBM, DEC, and Control Data) had their own proprietary floating-point formats that they had to continue supporting because of their installed user base. They really had no choice but to continue to support their existing formats. In the mid to late 1980s the primary systems that supported the IEEE format were RISC workstations and some coprocessors for microprocessors. Because the designers of these systems had no need to protect a proprietary floating-point format, they readily adopted the IEEE format. As RISC processors moved from general-purpose integer computing to high performance floating-point computing, the CPU designers found ways to make IEEE floating-point operations operate very quickly. In 10 years, the IEEE 754 has gone from a standard for floating-point coprocessors to the dominant floating-point standard for all computers. Because of this standard, we, the users, are the beneficiaries of a portable floating-point environment.</para>
+    </section>
+    <section id="id11337711">
+      <title>IEEE Floating-Point Standard</title>
+      <para id="id13127066">The IEEE 754 standard specified a number of different details of floating-point operations, including:</para>
+      <list id="id18388491" list-type="bulleted">
+        <item>Storage formats</item>
+        <item>Precise specifications of the results of operations</item>
+        <item>Special values</item>
+        <item>Specified runtime behavior on illegal operations</item>
+      </list>
+      <para id="id11337833">Specifying the floating-point format to this level of detail insures that when a computer system is compliant with the standard, users can expect repeatable execution from one hardware platform to another when operations are executed in the same order.</para>
+    </section>
+    <section id="id8767201">
+      <title>IEEE Storage Format</title>
+      <para id="id18727757">The two most common IEEE floating-point formats in use are 32- and 64-bit numbers. <link target-id="id12954503"/> gives the general parameters of these data types.</para>
+      
+      <table id="id12954503" summary="Parameters of IEEE 32- and 64-Bit Formats"><title>Parameters of IEEE 32- and 64-Bit Formats</title>
+<tgroup cols="6"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <colspec colnum="3" colname="c3"/>
+          <colspec colnum="4" colname="c4"/>
+          <colspec colnum="5" colname="c5"/>
+          <colspec colnum="6" colname="c6"/>
+          <tbody>
+            <row>
+              <entry>IEEE75</entry>
+              <entry>FORTRAN</entry>
+              <entry>C</entry>
+              <entry>Bits</entry>
+              <entry>Exponent Bits</entry>
+              <entry>Mantissa Bits</entry>
+            </row>
+            <row>
+              <entry>Single</entry>
+              <entry>REAL*4</entry>
+              <entry>float</entry>
+              <entry>32</entry>
+              <entry>8</entry>
+              <entry>24</entry>
+            </row>
+            <row>
+              <entry>Double</entry>
+              <entry>REAL*8</entry>
+              <entry>double</entry>
+              <entry>64</entry>
+              <entry>11</entry>
+              <entry>53</entry>
+            </row>
+            <row>
+              <entry>Double-Extended</entry>
+              <entry>REAL*10</entry>
+              <entry>long double </entry>
+              <entry>&gt;=80</entry>
+              <entry>&gt;=15</entry>
+              <entry>&gt;=64</entry>
+            </row>
+          </tbody>
+        
+
+
+</tgroup>
+</table>
+      <para id="id18727625">In FORTRAN, the 32-bit format is usually called REAL, and the 64-bit format is usually called DOUBLE. However, some FORTRAN compilers double the sizes for these data types. For that reason, it is safest to declare your FORTRAN variables as <code>REAL*4</code> or <code>REAL*8</code>. The double-extended format is not as well supported in compilers and hardware as the single- and double-precision formats. The bit arrangement for the single and double formats are shown in <link target-id="id13186626"/>.</para>
+      <para id="id13857053">Based on the storage layouts in <link target-id="id12954503"/>, we can derive the ranges and accuracy of these formats, as shown in <link target-id="id18072137"/>.</para>
+      <para id="id11249782">
+        <figure id="id13186626"><title>IEEE754 ﬂoating-point formats</title><media id="id13186626_media" alt="This figure shows two diagrams, the first labeled single precision, and the second labeled double precision. Both diagrams are thin segmented blocks, with the first section on the left labeled s, the section to the right of it labeled exp, and the rightmost section labeled mantissa. The widths of these sections are labeled below each diagram. For single precision, the entire width is measured as 32 bits. The s-section is labeled with a black block, exp is labeled with a black block, and the width of mantissa is labeled 23. For double precision, the entire width is measured as 64 bits. The s-section is labeled with a black block, exp is labeled 11, and mantissa is labeled 52.">
+            <image mime-type="image/png" src="../../media/graphics1-c772.png" id="id13186626__onlineimage" height="278" width="600"/>
+          </media>
+        </figure>
+      </para>
+      <table id="id18072137" summary="Range and Accuracy of IEEE 32- and 64-Bit Formats">
+<tgroup cols="4"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <colspec colnum="3" colname="c3"/>
+          <colspec colnum="4" colname="c4"/>
+          <tbody>
+            <row>
+              <entry>IEEE754</entry>
+              <entry>Minimum Normalized Number</entry>
+              <entry>Largest Finite Number</entry>
+              <entry>Base-10 Accuracy</entry>
+            </row>
+            <row>
+              <entry>Single</entry>
+              <entry>1.2E-38</entry>
+              <entry>3.4 E+38</entry>
+              <entry>6-9 digits</entry>
+            </row>
+            <row>
+              <entry>Double</entry>
+              <entry>2.2E-308</entry>
+              <entry>1.8 E+308</entry>
+              <entry>15-17 digits</entry>
+            </row>
+            <row>
+              <entry>Extended Double</entry>
+              <entry>3.4E-4932</entry>
+              <entry>1.2 E+4932</entry>
+              <entry>18-21 digits</entry>
+            </row>
+          </tbody>
+        
+
+</tgroup><caption>Range and Accuracy of IEEE 32- and 64-Bit Formats</caption>
+</table>
+      <section id="id8189517">
+        <title>Converting from Base-10 to IEEE Internal Format</title>
+        <para id="id18814403">We now examine how a 32-bit floating-point number is stored. The high-order bit is the sign of the number. Numbers are stored in a sign-magnitude format (i.e., not 2’s - complement). The exponent is stored in the 8-bit field biased by adding 127 to the exponent. This results in an exponent ranging from -126 through +127.</para>
+        <para id="id18814172">The mantissa is converted into base-2 and normalized so that there is one nonzero digit to the left of the binary place, adjusting the exponent as necessary. The digits to the right of the binary point are then stored in the low-order 23 bits of the word. Because all numbers are normalized, there is no need to store the leading 1.</para>
+        <para id="id15349135">This gives a free extra bit of precision. Because this bit is dropped, it’s no longer proper to refer to the stored value as the mantissa. In IEEE parlance, this mantissa minus its leading digit is called the <emphasis effect="italics">significand</emphasis>.</para>
+        <para id="id18106877"><link target-id="id18582998"/> shows an example conversion from base-10 to IEEE 32-bit format.</para>
+        <para id="id14599728">
+          <figure id="id18582998"><title>Converting from base-10 to IEEE 32-bit format</title><media id="id18582998_media" alt="This figure consists of a boxed set of numbers and a long string of binary below the box. Inside the box are three rows of text. The first row reads 172.625, Base 10. The second reads 10101100.101 x 2 ** 0, Base 2. The third reads 1.0101100101 x 2 ** 7, Base 2 Normalized. Below this diagram is the caption, add 127 for bias = 134. From the 7 in the third row is an arrow that points to the beginning of a string of binary, that reads, 0 space 10000110 space 01011001010000000000000. From the beginning of the third row in the diagram is an arrow that points at the third segment of the binary. Below the binary is a line of text that reads, 1. Assumed bit and binary point.">
+              <image mime-type="image/png" src="../../media/graphics2-3bc5.png" id="id18582998__onlineimage" height="246" width="600"/>
+            </media>
+            
+          </figure>
+        </para>
+        <para id="id12586099">The 64-bit format is similar, except the exponent is 11 bits long, biased by adding 1023 to the exponent, and the significand is 54 bits long.</para>
+      </section>  
+      </section>
+  </content>
+</document>

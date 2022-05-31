@@ -1,0 +1,31 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Closing Notes</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32768</md:content-id>
+  <md:title>Closing Notes</md:title>
+  <md:abstract/>
+  <md:uuid>e07233e7-ad00-4468-97d8-c884f1decb49</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+
+      <para id="id1172470098183">While this is a relatively long chapter with a lot of technical detail, it does not even begin to scratch the surface of the IEEE floating-point format or the entire field of numerical analysis. We as programmers must be careful about the accuracy of our programs, lest the results become meaningless. Here are a few basic rules to get you started:</para>
+      <list id="id1172454551567" list-type="bulleted"><item>Look for compiler options that relax or enforce strict IEEE compliance and choose the appropriate option for your program. You may even want to change these options for different portions of your program.</item>
+        <item>Use <code>REAL*8</code> for computations unless you are sure <code>REAL*4</code> has sufficient precision. Given that REAL*4 has roughly 7 digits of precision, if the bottom digits become meaningless due to rounding and computations, you are in some danger of seeing the effect of the errors in your results. <code>REAL*8</code> with 13 digits makes this much less likely to happen.</item>
+        <item>Be aware of the relative magnitude of numbers when you are performing additions.</item>
+        <item>When summing up numbers, if there is a wide range, sum from smallest to largest.</item>
+        <item>Perform multiplications before divisions whenever possible.</item>
+        <item>When performing a comparison with a computed value, check to see if the values are “close” rather than identical.</item>
+        <item>Make sure that you are not performing any unnecessary type conversions during the critical portions of your code.</item>
+      </list>
+      <para id="id1172464844328">An excellent reference on floating-point issues and the IEEE format is “What Every Computer Scientist Should Know About Floating-Point Arithmetic,” written by David Goldberg, in ACM Computing Surveys magazine (March 1991). This article gives examples of the most common problems with floating-point and outlines the solutions. It also covers the IEEE floating-point format very thoroughly. I also recommend you consult Dr. William Kahan’s home page (<link url="http://www.cs.berkeley.edu/~wkahan/">http://www.cs.berkeley.edu/~wkahan/</link>) for some excellent materials on the IEEE format and challenges using floating-point arithmetic. Dr. Kahan was one of the original designers of the Intel i8087 and the IEEE 754 floating-point format.</para>
+  </content>
+</document>

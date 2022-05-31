@@ -1,0 +1,67 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Virtual Memory</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33712</md:content-id>
+  <md:title>Virtual Memory</md:title>
+  <md:abstract/>
+  <md:uuid>1a1730de-ccea-491c-b431-8aacbc8ffa6e</md:uuid>
+</metadata>
+
+<content>
+      <para id="id13581266">In addition to the negative performance impact due to cache misses, the virtual memory system can also slow your program down if it is too large to fit in the memory of the system or is competing with other large jobs for scarce memory resources.</para>
+      <para id="id7368669">Under most UNIX implementations, the operating system automatically pages pieces of a program that are too large for the available memory out to the swap area. The program won’t be tossed out completely; that only happens when memory gets extremely tight, or when your program has been inactive for a while. Rather, individual pages are placed in the swap area for later retrieval. First of all, you need to be aware that this is happening if you don’t already know about it. Second, if it is happening, the memory access patterns are critical. When references are too widely scattered, your runtime will be completely dominated by disk I/O.</para>
+      <para id="id9092110">If you plan in advance, you can make a virtual memory system work for you when your program is too large for the physical memory on the machine. The techniques are exactly the same as those for tuning a software-managed out-of-core solution, or loop nests. The process of “blocking” memory references so that data consumed in neighborhoods uses a bigger portion of each virtual memory page before rotating it out to disk to make room for another.<footnote id="id8483150">We examine the techniques for blocking in <link document=""/> Chapter 8.</footnote></para>
+      <section id="id8682274">
+        <title>Gauging the Size of Your Program and the Machine’s Memory</title>
+        <para id="id7278354">How can you tell if you are running out-of-core? There are ways to check for pag- ing on the machine, but perhaps the most straightforward check is to compare the size of your program against the amount of available memory. You do this with the <emphasis effect="italics">size</emphasis> command:</para>
+        <code id="id12968510" display="block"><newline/>
+      % size myprogram
+    </code>
+        <para id="id14747602">On a System V UNIX machine, the output looks something like this:</para>
+        <code id="id11013922" display="block"><newline/>
+      53872 + 53460 + 10010772 = 10118104
+    </code>
+        <para id="id13191950">On a Berkeley UNIX derivative you see something like this:</para>
+        <code id="id13279084" display="block"><newline/>
+      text     data      bss         hex       decimal
+      53872    53460     10010772    9a63d8    10118104
+    </code>
+        <para id="id10163830">The first three fields describe the amount of memory required for three different portions of your program. The first, text, accounts for the machine instructions that make up your program. The second, data, includes initialized values in your pro- gram such as the contents of data statements, common blocks, externals, character strings, etc. The third component, bss, (block started by symbol), is usually the largest. It describes an uninitialized data area in your program. This area would be made of common blocks that are not set by a block data. The last field is a total for all three sections added together, in bytes.<footnote id="id10181068">Warning: The <emphasis effect="italics">size</emphasis> command won’t give you the full picture if your program allocates memory dynamically, or keeps data on the stack. This area is especially important for C programs and FORTRAN programs that create large arrays that are not in COMMON.</footnote></para>
+        <para id="id15628909">Next, you need to know how much memory you have in your system. Unfortunately, there isn’t a standard UNIX command for this. On the RS/6000, <emphasis effect="italics">/etc/lscfg</emphasis> tells you. On an SGI machine, <emphasis effect="italics">/etc/hinv</emphasis> does it. Many System V UNIX implementations have an <emphasis effect="italics">/etc/memsize</emphasis> command. On any Berkeley derivative, you can type:</para>
+        <code id="id10168323" display="block"><newline/>
+      % ps aux
+    </code>
+        <para id="id7140898">This command gives you a listing of all the processes running on the machine. Find the process with the largest value in the <code display="inline">%MEM</code>. Divide the value in the <code display="inline">RSS</code> field by the percentage of memory used to get a rough figure for how much memory your machine has:</para>
+        <code id="id14646654" display="block"><newline/>
+      memory = RSS/(%MEM/100)
+    </code>
+        <para id="id15619019">For instance, if the largest process shows 5% memory usage and a resident set size (RSS) of 840 KB, your machine has 840000/(5/100) = 16 MB of memory.<footnote id="id7017067">You could also reboot the machine! It will tell you how much memory is available when it comes up.</footnote> If the answer from the size command shows a total that is anywhere near the amount of memory you have, you stand a good chance of paging when you run — especially if you are doing other things on the machine at the same time.</para>
+      </section>
+      <section id="id15459702">
+        <title>Checking for Page Faults</title>
+        <para id="id11750399">Your system’s performance monitoring tools tell you if programs are paging. Some paging is OK; page faults and “page-ins” occur naturally as programs run. Also, be careful if you are competing for system resources along with other users. The pic- ture you get won’t be the same as when you have the computer to yourself.</para>
+        <para id="id10162964">To check for paging activity on a Berkeley UNIX derivative, use the <emphasis effect="italics">vmstat</emphasis> command. Commonly people invoke it with a time increment so that it reports paging at regular intervals:</para>
+        <code id="eip-671" display="block"><newline/>
+      % vmstat 5</code><para id="eip-620">This command produces output every five seconds.</para><code id="id15635822" display="block"><newline/>
+      procs     memory              page               disk       faults     cpu
+      r b w   avm   fre  re at  pi  po  fr  de  sr s0 d1 d2 d3  in  sy  cs us sy id
+      0 0 0   824 21568   0  0   0   0   0   0   0  0  0  0  0  20  37  13  0  1 98
+      0 0 0   840 21508   0  0   0   0   0   0   0  1  0  0  0 251 186 156  0 10 90
+      0 0 0   846 21460   0  0   0   0   0   0   0  2  0  0  0 248 149 152  1  9 89
+      0 0 0   918 21444   0  0   0   0   0   0   0  4  0  0  0 258 143 152  2 10 89</code>
+        <para id="id12100426">Lots of valuable information is produced. For our purposes, the important fields are <code display="inline">avm</code> or <emphasis effect="italics">active virtual memory</emphasis>, the <code display="inline">fre</code> or <emphasis effect="italics">free real memory</emphasis>, and the <code display="inline">pi</code> and <code display="inline">po</code> numbers showing paging activity. When the <code display="inline">fre</code> figure drops to near zero, and the <code display="inline">po</code> field shows a lot of activity, it’s an indication that the memory system is overworked.</para>
+        <para id="id9772066">On a SysV machine, paging activity can be seen with the sar command:</para>
+        <code id="id11987546" display="block"><newline/>
+      % sar -r 5 5
+    </code>
+        <para id="id7774570">This command shows you the amount of free memory and swap space presently available. If the free memory figure is low, you can assume that your program is paging:</para>
+        <code id="id13281402" display="block"><newline/>
+      Sat Apr 18 20:42:19 
+      [r] freemem freeswap
+             4032    82144
+    </code>
+        <para id="id14135274">As we mentioned earlier, if you must run a job larger than the size of the memory on your machine, the same sort of advice that applied to conserving cache activity applies to paging activity.<footnote id="id10971372">By the way, are you getting the message “Out of memory?” If you are running <emphasis effect="italics">csh</emphasis>, try typing <code display="inline">unlimit</code> to see if the message goes away. Otherwise, it may mean that you don’t have enough swap space available to run the job.</footnote> Try to minimize the stride in your code, and where you can’t, blocking memory references helps a whole lot.</para>
+        <para id="id12801827">A note on memory performance monitoring tools: you should check with your workstation vendor to see what they have available beyond <emphasis effect="italics">vmstat</emphasis> or <emphasis effect="italics">sar</emphasis>. There may be much more sophisticated (and often graphical) tools that can help you understand how your program is using memory.</para>
+      </section>
+  </content>
+</document>

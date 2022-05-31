@@ -1,0 +1,22 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33682</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>fb7c3de9-bae7-41b9-8905-bf531c1447ab</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id1585210">
+        <problem id="oo-id1164917455301">
+          <para id="id1164919581687">Speculative execution is safe for certain types of instructions; results can be discarded if it turns out that the instruction shouldn’t have executed. Floating- point instructions and memory operations are two classes of instructions for which speculative execution is trickier, particularly because of the chance of generating exceptions. For instance, dividing by zero or taking the square root of a negative number causes an exception. Under what circumstances will a speculative memory reference cause an exception?</para>
+        </problem>
+      </exercise>
+      <exercise id="id7352860">
+        <problem id="oo-id1164906895142">
+          <para id="id1164913598606">Picture a machine with floating-point pipelines that are 100 stages deep (that’s ridiculously deep), each of which can deliver a new result every nanosecond. That would give each pipeline a peak throughput rate of 1 Gflop, and a worst- case throughput rate of 10 Mflops. What characteristics would a program need to have to take advantage of such a pipeline?</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

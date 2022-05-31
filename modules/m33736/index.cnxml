@@ -1,0 +1,49 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Loop Interchange</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33736</md:content-id>
+  <md:title>Loop Interchange</md:title>
+  <md:abstract/>
+  <md:uuid>988e2b32-b5e1-4f7a-81db-84cf90c03cff</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1794070">Loop interchange is a technique for rearranging a loop nest so that the right stuff is at the center. What the right stuff is depends upon what you are trying to accomplish. In many situations, loop interchange also lets you swap high trip count loops for low trip count loops, so that activity gets pulled into the center of the loop nest.<footnote id="id1164913743125">It’s also good for improving memory access patterns.</footnote></para>
+      <section id="id1164913471951">
+        <title>Loop Interchange to Move Computations to the Center</title>
+        <para id="id8020987">When someone writes a program that represents some kind of real-world model, they often structure the code in terms of the model. This makes perfect sense. The computer is an analysis tool; you aren’t writing the code on the computer’s behalf. However, a model expressed naturally often works on one point in space at a time, which tends to give you insignificant inner loops — at least in terms of the trip count. For performance, you might want to interchange inner and outer loops to pull the activity into the center, where you can then do some unrolling. Let’s illustrate with an example. Here’s a loop where <code display="inline">KDIM</code> time-dependent quantities for points in a two-dimensional mesh are being updated:</para>
+        <code id="id1164912938583" display="block"><newline/>
+      PARAMETER (IDIM = 1000, JDIM = 1000, KDIM = 3)
+        ...
+      DO I=1,IDIM
+        DO J=1,JDIM
+          DO K=1,KDIM
+            D(K,J,I) = D(K,J,I) + V(K,J,I) * DT
+          ENDDO
+        ENDDO 
+      ENDDO
+    </code>
+        <para id="id7099580">In practice, <code display="inline">KDIM</code> is probably equal to 2 or 3, where <code display="inline">J</code> or <code display="inline">I</code>, representing the number of points, may be in the thousands. The way it is written, the inner loop has a very low trip count, making it a poor candidate for unrolling.</para>
+        <para id="id1164913240161">By interchanging the loops, you update one quantity at a time, across all of the points. For tuning purposes, this moves larger trip counts into the inner loop and allows you to do some strategic unrolling:</para>
+        <code id="id1164913152898" display="block"><newline/>
+      DO K=1,KDIM
+        DO J=1,JDIM
+          DO I=1,IDIM
+            D(K,J,I) = D(K,J,I) + V(K,J,I) * DT 
+          ENDDO
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164913543077">This example is straightforward; it’s easy to see that there are no inter-iteration dependencies. But how can you tell, in general, when two loops can be inter- changed? Interchanging loops might violate some dependency, or worse, only violate it occasionally, meaning you might not catch it when optimizing. Can we interchange the loops below?</para>
+        <code id="id1164913706076" display="block"><newline/>
+      DO I=1,N-1
+        DO J=2,N
+          A(I,J) = A(I+1,J-1) * B(I,J)
+          C(I,J) = B(J,I)
+        ENDDO 
+      ENDDO
+    </code>
+        <para id="id6407776">While it is possible to examine the loops by hand and determine the dependencies, it is much better if the compiler can make the determination. Very few single-processor compilers automatically perform loop interchange. However, the compilers for high-end vector and parallel computers generally interchange loops if there is some benefit and if interchanging the loops won’t alter the program results.<footnote id="id1164913743506">When the compiler performs automatic parallel optimization, it prefers to run the outermost loop in parallel to minimize overhead and unroll the innermost loop to make best use of a superscalar or vector processor. For this reason, the compiler needs to have some flexibility in ordering the loops in a loop nest.</footnote></para>
+      </section>
+  </content>
+</document>

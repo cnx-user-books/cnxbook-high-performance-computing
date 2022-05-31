@@ -1,0 +1,70 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32810</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>3e40a2ce-31a0-4cfa-b3ea-1c79553e2fa1</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<exercise id="id7533669">
+        <problem id="oo-id8175953">
+          <para id="id11613682">Experiment with the fork code in this chapter. Run the program multiple times and see how the order of the messages changes. Explain the results.</para>
+        </problem>
+      </exercise>
+      <exercise id="id11417100">
+        <problem id="oo-id11612599">
+          <para id="id11529048">Experiment with the <code>create1</code> and <code>create3</code> codes in this chapter. Remove all of the <code>sleep( )</code> calls. Execute the programs several times on single and multiprocessor systems. Can you explain why the output changes from run to run in some situations and doesn’t change in others?</para>
+        </problem>
+      </exercise>
+      <exercise id="id11609525">
+        <problem id="oo-id6124837">
+          <para id="id11609528">Experiment with the parallel sum code in this chapter. In the <code>SumFunc( )</code> routine, change the for-loop to:</para>
+       
+      <code id="id11616122" display="block">for(i=start;i&lt;end;i++ ) GlobSum = GlobSum + array[i];
+    </code>
+      <para id="id11593734">Remove the three lines at the end that get the mutex and update the <code>GlobSum</code>. Execute the code. Explain the difference in values that you see for <code>GlobSum</code>. Are the patterns different on a single processor and a multiprocessor? Explain the performance impact on a single processor and a multiprocessor.</para>
+ </problem>
+      </exercise>      
+<exercise id="id11406610">
+        <problem id="oo-id11614759">
+          <para id="id11593814">Explain how the following code segment could cause deadlock — two or more processes waiting for a resource that can’t be relinquished:</para>
+              <code id="id7939358" display="block">...
+    call lock (lword1)
+    call lock (lword2)
+    ...
+    call unlock (lword1)
+    call unlock (lword2)
+    .
+    .
+    .
+    call lock (lword2)
+    call lock (lword1)
+       ...
+    call unlock (lword2)
+    call unlock (lword1)
+       ...
+    </code>
+</problem>
+      </exercise>
+<exercise id="eip-id5553998">
+<problem id="eip-id1168728197091">
+      <para id="id11614638">If you were to code the functionality of a spin-lock in C, it might look like this:</para>
+      <code id="id11579012" display="block"><newline/>
+    while (!lockword);
+    lockword = !lockword;
+    </code>
+      <para id="id11593768">As you know from the first sections of the book, the same statements would be compiled into explicit loads and stores, a comparison, and a branch. There’s a danger that two processes could each load <code>lockword</code>, find it unset, and continue on as if they owned the lock (we have a race condition). This suggests that spin-locks are implemented differently — that they’re not merely the two lines of C above. How do you suppose they are implemented?</para>
+    </problem>
+</exercise>
+  </content>
+</document>

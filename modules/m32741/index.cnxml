@@ -1,0 +1,25 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Reality</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32741</md:content-id>
+  <md:title>Reality</md:title>
+  <md:abstract/>
+  <md:uuid>928e71b6-4c0e-4354-a1f1-f9a75bad6976</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1170196676869">The real world is full of real numbers. Quantities such as distances, velocities, masses, angles, and other quantities are all real numbers.<footnote id="id1170199814199">In high performance computing we often simulate the real world, so it is somewhat ironic that we use simulated real numbers (floating-point) in those simulations of the real world.</footnote> A wonderful property of real numbers is that they have unlimited accuracy. For example, when considering the ratio of the circumference of a circle to its diameter, we arrive at a value of 3.141592.... The decimal value for <emphasis effect="italics">pi</emphasis> does not terminate. Because real numbers
+have unlimited accuracy, even though we can’t write it down, <emphasis effect="italics">pi</emphasis> is still a real number. Some real numbers are rational numbers because they can be represented
+as the ratio of two integers, such as 1/3. Not all real numbers are rational numbers. Not surprisingly, those real numbers that aren’t rational numbers are called irrational. You probably would not want to start an argument with an irrational number unless you have a lot of free time on your hands.</para>
+      
+      <para id="id1170199008349">Unfortunately, on a piece of paper, or in a computer, we don’t have enough space to keep writing the digits of <emphasis effect="italics">pi</emphasis>. So what do we do? We decide that we only need so much accuracy and round real numbers to a certain number of digits. For example, if we decide on four digits of accuracy, our approximation of <emphasis effect="italics">pi</emphasis> is 3.142. Some state legislature attempted to pass a law that <emphasis effect="italics">pi</emphasis> was to be three. While this is often cited as evidence for the IQ of governmental entities, perhaps the legislature was just suggesting that we only need one digit of accuracy for <emphasis effect="italics">pi</emphasis>. Perhaps they foresaw the need to save precious memory space on computers when representing real numbers.</para>
+  </content>
+</document>

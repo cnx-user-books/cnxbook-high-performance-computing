@@ -1,0 +1,196 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Classical Optimizations</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33696</md:content-id>
+  <md:title>Classical Optimizations</md:title>
+  <md:abstract/>
+  <md:uuid>06c53619-fbb0-43bc-bb4a-15e9abb1049b</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1164354692925">Once the intermediate language is broken into basic blocks, there are a number of optimizations that can be performed on the code in these blocks. Some optimizations are very simple and affect a few tuples within a basic block. Other optimizations move code from one basic block to another without altering the program results. For example, it is often valuable to move a computation from the body of a loop to the code immediately preceding the loop.</para>
+      <para id="id1164354675865">In this section, we are going to list classical optimizations by name and tell you what they are for. We’re not suggesting that <emphasis effect="italics">you</emphasis> make the changes; most compilers since the mid-1980s automatically perform these optimizations at all but their lowest optimization level. As we said at the start of the chapter, if you understand what the compiler can (and can’t) do, you will become a better programmer because you will be able to play to the compiler’s strengths.</para>
+      <section id="id1164354790163">
+        <title>Copy Propagation</title>
+        <para id="id1164354859941">To start, let’s look at a technique for untangling calculations. Take a look at the following segment of code: notice the two computations involving <code>X</code>.</para>
+        <code id="id1164354732190" display="block"><newline/>
+      X = Y 
+      Z = 1.0 + X
+    </code>
+        <para id="id1164355205286">As written, the second statement requires the results of the first before it can proceed — you need <code>X</code> to calculate <code>Z</code>. Unnecessary dependencies could translate into a delay at runtime.<footnote id="id1164354726730">This code is an example of a flow dependence. I describe dependencies in detail in <link document="m32775"/>.</footnote> With a little bit of rearrangement we can make the second statement independent of the first, by <emphasis effect="italics">propagating</emphasis> a copy of <code>Y</code>. The new calculation for <code>Z</code> uses the value of <code>Y</code> directly:</para>
+        <code id="id1164358761046" display="block"><newline/>
+      X = Y 
+      Z = 1.0 + Y
+    </code>
+        <para id="id1164354710969">Notice that we left the first statement, <code>X=Y</code>, intact. You may ask, “Why keep it?” The problem is that we can’t tell whether the value of <code>X</code> is needed elsewhere. That is something for another analysis to decide. If it turns out that no other statement needs the new value of <code>X</code>, the assignment is eliminated later by dead code removal.</para>
+      </section>
+      <section id="id1164354676282">
+        <title>Constant Folding</title>
+        <para id="id1164354732064">A clever compiler can find constants throughout your program. Some of these are “obvious” constants like those defined in parameter statements. Others are less obvious, such as local variables that are never redefined. When you combine them in a calculation, you get a <emphasis effect="italics">constant expression</emphasis>. The little program below has two constants, <code display="inline">I</code> and <code display="inline">K</code>:</para>
+        <code id="id1164354732733" display="block"><newline/>
+      PROGRAM MAIN
+      INTEGER I,K
+      PARAMETER (I = 100) 
+      K = 200
+      J = I + K 
+      END
+    </code>
+        <para id="id1164354871710">Because <code display="inline">I</code> and <code display="inline">K</code> are constant individually, the combination <code display="inline">I+K</code> is constant, which means that <code display="inline">J</code> is a constant too. The compiler reduces constant expressions like <code display="inline">I+K</code> into constants with a technique called <emphasis effect="italics">constant folding</emphasis>.</para>
+        <para id="id1164354732469">How does constant folding work? You can see that it is possible to examine every path along which a given variable could be defined en route to a particular basic block. If you discover that all paths lead back to the same value, that is a constant; you can replace all references to that variable with that constant. This replacement has a ripple-through effect. If the compiler finds itself looking at an expression that is made up solely of constants, it can evaluate the expression at compile time and replace it with a constant. After several iterations, the compiler will have located most of the expressions that are candidates for constant folding.</para>
+        <para id="id1164354675600">A programmer can sometimes improve performance by making the compiler aware of the constant values in your application. For example, in the following code segment:</para>
+        <code id="id1164354795885" display="block">X = X * Y 
+    </code>
+        
+        <para id="id1164354725400">the compiler may generate quite different runtime code if it knew that <code display="inline">Y</code> was 0, 1, 2, or 175.32. If it does not know the value for <code display="inline">Y</code>, it must generate the most conservative (not necessarily the fastest) code sequence. A programmer can communicate these values through the use of the <code display="inline">PARAMETER</code> statement in FORTRAN. By the use of a parameter statement, the compiler knows the values for these constants at runtime. Another example we have seen is:</para>
+        <code id="id1164354700082" display="block"><newline/>
+      DO I = 1,10000
+        DO J=1,IDIM
+          ..... 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164354724973">After looking at the code, it’s clear that <code>IDIM</code> was either 1, 2, or 3, depending on the data set in use. Clearly if the compiler knew that <code>IDIM</code> was 1, it could generate much simpler and faster code.</para>
+      </section>
+      <section id="id1164354698347">
+        <title>Dead Code Removal</title>
+        <para id="id1164354698352">Programs often contain sections of <emphasis effect="italics">dead code</emphasis> that have no effect on the answers and can be removed. Occasionally, dead code is written into the program by the author, but a more common source is the compiler itself; many optimizations produce dead code that needs to be swept up afterwards.</para>
+        <para id="id1164354823286">Dead code comes in two types:</para>
+        <list id="id1164354823294" list-type="bulleted">
+          <item>Instructions that are unreachable</item>
+          <item>Instructions that produce results that are never used</item>
+        </list>
+        <para id="id1164354693986">You can easily write some unreachable code into a program by directing the flow of control around it — permanently. If the compiler can tell it’s unreachable, it will eliminate it. For example, it’s impossible to reach the statement <code display="inline">I = 4</code> in this program:</para>
+        <code id="id1164354863849" display="block"><newline/>
+      PROGRAM MAIN
+      I = 2 
+      WRITE (*,*) I 
+      STOP
+      I = 4 
+      WRITE (*,*) I 
+      END
+    </code>
+        <para id="id1164354843699">The compiler throws out everything after the <code>STOP</code> statement and probably gives you a warning. Unreachable code produced by the compiler during optimization will be quietly whisked away.</para>
+        <para id="id1164354843170">Computations with local variables can produce results that are never used. By analyzing a variable’s definitions and uses, the compiler can see whether any other part of the routine references it. Of course the compiler can’t tell the ultimate fate of variables that are passed between routines, external or common, so those computations are always kept (as long as they are reachable).<footnote id="id1164356548634">If a compiler does sufficient interprocedural analysis, it can even optimize variables across routine boundaries. Interprocedural analysis can be the bane of benchmark codes trying to time a computation without using the results of the computation.</footnote> In the following program, computations involving <code display="inline">k</code> contribute nothing to the final answer and are good candidates for dead code elimination:</para>
+        <code id="id1164354700406" display="block"><newline/>
+      main ()
+      {
+        int i,k;
+        i = k = 1;
+        i += 1;
+        k += 2;
+        printf ("%d\n",i);
+      }
+    </code>
+        <para id="id1164354712934">Dead code elimination has often produced some amazing benchmark results from poorly written benchmarks. See <link target-id="m33700"/> for an example of this type of code.</para>
+      </section>
+      <section id="id1164354701553">
+        <title>Strength Reduction</title>
+        <para id="id1164354701560">Operations or expressions have time costs associated with them. Sometimes it’s possible to replace a more expensive calculation with a cheaper one. We call this <emphasis effect="italics">strength reduction</emphasis>. The following code fragment contains two expensive operations:</para>
+        <code id="id1164354866906" display="block"><newline/>
+      REAL X,Y 
+      Y = X**2
+      J = K*2
+    </code>
+        <para id="id1164354730724">For the exponentiation operation on the first line, the compiler generally makes an embedded mathematical subroutine library call. In the library routine, <code display="inline">X</code> is converted to a logarithm, multiplied, then converted back. Overall, raising <code display="inline">X</code> to a power is expensive — taking perhaps hundreds of machine cycles. The key is to notice that <code display="inline">X</code> is being raised to a small integer power. A much cheaper alternative would be to express it as <code display="inline">X*X</code>, and pay only the cost of multiplication. The second statement shows integer multiplication of a variable <code display="inline">K</code> by 2. Adding <code display="inline">K+K</code> yields the same answer, but takes less time.</para>
+        <para id="id1164354869980">There are many opportunities for compiler-generated strength reductions; these are just a couple of them. We will see an important special case when we look at induction variable simplification. Another example of a strength reduction is replacing multiplications by integer powers of two by logical shifts.</para>
+      </section>
+      <section id="id1164354702242">
+        <title>Variable Renaming</title>
+        <para id="id1164354702248">In <link document="m33671"/>, we talked about register renaming. Some processors can make runtime decisions to replace all references to register 1 with register 2, for instance, to eliminate bottlenecks. Register renaming keeps instructions that are recycling the same registers for different purposes from having to wait until previous instructions have finished with them.</para>
+        <para id="id1164354871572">The same situation can occur in programs — the same variable (i.e., memory location) can be recycled for two unrelated purposes. For example, see the variable <code>x</code> in the following fragment:</para>
+        <code id="id1164354871599" display="block"><newline/>
+      x = y * z;
+      q = r + x + x;
+      x = a + b;
+    </code>
+        <para id="id1164354727257">When the compiler recognizes that a variable is being recycled, and that its current and former uses are independent, it can substitute a new variable to keep the calculations separate:</para>
+        <code id="id1164354859508" display="block"><newline/>
+      x0 = y * z;
+      q = r + x0 + x0;
+      x = a + b;
+    </code>
+        <para id="id1164354678397"><emphasis effect="italics">Variable renaming</emphasis> is an important technique because it clarifies that calculations are independent of each other, which increases the number of things that can be done in parallel.</para>
+      </section>
+      <section id="id1164354732328">
+        <title>Common Subexpression Elimination</title>
+        <para id="id1164354732334">Subexpressions are pieces of expressions. For instance, <code display="inline">A+B</code> is a subexpression of <code display="inline">C*(A+B)</code>. If <code display="inline">A+B</code> appears in several places, like it does below, we call it a <emphasis effect="italics">common subexpression</emphasis>:</para>
+        <code id="id1164354677154" display="block"><newline/>
+      D = C * (A + B) 
+      E = (A + B)/2.
+    </code>
+        <para id="id1164354789085">Rather than calculate <code display="inline">A + B</code> twice, the compiler can generate a temporary variable and use it wherever <code display="inline">A + B</code> is required:</para>
+        <code id="id1164354732539" display="block"><newline/>
+      temp = A + B 
+      D = C * temp 
+      E = temp/2.
+    </code>
+        <para id="id1164354701798">Different compilers go to different lengths to find common subexpressions. Most pairs, such as <code display="inline">A+B</code>, are recognized. Some can recognize reuse of intrinsics, such as <code display="inline">SIN(X)</code>. Don’t expect the compiler to go too far though. Subexpressions like <code display="inline">A+B+C</code> are not computationally equivalent to reassociated forms like <code display="inline">B+C+A</code>, even though they are algebraically the same. In order to provide predictable results on computations, FORTRAN must either perform operations in the order specified by the user or reorder them in a way to guarantee exactly the same result. Sometimes the user doesn’t care which way <code display="inline">A+B+C</code> associates, but the compiler cannot assume the user does not care.</para>
+        <para id="id1164354691202">Address calculations provide a particularly rich opportunity for common subexpression elimination. You don’t see the calculations in the source code; they’re generated by the compiler. For instance, a reference to an array element <code display="inline">A(I,J) </code>may translate into an intermediate language expression such as:</para>
+        <code id="id1164354691263" display="block"><newline/>
+      address(A) + (I-1)*sizeof_datatype(A)
+      + (J-1)*sizeof_datatype(A) * column_dimension(A)
+    </code>
+        <para id="id1164354691279">If <code display="inline">A(I,J)</code> is used more than once, we have multiple copies of the same address computation. Common subexpression elimination will (hopefully) discover the redundant computations and group them together.</para>
+      </section>
+      <section id="id1164354644428">
+        <title>Loop-Invariant Code Motion</title>
+        <para id="id1164354644434">Loops are where many high performance computing programs spend a majority of their time. The compiler looks for every opportunity to move calculations out of a loop body and into the surrounding code. Expressions that don’t change after the loop is entered (<emphasis effect="italics">loop-invariant expressions</emphasis>) are prime targets. The following loop has two loop-invariant expressions:</para>
+        <code id="id1164354644482" display="block"><newline/>
+      DO I=1,N
+        A(I) = B(I) + C * D 
+        E = G(K)
+      ENDDO
+    </code>
+        <para id="id1164354693573">Below, we have modified the expressions to show how they can be moved to the outside:</para>
+        <code id="id1164354693595" display="block"><newline/>
+      temp = C * D 
+      DO I=1,N
+        A(I) = B(I) + temp
+      ENDDO
+      E = G(K)
+    </code>
+        <para id="id1164354693641">It is possible to move code before or after the loop body. As with common subexpression elimination, address arithmetic is a particularly important target for loop- invariant code motion. Slowly changing portions of index calculations can be pushed into the suburbs, to be executed only when needed.</para>
+      </section>
+      <section id="id1164354674174">
+        <title>Induction Variable Simplification</title>
+        <para id="id1164354674181">Loops can contain what are called <emphasis effect="italics">induction variables</emphasis>. Their value changes as a linear function of the loop iteration count. For example, <code display="inline">K</code> is an induction variable in the following loop. Its value is tied to the loop index:</para>
+        <code id="id1164354674229" display="block"><newline/>
+      DO I=1,N
+        K = I*4 + M
+         ... 
+      ENDDO
+    </code>
+        <para id="id1164354674264"><emphasis effect="italics">Induction variable simplification</emphasis> replaces calculations for variables like <code display="inline">K</code> with simpler ones. Given a starting point and the expression’s first derivative, you can arrive at <code display="inline">K</code>’s value for the <emphasis effect="italics">n</emphasis>th iteration by stepping through the <emphasis effect="italics">n-1</emphasis> intervening iterations:</para>
+        <code id="id1164354876568" display="block"><newline/>
+      K = M 
+      DO I=1,N
+        K = K + 4 
+         ... 
+      ENDDO
+    </code>
+        <para id="id1164354876617">The two forms of the loop aren’t equivalent; the second won’t give you the value of <code display="inline">K</code> given any value of <code display="inline">I</code>. Because you can’t jump into the middle of the loop on the <emphasis effect="italics">n</emphasis>th iteration, <code display="inline">K</code> always takes on the same values it would have if we had kept the original expression.</para>
+        <para id="id1164354674878">Induction variable simplification probably wouldn’t be a very important optimization, except that array address calculations look very much like the calculation for <code display="inline">K</code> in the example above. For instance, the address calculation for <code display="inline">A(I)</code> within a loop iterating on the variable <code display="inline">I</code> looks like this:</para>
+        <code id="id1164354674933" display="block">address = base_address(A) + (I-1) * sizeof_datatype(A)
+    </code>
+        <para id="id1164354674945">Performing all that math is unnecessary. The compiler can create a new induction variable for references to A and simplify the address calculations:</para>
+        
+        <code id="eip-450" display="block"><newline/>
+      outside the loop...
+      address = base_address(A) - (1 * sizeof_datatype(A))
+      indie the loop...
+      address = address + sizeof_datatype(A)
+    </code>
+        
+        
+        <para id="id1164354674983">Induction variable simplification is especially useful on processors that can automatically increment a register each time it is used as a pointer for a memory reference. While stepping through a loop, the memory reference and the address arithmetic can both be squeezed into a single instruction—a great savings.</para>
+      </section>
+      <section id="id1164354864773">
+        <title>Object Code Generation</title>
+        <para id="id1164354864780">Precompilation, lexical analysis, parsing, and many optimization techniques are somewhat portable, but code generation is very specific to the target processor. In some ways this phase is where compilers earn their keep on single-processor RISC systems.</para>
+        <para id="id1164354864812">Anything that isn’t handled in hardware has to be addressed in software. That means if the processor can’t resolve resource conflicts, such as overuse of a register or pipeline, then the compiler is going to have to take care of it. Allowing the compiler to take care of it isn’t necessarily a bad thing — it’s a design decision. A complicated compiler and simple, fast hardware might be cost effective for certain applications. Two processors at opposite ends of this spectrum are the MIPS R2000 and the HP PA-8000. The first depends heavily on the compiler to schedule instructions and fairly distribute resources. The second manages both things at runtime, though both depend on the compiler to provide a balanced instruction mix.</para>
+        <para id="id1164354710140">In all computers, register selection is a challenge because, in spite of their numbers, registers are precious. You want to be sure that the most active variables become register resident at the expense of others. On machines without register renaming (see <link document="m33671"/>), you have to be sure that the compiler doesn’t try to recycle registers too quickly, otherwise the processor has to delay computations as it waits for one to be freed.</para>
+        <para id="id1164354710229">Some instructions in the repertoire also save your compiler from having to issue others. Examples are auto-increment for registers being used as array indices or conditional assignments in lieu of branches. These both save the processor from extra calculations and make the instruction stream more compact.</para>
+        <para id="id1164354710291">Lastly, there are opportunities for increased parallelism. Programmers generally think serially, specifying steps in logical succession. Unfortunately, serial source code makes serial object code. A compiler that hopes to efficiently use the parallelism of the processor will have to be able to move instructions around and find operations that can be issued side by side. This is one of the biggest challenges for compiler writers today. As superscalar and <emphasis effect="italics">very long instruction word</emphasis> (VLIW) designs become capable of executing more instructions per clock cycle, the compiler will have to dig deeper for operations that can execute at the same time.</para>
+      </section>
+  </content>
+</document>

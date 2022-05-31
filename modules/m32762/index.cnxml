@@ -1,0 +1,36 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Compiler Issues</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32762</md:content-id>
+  <md:title>Compiler Issues</md:title>
+  <md:abstract/>
+  <md:uuid>bec5d6f7-6512-4a4e-b580-32efba105442</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<para id="id1169720750004">The IEEE 754 floating-point standard does a good job describing how floating- point operations are to be performed. However, we generally don’t write assembly language programs. When we write in a higher-level language such as FORTRAN, it’s sometimes difficult to get the compiler to generate the assembly language you need for your application. The problems fall into two categories:</para>
+      <list id="id1169726171573" list-type="bulleted">
+        <item>The compiler is too conservative in trying to generate IEEE-compliant code and produces code that doesn’t operate at the peak speed of the processor. On some processors, to fully support gradual underflow, extra instructions must be generated for certain instructions. If your code will never underflow, these instructions are unnecessary overhead.</item>
+        <item>The optimizer takes liberties rewriting your code to improve its performance, eliminating some necessary steps. For example, if you have the following code:
+<code id="eip-919" display="block"><newline/>
+      Z = X + 500
+      Y = Z - 200</code>
+The optimizer may replace it with 
+<code>Y = X + 300</code>. However, in the case of a value for <code>X</code> that is close to overflow, the two sequences may not produce the same result.
+</item>
+      </list>
+      
+      
+      
+      <para id="id1169718476562">Sometimes a user prefers “fast” code that loosely conforms to the IEEE standard, and at other times the user will be writing a numerical library routine and need total control over each floating-point operation. Compilers have a challenge supporting the needs of both of these types of users. Because of the nature of the high performance computing market and benchmarks, often the “fast and loose” approach prevails in many compilers.</para>
+
+  </content>
+</document>

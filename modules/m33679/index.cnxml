@@ -1,0 +1,21 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>RISC Means Fast</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33679</md:content-id>
+  <md:title>RISC Means Fast</md:title>
+  <md:abstract/>
+  <md:uuid>a086c08b-07db-4bc3-821b-cbee2de31e33</md:uuid>
+</metadata>
+
+<content>
+      <para id="id49684313">We all know that the “R” in RISC means “reduced.” Lately, as the number of components that can be manufactured on a chip has increased, CPU designers have been looking at ways to make their processors faster by adding features. We have already talked about many of the features such as on-chip multipliers, very fast floating-point, lots of registers, and on-chip caches. Even with all of these features, there seems to be space left over. Also, because much of the design of the control section of the processor is automated, it might not be so bad to add just a “few” new instructions here and there. Especially if simulations indicate a 10% overall increase in speed!</para>
+      <para id="id41281359">So, what does it mean when they add 15 instructions to a RISC instruction set architecture (ISA)? Would we call it “not-so-RISC”? A suggested term for this trend is FISC, or <emphasis effect="italics">fast instruction set computer</emphasis>. The point is that reducing the number of instructions is not the goal. The goal is to build the fastest possible processor within the manufacturing and cost constraints.<footnote id="id46958956">People will argue forever but, in a sense, reducing the instruction set was never an end in itself, it was a means to an end.</footnote></para>
+      <para id="id45142817">Some of the types of instructions that are being added into architectures include:</para>
+      <list id="id49669307" list-type="bulleted">
+        <item>More addressing modes</item>
+        <item>Meta-instructions such as “decrement counter and branch if non-zero”</item>
+        <item>Specialized graphics instructions such as the Sun VIS set, the HP graphics instructions, the MIPS Digital Media Extentions (MDMX), and the Intel MMX instructions</item>
+      </list>
+      <para id="id42241092">Interestingly, the reason that the first two are feasible is that adder units take up so little space, it is possible to put one adder into the decode unit and another into the load/store unit. Most visualization instruction sets take up very little chip area. They often provide “ganged” 8-bit computations to allow a 64-bit register to be used to perform eight 8-bit operations in a single instruction.</para>
+  </content>
+</document>

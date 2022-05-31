@@ -1,0 +1,110 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Blocking to Ease Memory Access Patterns</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33756</md:content-id>
+  <md:title>Blocking to Ease Memory Access Patterns</md:title>
+  <md:abstract/>
+  <md:uuid>55e9a30a-69b1-47c6-b065-e76775e2dce1</md:uuid>
+</metadata>
+
+<content>
+      <para id="id10391864"><emphasis effect="italics">Blocking</emphasis> is another kind of memory reference optimization. As with loop interchange, the challenge is to retrieve as much data as possible with as few cache misses as possible. We’d like to rearrange the loop nest so that it works on data in little neighborhoods, rather than striding through memory like a man on stilts. Given the following vector sum, how can we rearrange the loop?</para>
+      <code id="id14731822" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          A(J,I) = A(J,I) + B(I,J)
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id6130349">This loop involves two vectors. One is referenced with unit stride, the other with a stride of N. We can interchange the loops, but one way or another we still have <code display="inline">N</code>-strided array references on either <code display="inline">A</code> or <code display="inline">B</code>, either of which is undesirable. The trick is to <emphasis effect="italics">block</emphasis> references so that you grab a few elements of <code display="inline">A</code>, and then a few of <code display="inline">B</code>, and then a few of <code display="inline">A</code>, and so on — in neighborhoods. We make this happen by combining inner and outer loop unrolling:</para>
+      <code id="id6574730" display="block"><newline/>
+      DO I=1,N,2
+        DO J=1,N,2
+          A(J,I)     = A(J,I)     + B(I,J)
+          A(J+1,I)   = A(J+1,I)   + B(I,J+1)
+          A(J,I+1)   = A(J,I+1)   + B(I+1,J)
+          A(J+1,I+1) = A(J+1,I+1) + B(I+1,J+1)
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id6370659">Use your imagination so we can show why this helps. Usually, when we think of a two-dimensional array, we think of a rectangle or a square (see <link target-id="id7269762"/>). Remember, to make programming easier, the compiler provides the illusion that two-dimensional arrays A and B are rectangular plots of memory as in <link target-id="id7269762"/>. Actually, memory is sequential storage. In FORTRAN, a two-dimensional array is constructed in memory by logically lining memory “strips” up against each other, like the pickets of a cedar fence. (It’s the other way around in C: rows are stacked on top of one another.) Array storage starts at the upper left, proceeds down to the bottom, and then starts over at the top of the next column. Stepping through the array with unit stride traces out the shape of a backwards “N,” repeated over and over, moving to the right.</para>
+      <figure id="id7269762"><title>Arrays A and B</title><media id="id7269762_media" alt="This figure shows two boxes. The first, labeled, Array A, contains a large grey letter, A, and a dashed grid pattern covering the box. The second, labeled Array B, contains a large grey letter, B, of the same size as letter A, with an identical dashed grid pattern inside the box.">
+          <image mime-type="image/png" src="../../media/graphics1-e325.png" id="id7269762__onlineimage" height="257" width="600"/>
+        </media>
+      <!--Figure 8-1--></figure>
+      
+      <figure id="id13221999"><title>How array elements are stored</title><media id="id13221999_media" alt="This figure contains two objects. The first is an N-shaped zig-zag arrow, first going downward, then moving diagonally up and to the right, then moving downward again. The first downward section is labeled, column 1, and the second is labeled, column 2. The second object is a box filled with a pattern of similar zig-zag arrows, titled array. Inside the box is a dashed grid pattern overlaid on the arrows. A horizontal section of the grid is labled, denotes cache line boundary.">
+          <image mime-type="image/png" src="../../media/graphics2-0881.png" id="id13221999__onlineimage" height="298" width="600"/>
+        </media>
+      <!--Figure 8-2--></figure>
+      
+      <para id="id6806294">Imagine that the thin horizontal lines of <link target-id="id13221999"/> cut memory storage into pieces the size of individual cache entries. Picture how the loop will traverse them. Because of their index expressions, references to <code display="inline">A</code> go from top to bottom (in the backwards “N” shape), consuming every bit of each cache line, but references to <code display="inline">B</code> dash off to the right, using one piece of each cache entry and discarding the rest (see <link target-id="id6782858"/>, top). This low usage of cache entries will result in a high number of cache misses.</para>
+      <para id="id6558493">If we could somehow rearrange the loop so that it consumed the arrays in small rectangles, rather than strips, we could conserve some of the cache entries that are being discarded. This is exactly what we accomplished by unrolling both the inner and outer loops, as in the following example. Array <code display="inline">A</code> is referenced in several strips side by side, from top to bottom, while <code display="inline">B</code> is referenced in several strips side by side, from left to right (see <link target-id="id6782858"/>, bottom). This improves cache performance and lowers runtime.</para>
+      <para id="id8236262">For really big problems, more than cache entries are at stake. On virtual memory machines, memory references have to be translated through a <code display="inline">TLB</code>. If you are dealing with large arrays, <code display="inline">TLB</code> misses, in addition to cache misses, are going to add to your runtime.</para>
+      <figure id="id6782858"><title>2×2 squares</title><media id="id6782858_media" alt="This figure contains four objects. The first is a box labeled Array A containing an N-shaped zig-zag arrow, first going downward, then moving diagonally up and to the right, then moving downward again. Inside the box is a dashed grid pattern. The arrows are on the far left side of the box, and their length takes up the entire height of the box. The second is labeled, Array B, and contains a similar zig-zag of arrows, this time pointing to the right and in the topmost portion of the box. Array A and B are positioned next to each other. Below them is a horizontal line dividing the figure into two parts. Below the line are two more boxes, also labeled Array A and Array B, but with different arrows inside. The arrows in Array A are pictured as follows. Two small arrows in the top-left portion of the box point downward, and out of them is a larger arrow pointing down that stretches the entire height of the box. coming from the right and at a diagonal is a thick, faded line that meets the arrow at the bottom-left portion of the object. Array B contains the same shape, except with the arrows pointing to the right, from the uppermost portion of the object.">
+          <image mime-type="image/png" src="../../media/graphics3-1692.png" id="id6782858__onlineimage" height="492" width="600"/>
+        </media>
+      <!--Figure 8-3--></figure>
+      
+      <para id="id12070637">Here’s something that may surprise you. In the code below, we rewrite this loop yet again, this time blocking references at two different levels: in <code display="inline">2×2</code> squares to save cache entries, and by cutting the original loop in two parts to save <code display="inline">TLB</code> entries:</para>
+      <code id="id13096232" display="block"><newline/>
+      DO I=1,N,2
+        DO J=1,N/2,2
+          A(J,I) = A(J,I) + B(I,J)
+          A(J+1,I) = A(J+1,I) + B(I+1,J)
+          A(J,I+1) = A(J,I+1) + B(I+1,J)
+          A(J+1,I+1) = A(J+1,I+1) + B(I+1,J+1)
+        ENDDO
+      ENDDO
+      DO I=1,N,2
+        DO J=N/2+1,N,2
+          A(J,I) = A(J,I) + B(I,J)
+          A(J+1,I) = A(J+1,I) + B(I+1,J)
+          A(J,I+1) = A(J,I+1) + B(I+1,J)
+          A(J+1,I+1) = A(J+1,I+1) + B(I+1,J+1)
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id8461549">You might guess that adding more loops would be the wrong thing to do. But if you work with a reasonably large value of <code display="inline">N</code>, say 512, you will see a significant increase in performance. This is because the two arrays <code display="inline">A</code> and <code display="inline">B</code> are each 256 KB × 8 bytes = 2 MB when <code display="inline">N</code> is equal to 512 — larger than can be handled by the TLBs and caches of most processors.</para>
+      <para id="id3969524">The two boxes in <link target-id="id5129821"/> illustrate how the first few references to A and B look superimposed upon one another in the blocked and unblocked cases. Unblocked references to B zing off through memory, eating through cache and TLB entries. Blocked references are more sparing with the memory system.</para>
+      <para id="id6406727">
+        <figure id="id5129821"><title>Picture of unblocked versus blocked references</title><media id="id5129821_media" alt="This figure contains two objects. The first is a box, labled, Blocked, with sets of arrows in a grid pointing in different directions. The for viewing purposes, the grid can be thought of as having four quadrants. In the upper-left quadrant, four parallel evenly-spaced arrows of equal length point to the right, and four identical arrows point down, crossing at sixteen points. In the upper-right quadrant, four parallel evenly-spaced arrows of equal length point down. And in the lower-left quadrant, four parallel evenly-spaced arrows of equal length point to the right. Below this object is a large, wide arrow pointing to the right, labeled, Strided Memory References. The second objects, labeled Unblocked, is similar in nature with arrows inside a box. There are eight arrows in this box. The arrows are parallel, spaced evenly, and of equal length. Four arrows come from the top-left of the object and point down. The other four arrows come from the top-left and point to the right. Below this object is a wider arrow pointed to the right, labeled strided memory references. An asterisk at the bottom of the figure, related to the titles of the two objects, is labeled, Arrays A and B are superimposed.">
+            <image mime-type="image/png" src="../../media/graphics4-3dc5.png" id="id5129821__onlineimage" height="319" width="599"/>
+          </media>
+        <!--Figure 8-4--></figure>
+      </para>
+      
+      <para id="id9516308">You can take blocking even further for larger problems. This code shows another method that limits the size of the inner loop and visits it repeatedly:</para>
+      <code id="id10404121" display="block"><newline/>
+      II = MOD (N,16) 
+      JJ = MOD (N,4)
+    
+      DO I=1,N
+        DO J=1,JJ
+          A(J,I) = A(J,I) + B(J,I)
+        ENDDO
+      ENDDO
+    
+      DO I=1,II
+        DO J=JJ+1,N
+            A(J,I) = A(J,I) + B(J,I)
+            A(J,I) = A(J,I) + 1.0D0
+        ENDDO
+      ENDDO
+    
+      DO I=II+1,N,16
+        DO J=JJ+1,N,4
+          DO K=I,I+15
+            A(J,K)   = A(J,K)   + B(K,J)
+            A(J+1,K) = A(J+1,K) + B(K,J+1)
+            A(J+2,K) = A(J+2,K) + B(K,J+2)
+            A(J+3,K) = A(J+3,K) + B(K,J+3)
+          ENDDO
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id17807306">Where the inner <code display="inline">I</code> loop used to execute <code display="inline">N</code> iterations at a time, the new <code display="inline">K</code> loop executes only 16 iterations. This divides and conquers a large memory address space by cutting it into little pieces.</para>
+      <para id="id19900786">While these blocking techniques begin to have diminishing returns on single-processor systems, on large multiprocessor systems with nonuniform memory access (NUMA), there can be significant benefit in carefully arranging memory accesses to maximize reuse of both cache lines and main memory pages.</para>
+      <para id="id8603994">Again, the combined unrolling and blocking techniques we just showed you are for loops with <emphasis effect="italics">mixed stride</emphasis> expressions. They work very well for loop nests like the one we have been looking at. However, if all array references are strided the same way, you will want to try loop unrolling or loop interchange first.</para>
+  </content>
+</document>

@@ -1,0 +1,310 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Assisting the Compiler</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32814</md:content-id>
+  <md:title>Assisting the Compiler</md:title>
+  <md:abstract/>
+  <md:uuid>dfecd9f3-a2c4-4f4a-b495-82267a3a0f8a</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1163667279212">If it were all that simple, you wouldn’t need this book. While compilers are extremely clever, there is still a lot of ways to improve the performance of your code without sacrificing its portability. Instead of converting the whole program to C and using a thread library, you can assist the compiler by adding compiler directives to our source code.</para>
+      <para id="id1163664326481">Compiler directives are typically inserted in the form of stylized FORTRAN comments. This is done so that a nonparallelizing compiler can ignore them and just look at the FORTRAN code, sans comments. This allows to you tune your code for parallel architectures without letting it run badly on a wide range of single-processor systems.</para>
+      <para id="id1163666064964">There are two categories of parallel-processing comments:</para>
+      <list id="id1163672698594" list-type="bulleted">
+        <item>Assertions</item>
+        <item>Manual parallelization directives</item>
+      </list>
+      <para id="id1163667285158">Assertions tell the compiler certain things that you as the programmer know about the code that it might not guess by looking at the code. Through the assertions, you are attempting to assuage the compiler’s doubts about whether or not the loop is eligible for parallelization. When you use directives, you are taking full responsibility for the correct execution of the program. You are telling the compiler what to parallelize and how to do it. You take full responsibility for the output of the program. If the program produces meaningless results, you have no one to blame but yourself.</para>
+      <section id="id1163675278431"><title>Assertions</title><para id="id1163672310341">In a previous example, we compiled a program and received the following output:</para>
+        <code id="eip-id5489660" display="block"><newline/>
+E6000: f77 -O3 -autopar -loopinfo -o dep dep.f
+dep.f:
+"dep.f", line 6: not parallelized, call may be unsafe 
+"dep.f", line 8: not parallelized, unsafe dependence (a) 
+E6000:
+    </code>
+        <para id="id1163665432192">An uneducated programmer who has not read this book (or has not looked at the code) might exclaim, “What unsafe dependence, I never put one of those in my code!” and quickly add a <emphasis effect="italics">no dependencies</emphasis> assertion. This is the essence of an assertion. Instead of telling the compiler to simply parallelize the loop, the programmer is telling the compiler that its conclusion that there is a dependence is incorrect. Usually the net result is that the compiler does indeed parallelize the loop.</para>
+        <para id="id1163668429957">We will briefly review the types of assertions that are typically supported by these compilers. An assertion is generally added to the code using a stylized comment.</para>
+        <section id="id1163669060975">
+          <title>No dependencies</title>
+          <para id="id1163666847568">A <emphasis>no dependencies</emphasis> or <emphasis>ignore dependencies</emphasis> directive tells the compiler that references don’t overlap. That is, it tells the compiler to generate code that may execute incorrectly if there <emphasis>are</emphasis> dependencies. You’re saying, “I know what I’m doing; it’s OK to overlap references.” A no dependencies directive might help the following loop:</para>
+          <code id="id1163666495844" display="block"><newline/>
+DO I=1,N
+  A(I) = A(I+K) * B(I) 
+ENDDO
+    </code>
+          <para id="id1163664553891">If you know that <code>k</code> is greater than <code>-1</code> or less than <code>-n</code>, you can get the compiler to parallelize the loop:</para>
+          <code id="id1163671936556" display="block"><newline/>
+C$ASSERT NO_DEPENDENCIES 
+     DO I=1,N
+       A(I) = A(I+K) * B(I) 
+     ENDDO
+    </code>
+          <para id="id1163675056278">Of course, blindly telling the compiler that there are no dependencies is a prescription for disaster. If <code>k</code> equals <code>-1</code>, the example above becomes a recursive loop.</para>
+        </section>
+        <section id="id1163667350418">
+          <title>Relations</title>
+          <para id="id1163666905192">You will often see loops that contain some potential dependencies, making them bad candidates for a no dependencies directive. However, you may be able to supply some local facts about certain variables. This allows partial parallelization without compromising the results. In the code below, there are two potential dependencies because of subscripts involving k and j:</para>
+          <code id="id1163673905135" display="block"><newline/>
+for (i=0; i&lt;n; i++) {
+    a[i] = a[i+k] * b[i];
+    c[i] = c[i+j] * b[i];
+}
+    </code>
+          <para id="id1163675339130">Perhaps we know that there are no conflicts with references to <code display="inline">a[i]</code> and <code>a[i+k]</code>. But maybe we aren’t so sure about <code display="inline">c[i]</code> and <code display="inline">c[i+j]</code>. Therefore, we can’t say in general that there are no dependencies. However, we may be able to say something explicit about <code>k</code> (like “<code>k</code> is always greater than <code>-1</code>”), leaving <code>j</code> out of it. This information about the relationship of one expression to another is called a <emphasis>relation assertion</emphasis>. Applying a relation assertion allows the compiler to apply its optimization to the first statement in the loop, giving us partial parallelization.<footnote id="id1163663873099">Notice that, if you were tuning by hand, you could split this loop into two: one parallelizable and one not.</footnote></para>
+          <para id="id1163671890282">Again, if you supply inaccurate testimony that leads the compiler to make unsafe optimizations, your answer may be wrong.</para>
+        </section>
+        <section id="id1163665159946">
+          <title>Permutations</title>
+          <para id="id1163666460375">As we have seen elsewhere, when elements of an array are indirectly addressed, you have to worry about whether or not some of the subscripts may be repeated. In the code below, are the values of K(I) all unique? Or are there duplicates?</para>
+          <code id="id1163666603531" display="block"><newline/>
+DO I=1,N
+  A(K(I)) = A(K(I)) + B(I) * C 
+END DO
+    </code>
+          <para id="id1163667974508">If you know there are no duplicates in <code>K</code> (i.e., that <code>A(K(I))</code> is a permutation), you can inform the compiler so that iterations can execute in parallel. You supply the information using a <emphasis effect="italics">permutation assertion</emphasis>.</para>
+        </section>
+        <section id="id1163667277237">
+          <title>No equivalences</title>
+          <para id="id1163667278251">Equivalenced arrays in FORTRAN programs provide another challenge for the compiler. If any elements of two equivalenced arrays appear in the same loop, most compilers assume that references could point to the same memory storage location and optimize very conservatively. This may be true even if it is abundantly apparent to you that there is no overlap whatsoever.</para>
+          <para id="id1163667276734">You inform the compiler that references to equivalenced arrays are safe with a <emphasis effect="italics">no equivalences</emphasis> assertion. Of course, if you don’t use equivalences, this assertion has no effect.</para>
+        </section>
+        <section id="id7540293">
+          <title>Trip count</title>
+          <para id="id1163665112108">Each loop can be characterized by an average number of iterations. Some loops are never executed or go around just a few times. Others may go around hundreds of times:</para>
+          <code id="id1163669983568" display="block"><newline/>
+C$ASSERT TRIPCOUNT&gt;100
+     DO I=L,N
+       A(I) = B(I) + C(I) 
+     END DO
+    </code>
+          <para id="id1163667265525">Your compiler is going to look at every loop as a candidate for unrolling or parallelization. It’s working in the dark, however, because it can’t tell which loops are important and tries to optimize them all. This can lead to the surprising experience of seeing your runtime go up after optimization!</para>
+          <para id="id7171786">A <emphasis effect="italics">trip count assertion</emphasis> provides a clue to the compiler that helps it decide how much to unroll a loop or when to parallelize a loop.<footnote id="id1163666057875">The assertion is made either by hand or from a profiler.</footnote> Loops that aren’t important can be identified with low or zero trip counts. Important loops have high trip counts.</para>
+        </section>
+        <section id="id7153636">
+          <title>Inline substitution</title>
+          <para id="id1163663861013">If your compiler supports procedure inlining, you can use directives and command-line switches to specify how many nested levels of procedures you would like to inline, thresholds for procedure size, etc. The vendor will have chosen reasonable defaults.</para>
+          
+          <para id="id1163666901482">Assertions also let you choose subroutines that you think are good candidates for inlining. However, subject to its thresholds, the compiler may reject your choices. Inlining could expand the code so much that increased memory activity would claim back gains made by eliminating the procedure call. At higher optimization levels, the compiler is often capable of making its own choices for inlining candidates, provided it can find the source code for the routine under consideration.</para>
+          <para id="id7483216">Some compilers support a feature called <emphasis effect="italics">interprocedural analysis</emphasis>. When this is done, the compiler looks across routine boundaries for its data flow analysis. It can perform significant optimizations across routine boundaries, including automatic inlining, constant propagation, and others.</para>
+        </section>
+        <section id="id1163667767533">
+          <title>No side effects</title>
+          <para id="id1163666902305">Without interprocedural analysis, when looking at a loop, if there is a subroutine call in the middle of the loop, the compiler has to treat the subroutine as if it will have the worst possible side effects. Also, it has to assume that there are dependencies that prevent the routine from executing simultaneously in two different threads.</para>
+          <para id="id8417595">Many routines (especially functions) don’t have any side effects and can execute quite nicely in separate threads because each thread has its own private call stack and local variables. If the routine is meaty, there will be a great deal of benefit in executing it in parallel.</para>
+          <para id="id1163666899815">Your computer may allow you to add a directive that tells you if successive sub-routine calls are independent:</para>
+          <code id="id1163667260605" display="block"><newline/>
+C$ASSERT NO_SIDE_EFFECTS 
+     DO I=1,N
+       CALL BIGSTUFF (A,B,C,I,J,K) 
+     END DO
+    </code>
+          <para id="id1163664281001">Even if the compiler has all the source code, use of common variables or equivalences may mask call independence.</para>
+        </section>
+      </section>
+      <section id="id1163667282721">
+        <title>Manual Parallelism</title>
+        <para id="id1163672702999">At some point, you get tired of giving the compiler advice and hoping that it will reach the conclusion to parallelize your loop. At that point you move into the realm of manual parallelism. Luckily the programming model provided in FORTRAN insulates you from much of the details of exactly how multiple threads are managed at runtime. You generally control explicit parallelism by adding specially formatted comment lines to your source code. There are a wide variety of formats of these directives. In this section, we use the syntax that is part of the OpenMP (see <link url="www.openmp.org"/>) standard. You generally find similar capabilities in each of the vendor compilers. The precise syntax varies slightly from vendor to vendor. (That alone is a good reason to have a standard.)</para>
+        <para id="id1163664701236">The basic programming model is that you are executing a section of code with either a single thread or multiple threads. The programmer adds a directive to summon additional threads at various points in the code. The most basic construct is called the <emphasis effect="italics">parallel region</emphasis>.</para>
+        <section id="id1163660540731">
+          <title>Parallel regions</title>
+          <para id="id1163671267013">In a parallel region, the threads simply appear between two statements of straight-line code. A very trivial example might be the following using the OpenMP directive syntax:</para>
+          <code id="id1163667285413" display="block"><newline/>
+        PROGRAM ONE
+        EXTERNAL OMP_GET_THREAD_NUM, OMP_GET_MAX_THREADS 
+        INTEGER OMP_GET_THREAD_NUM, OMP_GET_MAX_THREADS 
+        IGLOB = OMP_GET_MAX_THREADS()
+        PRINT *,’Hello There’
+C$OMP PARALLEL PRIVATE(IAM), SHARED(IGLOB) 
+        IAM = OMP_GET_THREAD_NUM()
+        PRINT *, ’I am ’, IAM, ’ of ’, IGLOB 
+C$OMP END PARALLEL
+        PRINT *,’All Done’ 
+        END
+    </code>
+          <para id="id1163665315862">The <code display="inline">C$OMP </code>is the sentinel that indicates that this is a directive and not just another comment. The output of the program when run looks as follows:</para>
+          <code id="id1163667292502" display="block"><newline/>   
+    % setenv OMP_NUM_THREADS 4
+    % a.out
+    Hello There
+    I am 0 of 4 
+    I am 3 of 4 
+    I am 1 of 4 
+    I am 2 of 4 
+    All Done
+    %
+    </code>
+          <para id="id1163664267036">Execution begins with a single thread. As the program encounters the <code display="inline">PARALLEL</code> directive, the other threads are activated to join the computation. So in a sense, as execution passes the first directive, one thread becomes four. Four threads execute the two statements between the directives. As the threads are executing independently, the order in which the print statements are displayed is somewhat random. The threads wait at the <code display="inline">END PARALLEL</code> directive until all threads have arrived. Once all threads have completed the parallel region, a single thread continues executing the remainder of the program.</para>
+          <para id="id1163666160021">In <link target-id="id1163667257688"/>, the <code display="inline">PRIVATE(IAM)</code> indicates that the <code display="inline">IAM</code> variable is not shared across all the threads but instead, each thread has its own private version of the variable. The <code display="inline">IGLOB</code> variable is shared across all the threads. Any modification of <code display="inline">IGLOB</code> appears in all the other threads instantly, within the limitations of the cache coherency.</para>
+          <para id="id1163666627002">
+            <figure id="id1163667257688"><title>Data interactions during a parallel region</title><media id="id1163667257688_media" alt="This figure is a mixed code and object flowchart showing movement from a box labeled IGLOB in one thread to a line of code, followed by four boxes labeled IAM in four threads pointing with arrows at a second line of code, followed by a final arrow pointing down labeled one thread.">
+                <image mime-type="image/png" src="../../media/graphics1-f3ab.png" id="id1163667257688__onlineimage" height="392" width="599"/>
+              </media>
+            <!--figure 11-5--></figure>
+          </para>
+          
+          <para id="id1163669669149">During the parallel region, the programmer typically divides the work among the threads. This pattern of going from single-threaded to multithreaded execution may be repeated many times throughout the execution of an application.</para>
+          <para id="id1163668267358">Because input and output are generally not thread-safe, to be completely correct, we should indicate that the print statement in the parallel section is only to be executed on one processor at any one time. We use a directive to indicate that this section of code is a critical section. A lock or other synchronization mechanism ensures that no more than one processor is executing the statements in the critical section at any one time:</para>
+          <code id="id1163669545750" display="block"><newline/>
+C$OMP CRITICAL
+        PRINT *, ’I am ’, IAM, ’ of ’, IGLOB 
+C$OMP END CRITICAL
+    </code>
+        </section>
+        <section id="id1163667287072"><title>Parallel loops</title><para id="id1163667073036">Quite often the areas of the code that are most valuable to execute in parallel are loops. Consider the following loop:</para>
+          <code id="id7409479" display="block"><newline/>
+DO I=1,1000000
+  TMP1 = ( A(I) ** 2 ) + ( B(I) ** 2 ) 
+  TMP2 = SQRT(TMP1)
+  B(I) = TMP2
+ENDDO
+    </code>
+          <para id="id1163667475472">To manually parallelize this loop, we insert a directive at the beginning of the loop:</para>
+          <code id="id2363471" display="block"><newline/>
+C$OMP PARALLEL DO
+      DO I=1,1000000
+        TMP1 = ( A(I) ** 2 ) + ( B(I) ** 2 ) 
+        TMP2 = SQRT(TMP1)
+        B(I) = TMP2
+      ENDDO
+C$OMP END PARALLEL DO
+    </code>
+          <para id="id1163661007042">When this statement is encountered at runtime, the single thread again summons the other threads to join the computation. However, before the threads can start working on the loop, there are a few details that must be handled. The <code display="inline">PARALLEL DO</code> directive accepts the data classification and scoping clauses as in the parallel section directive earlier. We must indicate which variables are shared across all threads and which variables have a separate copy in each thread. It would be a disaster to have <code display="inline">TMP1</code> and <code display="inline">TMP2</code> shared across threads. As one thread takes the square root of <code display="inline">TMP1</code>, another thread would be resetting the contents of <code display="inline">TMP1</code>. <code display="inline">A(I)</code> and <code display="inline">B(I)</code> come from outside the loop, so they must be shared. We need to augment the directive as follows:</para>
+          <code id="id1163672723745" display="block"><newline/>
+C$OMP PARALLEL DO SHARED(A,B) PRIVATE(I,TMP1,TMP2) 
+      DO I=1,1000000
+        TMP1 = ( A(I) ** 2 ) + ( B(I) ** 2 ) 
+        TMP2 = SQRT(TMP1)
+        B(I) = TMP2
+      ENDDO
+C$OMP END PARALLEL DO
+    </code>
+          <para id="id1163668868520">The iteration variable I also must be a thread-private variable. As the different threads increment their way through their particular subset of the arrays, they don’t want to be modifying a global value for I.</para>
+          <para id="id1163662695359">There are a number of other options as to how data will be operated on across the threads. This summarizes some of the other data semantics available:</para>
+          
+<list id="eip-id1167391708796" list-type="labeled-item"><item><label>Firstprivate</label>
+          These are thread-private variables that take an initial value from the global variable of the same name immediately before the loop begins executing.</item>
+<item>
+          <label>Lastprivate</label>
+These are thread-private variables except that the thread that executes the last iteration of the loop copies its value back into the global variable of the same name.</item>
+          <item><label>Reduction</label>
+This indicates that a variable participates in a reduction operation that can be safely done in parallel. This is done by forming a partial reduction using a local variable in each thread and then combining the partial results at the end of the loop.</item>
+</list>          
+<para id="id1163672024393">Each vendor may have different terms to indicate these data semantics, but most support all of these common semantics. <link target-id="id1341927"/> shows how the different types of data semantics operate.</para>
+          <para id="id1163669738964">Now that we have the data environment set up for the loop, the only remaining problem that must be solved is which threads will perform which iterations. It turns out that this is not a trivial task, and a wrong choice can have a significant negative impact on our overall performance.</para>
+        </section>
+        <section id="id1163673985117">
+          <title>Iteration scheduling</title>
+          <para id="id1163668846334">There are two basic techniques (along with a few variations) for dividing the iterations in a loop between threads. We can look at two extreme examples to get an idea of how this works:</para>
+          <code id="id4588635" display="block"><newline/>
+C VECTOR ADD
+      DO IPROB=1,10000
+         A(IPROB) = B(IPROB) + C(IPROB) 
+      ENDDO
+    
+C PARTICLE TRACKING
+       DO IPROB=1,10000
+          RANVAL = RAND(IPROB)
+          CALL ITERATE_ENERGY(RANVAL) ENDDO
+       ENDDO</code>
+          <figure id="id1341927"><title>Variables during a parallel region</title><media id="id1341927_media" alt="This figure is a mixed flowchart with code and objects. The top is labeled variables, and a box labeled IGLOB points down to a line of code. After this line of code are boxes labeled IAM and more arrows pointing down at a second line of code. After the second line of code, there is a final arrow pointing down, labeled One Thread. Next to the IGLOB box are two smaller boxes labeled X and Y. These boxes point with arrows down at more boxes in the IAM row that are also labeled X and Y.">
+              <image mime-type="image/png" src="../../media/graphics2-f859.png" id="id1341927__onlineimage" height="438" width="600"/>
+            </media>
+          <!--Figure 11-6--></figure>
+          
+          <para id="id1163669328454">In both loops, all the computations are independent, so if there were 10,000 processors, each processor could execute a single iteration. In the vector-add example, each iteration would be relatively short, and the execution time would be relatively constant from iteration to iteration. In the particle tracking example, each iteration chooses a random number for an initial particle position and iterates to find the minimum energy. Each iteration takes a relatively long time to complete, and there will be a wide variation of completion times from iteration to iteration.</para>
+          <para id="id1163664738588">These two examples are effectively the ends of a continuous spectrum of the iteration scheduling challenges facing the FORTRAN parallel runtime environment:</para>
+          
+          <para id="id1431698"><title>Static</title>At the beginning of a parallel loop, each thread takes a fixed continuous portion of iterations of the loop based on the number of threads executing the loop.</para>
+          
+          <para id="id1421379"><title>Dynamic</title>With dynamic scheduling, each thread processes a chunk of data and when it has completed processing, a new chunk is processed. The chunk size can be varied by the programmer, but is fixed for the duration of the loop.</para>
+          
+          <para id="id1163668620147">These two example loops can show how these iteration scheduling approaches might operate when executing with four threads. In the vector-add loop, static scheduling would distribute iterations 1–2500 to Thread 0, 2501–5000 to Thread 1, 5001–7500 to Thread 2, and 7501–10000 to Thread 3. In <link target-id="id6316078"/>, the mapping of iterations to threads is shown for the static scheduling option.</para>
+          
+          
+          <figure id="id6316078"><title>Iteration assignment for static scheduling</title><media id="id6316078_media" alt="This figure is a graph, horizontal axis labeled time and vertical axis labeled thread. there are four horizontal grey bars in the graph at thread values of 0, 1, 2, and 3, each containing a string of numbers. The numbers in thread value 0 count from 1 to 2500. The numbers in thread value 1 count from 2501 to 5000, and this grey bar is offset a little to the right of the horizontal axis. The numbers in thread value 2 count from 5001 to 7500, and this bar is offset very slightly from the vertical axis. The numbers in thread value 3 count from 7501 to 10000, and the bar is evenly aligned with the bar on thread value 1.">
+              <image mime-type="image/png" src="../../media/graphics3-4157.png" id="id6316078__onlineimage" height="238" width="599"/>
+            </media>
+          <!--Figure 11-7--> </figure>
+          
+          
+          <para id="id1163672782400">Since the loop body (a single statement) is short with a consistent execution time, static scheduling should result in roughly the same amount of overall work (and time if you assume a dedicated CPU for each thread) assigned to each thread per loop execution.</para>
+          <para id="id1163673291026">An advantage of static scheduling may occur if the entire loop is executed repeatedly. If the same iterations are assigned to the same threads that happen to be running on the same processors, the cache might actually contain the values for <code>A</code>, <code>B</code>, and <code>C</code> from the previous loop execution.<footnote id="id4126403">The operating system and runtime library actually go to some lengths to try to make this happen. This is another reason not to have more threads than available processors, which causes unnecessary context switching.</footnote> The runtime pseudo-code for static scheduling in the first loop might look as follows:</para>
+          <code id="id1163669197552" display="block"><newline/>
+C VECTOR ADD - Static Scheduled
+     ISTART = (THREAD_NUMBER * 2500 ) + 1
+     IEND = ISTART + 2499
+     DO ILOCAL = ISTART,IEND
+       A(ILOCAL) = B(ILOCAL) + C(ILOCAL) 
+     ENDDO
+    </code>
+          <para id="id1163670229127">It’s not always a good strategy to use the static approach of giving a fixed number of iterations to each thread. If this is used in the second loop example, long and varying iteration times would result in poor load balancing. A better approach is to have each processor simply get the next value for <code display="inline">IPROB</code> each time at the top of the loop.</para>
+          <para id="id1163669262047">That approach is called <emphasis effect="italics">dynamic scheduling</emphasis>, and it can adapt to widely varying iteration times. In <link target-id="id8104614"/>, the mapping of iterations to processors using dynamic scheduling is shown. As soon as a processor finishes one iteration, it processes the next available iteration in order.</para>
+          <para id="id1163674383586">
+            <figure id="id8104614"><title>Iteration assignment in dynamic scheduling</title><media id="id8104614_media" alt="This figure is a graph, horizontal axis labeled time and vertical axis labeled thread. there are four rows in the graph  containing grey boxes at thread values of 0, 1, 2, and 3, each containing a number. The numbers in thread value 0 count from minimum 1 to maximum 10000, although not all boxes in the list count consecutively. The numbers in thread value 1 count from 3 to 9999, and the grey bars are offset a little to the right of the horizontal axis. The numbers in thread value 2 count from 4 to 9998, and the bars are offset slightly more from the vertical axis. The numbers in thread value 3 count from 5 to 9996, and the bars are offset slightly more from the vertical axis.">
+                <image mime-type="image/png" src="../../media/graphics4-8772.png" id="id8104614__onlineimage" height="237" width="599"/>
+              </media>
+            <!--Figure 11-8--> </figure>
+          </para>
+          
+          <para id="id1163675481871">If a loop is executed repeatedly, the assignment of iterations to threads may vary due to subtle timing issues that affect threads. The pseudo-code for the dynamic scheduled loop at runtime is as follows:</para>
+          <code id="id8445095" display="block"><newline/>
+C PARTICLE TRACKING - Dynamic Scheduled
+     IPROB = 0
+     WHILE (IPROB &lt;= 10000 ) 
+       BEGIN_CRITICAL_SECTION
+         IPROB = IPROB + 1
+         ILOCAL = IPROB 
+       END_CRITICAL_SECTION 
+       RANVAL = RAND(ILOCAL)
+       CALL ITERATE_ENERGY(RANVAL) 
+     ENDWHILE
+    </code>
+          <para id="id1163666927580"><code display="inline">ILOCAL</code> is used so that each thread knows which iteration is currently processing. The<code display="inline"> IPROB</code> value is altered by the next thread executing the critical section.</para>
+          <para id="id1163670028699">While the dynamic iteration scheduling approach works well for this particular loop, there is a significant negative performance impact if the programmer were to use the wrong approach for a loop. For example, if the dynamic approach were used for the vector-add loop, the time to process the critical section to determine which iteration to process may be larger than the time to actually process the iteration. Furthermore, any cache affinity of the data would be effectively lost because of the virtually random assignment of iterations to processors.</para>
+          <para id="id1163668241708">In between these two approaches are a wide variety of techniques that operate on a chunk of iterations. In some techniques the chunk size is fixed, and in others it varies during the execution of the loop. In this approach, a chunk of iterations are grabbed each time the critical section is executed. This reduces the scheduling overhead, but can have problems in producing a balanced execution time for each processor. The runtime is modified as follows to perform the particle tracking loop example using a chunk size of 100:</para>
+          <code id="id1163668083684" display="block"><newline/>
+      IPROB = 1
+      CHUNKSIZE = 100
+      WHILE (IPROB &lt;= 10000 ) 
+        BEGIN_CRITICAL_SECTION
+          ISTART = IPROB
+          IPROB = IPROB + CHUNKSIZE 
+        END_CRITICAL_SECTION
+        DO ILOCAL = ISTART,ISTART+CHUNKSIZE-1
+          RANVAL = RAND(ILOCAL)
+          CALL ITERATE_ENERGY(RANVAL) 
+        ENDDO
+      ENDWHILE
+    </code>
+          <para id="id1163668752513">The choice of chunk size is a compromise between overhead and termination imbalance. Typically the programmer must get involved through directives in order to control chunk size.</para>
+          <para id="id1163672928069">Part of the challenge of iteration distribution is to balance the cost (or existence) of the critical section against the amount of work done per invocation of the critical section. In the ideal world, the critical section would be free, and all scheduling would be done dynamically. Parallel/vector supercomputers with hardware assistance for load balancing can nearly achieve the ideal using dynamic approaches with relatively small chunk size.</para>
+          <para id="id1163660522901">Because the choice of loop iteration approach is so important, the compiler relies on directives from the programmer to specify which approach to use. The following example shows how we can request the proper iteration scheduling for our loops:</para>
+          <code id="id1163671984079" display="block"><newline/>
+C VECTOR ADD
+C$OMP PARALLEL DO PRIVATE(IPROB) SHARED(A,B,C) SCHEDULE(STATIC) 
+      DO IPROB=1,10000
+         A(IPROB) = B(IPROB) + C(IPROB) 
+      ENDDO
+C$OMP END PARALLEL DO 
+C PARTICLE TRACKING
+C$OMP PARALLEL DO PRIVATE(IPROB,RANVAL) SCHEDULE(DYNAMIC) 
+      DO IPROB=1,10000
+         RANVAL = RAND(IPROB)
+         CALL ITERATE_ENERGY(RANVAL) 
+      ENDDO
+C$OMP END PARALLEL DO
+    </code>
+        </section>
+      </section>
+  </content>
+</document>

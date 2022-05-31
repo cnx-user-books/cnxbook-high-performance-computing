@@ -1,0 +1,36 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Loops</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32784</md:content-id>
+  <md:title>Loops</md:title>
+  <md:abstract/>
+  <md:uuid>3c00f7bb-e4d0-41c6-b3f3-876b7b10d036</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id42210289">Loops are the center of activity for many applications, so there is often a high payback for simplifying or moving calculations outside, into the computational suburbs. Early compilers for parallel architectures used pattern matching to identify the bounds of their loops. This limitation meant that a hand-constructed loop using if-statements and goto-statements would not be correctly identified as a loop. Because modern compilers use data flow graphs, it’s practical to identify loops as a particular subset of nodes in the flow graph. To a data flow graph, a hand constructed loop looks the same as a compiler-generated loop. Optimizations can therefore be applied to either type of loop.</para>
+      <para id="id42090563">Once we have identified the loops, we can apply the same kinds of data-flow analysis we applied above. Among the things we are looking for are calculations that are unchanging within the loop and variables that change in a predictable (linear) fashion from iteration to iteration.</para>
+      <para id="id42210325">How does the compiler identify a loop in the flow graph? Fundamentally, two conditions have to be met:</para>
+      <list id="id42467149" list-type="bulleted"><item id="cond1">A given node has to dominate all other nodes within the suspected loop. This means that all paths to any node in the loop have to pass through one particular node, the dominator. The dominator node forms the header at the top of the loop.</item>
+        <item id="cond2">There has to be a cycle in the graph. Given a dominator, if we can find a path back to it from one of the nodes it dominates, we have a loop. This path back is known as the <emphasis effect="italics">back edge</emphasis> of the loop.</item>
+      </list>
+      <para id="id42474404">The flow graph in <link target-id="id42092301"/> contains one loop and one red herring. You can see that node B dominates every node below it in the subset of the flow graph. That satisfies <link target-id="cond1">Condition 1</link> and makes it a candidate for a loop header. There is a path from <code>E</code> to <code>B</code>, and <code>B</code> dominates <code>E</code>, so that makes it a back edge, satisfying <link target-id="cond2">Condition 2</link>. Therefore, the nodes <code>B</code>, <code>C</code>, <code>D</code>, and <code>E</code> form a loop. The loop goes through an array of linked list start pointers and traverses the lists to determine the total number of nodes in all lists. Letters to the extreme right correspond to the basic block numbers in the flow graph.</para>
+      <para id="id42096508">
+        <figure id="id42092301"><title>Flowgraph with a loop in it</title><media id="id42092301_media" alt="This figure shows a flowchart with movement through boxes A through E and loops back from certain boxes to earlier points in the flowchart. Next to the flowchart is a list of code corresponding to the boxes.">
+            <image mime-type="image/png" src="../../media/graphics1-9847.png" id="id42092301__onlineimage" height="451" width="599"/>
+          </media>
+        <!--Figure 9-10--></figure>
+      </para>
+      <para id="id42214842">At first glance, it appears that the nodes <code>C</code> and <code>D</code> form a loop too. The problem is that <code>C</code> doesn’t dominate <code>D</code> (and vice versa), because entry to either can be made from <code>B</code>, so <link target-id="cond1">condition 1</link> isn’t satisfied. Generally, the flow graphs that come from code segments written with even the weakest appreciation for a structured design offer better loop candidates.</para>
+      <para id="id42232285">After identifying a loop, the compiler can concentrate on that portion of the flow graph, looking for instructions to remove or push to the outside. Certain types of subexpressions, such as those found in array index expressions, can be simplified if they change in a predictable fashion from one iteration to the next.</para>
+      <para id="id42232918">In the continuing quest for parallelism, loops are generally our best sources for large amounts of parallelism. However, loops also provide new opportunities for those parallelism-killing dependencies.</para>
+  </content>
+</document>

@@ -1,0 +1,128 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>A Real Example </title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32804</md:content-id>
+  <md:title>A Real Example </md:title>
+  <md:abstract/>
+  <md:uuid>167370be-bd40-404e-a5d1-72e433333ba7</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<para id="id48328572">In all of the above examples, we have focused on the mechanics of shared memory, thread creation, and thread termination. We have used the <code display="inline">sleep( )</code> routine to slow things down sufficiently to see interactions between processes. But we want to go very fast, not just learn threading for threading’s sake.</para>
+      <para id="id47897907">The example code below uses the multithreading techniques described in this chapter to speed up a sum of a large array. The <emphasis effect="italics">hpcwall</emphasis> routine is from <link document="m33704"/>.</para>
+      <para id="id47928485">This code allocates a four-million-element double-precision array and fills it with random numbers between 0 and 1. Then using one, two, three, and four threads, it sums up the elements in the array:</para>
+      <code id="id48506085" display="block"><newline/>
+#define _REENTRANT        /* basic 3-lines for threads */
+#include &lt;stdio.h&gt;
+#include &lt;stdlib.h&gt;      
+#include &lt;pthread.h&gt;
+
+#define MAX_THREAD 4 
+void *SumFunc(void *);
+int ThreadCount;                    /* Threads on this try */
+double GlobSum;                     /* A global variable */
+int index[MAX_THREAD];              /* Local zero-based thread index */
+pthread_t thread_id[MAX_THREAD];    /* POSIX Thread IDs */
+pthread_attr_t attr;                /* Thread attributes NULL=use default */
+pthread_mutex_t my_mutex;           /* MUTEX data structure */
+    
+#define MAX_SIZE 4000000
+double array[MAX_SIZE];             /* What we are summing... */
+void hpcwall(double *);
+
+main() {
+  int i,retval;
+  pthread_t tid;
+  double single,multi,begtime,endtime;
+  
+  /* Initialize things */
+  for (i=0; i&lt;MAX_SIZE; i++) array[i] = drand48();      
+  pthread_attr_init(&amp;attr);     /* Initialize attr with defaults */   
+  pthread_mutex_init (&amp;my_mutex, NULL);
+  pthread_attr_setscope(&amp;attr, PTHREAD_SCOPE_SYSTEM);
+
+  /* Single threaded sum */ 
+  GlobSum = 0; 
+  hpcwall(&amp;begtime);
+  for(i=0; i&lt;MAX_SIZE;i++) GlobSum = GlobSum + array[i];
+  hpcwall(&amp;endtime);
+  single = endtime - begtime;
+  printf("Single sum=%lf time=%lf\n",GlobSum,single);
+    
+  /* Use different numbers of threads to accomplish the same thing */
+  for(ThreadCount=2;ThreadCount&lt;=MAX_THREAD; ThreadCount++) {
+    printf("Threads=%d\n",ThreadCount); 
+    GlobSum = 0;
+    hpcwall(&amp;begtime);
+    for(i=0;i&lt;ThreadCount;i++) {
+      index[i] = i;
+      retval = pthread_create(&amp;tid,&amp;attr,SumFunc,(void *) index[i]);
+      thread_id[i] = tid;
+    }
+    for(i=0;i&lt;ThreadCount;i++) retval = pthread_join(thread_id[i],NULL);
+    hpcwall(&amp;endtime);
+    multi = endtime - begtime;
+    printf("Sum=%lf time=%lf\n",GlobSum,multi);
+    printf("Efficiency = %lf\n",single/(multi*ThreadCount));
+  } /* End of the ThreadCount loop */
+}
+
+void *SumFunc(void *parm){ 
+  int i,me,chunk,start,end; 
+  double LocSum;
+
+  /* Decide which iterations belong to me */
+  me = (int) parm;
+  chunk = MAX_SIZE / ThreadCount;
+  start = me * chunk;
+  end = start + chunk; /* C-Style - actual element + 1 */ 
+  if ( me == (ThreadCount-1) ) end = MAX_SIZE; 
+  printf("SumFunc me=%d start=%d end=%d\n",me,start,end);
+
+  /* Compute sum of our subset*/ 
+  LocSum = 0;
+  for(i=start;i&lt;end;i++ ) LocSum = LocSum + array[i];
+  
+  /* Update the global sum and return to the waiting join */
+  pthread_mutex_lock (&amp;my_mutex); 
+  GlobSum = GlobSum + LocSum; 
+  pthread_mutex_unlock (&amp;my_mutex);
+}</code>
+      <para id="id48493023">First, the code performs the sum using a single thread using a for-loop. Then for each of the parallel sums, it creates the appropriate number of threads that call <code display="inline">SumFunc( )</code>. Each thread starts in <code display="inline">SumFunc( )</code> and initially chooses an area to operation in the shared array. The “strip” is chosen by dividing the overall array up evenly among the threads with the last thread getting a few extra if the division has a remainder.</para>
+      <para id="id48568215">Then, each thread independently performs the sum on its area. When a thread has finished its computation, it uses a mutex to update the global sum variable with its contribution to the global sum:</para>
+      <code id="id48030803" display="block"><newline/>
+    recs % addup
+    Single sum=7999998000000.000000 time=0.256624
+    Threads=2
+    SumFunc me=0 start=0 end=2000000
+    SumFunc me=1 start=2000000 end=4000000
+    Sum=7999998000000.000000 time=0.133530
+    Efficiency = 0.960923
+    Threads=3
+    SumFunc me=0 start=0 end=1333333
+    SumFunc me=1 start=1333333 end=2666666
+    SumFunc me=2 start=2666666 end=4000000
+    Sum=7999998000000.000000 time=0.091018
+    Efficiency = 0.939829
+    Threads=4
+    SumFunc me=0 start=0 end=1000000
+    SumFunc me=1 start=1000000 end=2000000
+    SumFunc me=2 start=2000000 end=3000000
+    SumFunc me=3 start=3000000 end=4000000
+    Sum=7999998000000.000000 time=0.107473
+    Efficiency = 0.596950 
+    recs %
+    </code>
+      <para id="id47733838">There are some interesting patterns. Before you interpret the patterns, you must know that this system is a three-processor Sun Enterprise 3000. Note that as we go from one to two threads, the time is reduced to one-half. That is a good result given how much it costs for that extra CPU. We characterize how well the additional resources have been used by computing an efficiency factor that should be 1.0. This is computed by multiplying the wall time by the number of threads. Then the time it takes on a single processor is divided by this number. If you are using the extra processors well, this evaluates to 1.0. If the extra processors are used pretty well, this would be about 0.9. If you had two threads, and the computation did not speed up at all, you would get 0.5.</para>
+      <para id="id47850569">At two and three threads, wall time is dropping, and the efficiency is well over 0.9. However, at four threads, the wall time increases, and our efficiency drops very dramatically. This is because we now have more threads than processors. Even though we have four threads that could execute, they must be time-sliced between three processors.<footnote id="id47854723">It is important to match the number of runnable threads to the available resources. In compute code, when there are more threads than available processors, the threads compete among themselves, causing unnecessary overhead and reducing the efficiency of your computation.</footnote> This is even worse that it might seem. As threads are switched, they move from processor to processor and their caches must also move from processor to processor, further slowing performance. This cache-thrashing effect is not too apparent in this example because the data structure is so large, most memory references are not to values previously in cache.</para>
+      <para id="id48765771">It’s important to note that because of the nature of floating-point (see <link document="m32739"/>), the parallel sum may not be the same as the serial sum. To perform a summation in parallel, you must be willing to tolerate these slight variations in your results.</para>
+  </content>
+</document>

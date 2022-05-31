@@ -1,0 +1,21 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Closing Notes</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33714</md:content-id>
+  <md:title>Closing Notes</md:title>
+  <md:abstract/>
+  <md:uuid>78a41633-4b32-4c6a-9941-cc7155a41639</md:uuid>
+</metadata>
+
+<content>
+      <para id="id27929614">We have seen some of the tools for timing and profiling. Even though it seems like we covered a lot, there are other kinds of profiles we would like to be able to cover — cache miss measurements, runtime dependency analysis, flop measurements, and so on. These profiles are good when you are looking for particular anomalies, such as cache miss or floating-point pipeline utilization. Profilers for these quantities exist for some machines, but they aren’t widely distributed.</para>
+      <para id="id27929727">One thing to keep in mind: when you profile code you sometimes get a very limited view of the way a program is used. This is especially true if it can perform many types of analyses for many different sets of input data. Working with just one or two profiles can give you a distorted picture of how the code operates overall. Imagine the following scenario: someone invites you to take your very first ride in an automobile. You get in the passenger’s seat with a sketch pad and a pen, and record everything that happens. Your observations include some of the following:</para>
+      <list id="id27929879" list-type="bulleted">
+        <item>The radio is always on.</item>
+        <item>The windshield wipers are never used.</item>
+        <item>The car moves only in a forward direction.</item>
+      </list>
+      <para id="id27929910">The danger is that, given this limited view of the way a car is operated, you might want to disconnect the radio’s on/off knob, remove the windshield wipers, and eliminate the reverse gear. This would come as a real surprise to the next person who tries to back the car out on a rainy day! The point is that unless you are careful to gather data for <emphasis effect="italics">all kinds</emphasis> of uses, you may not really have a picture of how the program operates. A single profile is fine for tuning a benchmark, but you may miss some important details on a multipurpose application. Worse yet, if you optimize it for one case and cripple it for another, you may do far more harm than good.</para>
+      <para id="id27930033">Profiling, as we saw in this chapter, is pretty mechanical. Tuning requires insight. It’s only fair to warn you that it isn’t always rewarding. Sometimes you pour your soul into a clever modification that actually increases the runtime. Argh! What went wrong? You’ll need to depend on your profiling tools to answer that.</para>
+  </content>
+</document>

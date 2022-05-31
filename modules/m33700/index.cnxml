@@ -1,0 +1,57 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33700</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>15e015ee-72ab-4f39-bf25-fd7278247e15</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id8535242">
+        <problem id="oo-id9045736">
+          <para id="id9645539">Does your compiler recognize dead code in the program below? How can you be sure? Does the compiler give you a warning?</para>
+        
+      <code id="id7119604" display="block"><newline/>
+      main()
+      {
+          int k=1;
+          if (k == 0)
+              printf ("This statement is never executed.\n");
+      }
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id5242024">
+        <problem id="oo-id9047804">
+          <para id="id7504898">Compile the following code and execute it under various optimization levels.</para>
+          <para id="id9836748">Try to guess the different types of optimizations that are being performed to improve the performance as the optimization is increased.</para>
+      <code id="id8780189" display="block"><newline/>
+      REAL*8 A(1000000) 
+      DO I=1,1000000
+         A(I) = 3.1415927
+      ENDDO
+      DO I=1,1000000
+        A(I) = A(I) * SIN(A(I)) + COS(A(I)) ENDDO
+      PRINT *,"All Done"
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id3096241">
+        <problem id="oo-id9054447">
+          <para id="id9646432">Take the following code segment and compile it at various optimization levels. Look at the generated assembly language code (–S option on some compilers) and find the effects of each optimization level on the machine language. Time the program to see the performance at the different optimization levels. If you have access to multiple architectures, look at the code generated using the same optimization levels on different architectures.</para>
+      <code id="id9670496" display="block"><newline/>
+      REAL*8 A(1000000) 
+      COMMON/BLK/A
+       .... Call Time
+      DO I=1,1000000
+        A(I) = A(I) + 1.234
+      ENDDO
+       .... Call Time
+      END
+    </code>
+<para id="id9834345">Why is it necessary to put the array into a common block?</para>
+ </problem>
+      </exercise>
+  </content>
+</document>

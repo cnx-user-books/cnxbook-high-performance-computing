@@ -1,0 +1,24 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimization Levels</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33692</md:content-id>
+  <md:title>Optimization Levels</md:title>
+  <md:abstract/>
+  <md:uuid>d638ac1b-6cde-48e3-9058-deb6df6843e1</md:uuid>
+</metadata>
+
+<content>
+      <para id="id7564405">There are a wide variety of optimization techniques, and they are not all applicable in all situations. So the user is typically given some choices as to whether or not particular optimizations are performed. Often this is expressed in the form of an <emphasis effect="italics">optimization level</emphasis> that is specified on the compiler as a command-line option such as –O3.</para>
+      <para id="id7459755">The different levels of optimization controlled by a compiler flag may include the following:</para>
+      <list id="id7552045" list-type="bulleted">
+        <item><emphasis effect="italics">No optimization</emphasis>: Generates machine code directly from the intermediate language, which can be very large and slow code. The primary uses of no optimization are for debuggers and establishing the correct program output. Because every operation is done precisely as the user specified, it must be right.</item>
+        <item><emphasis effect="italics">Basic optimizations</emphasis>:<emphasis effect="italics"/>Similar to those described in this chapter. They generally work to minimize the intermediate language and generate fast compact code.</item>
+        <item><emphasis effect="italics">Interprocedural analysis</emphasis>: Looks beyond the boundaries of a single routine for optimization opportunities. This optimization level might include extending a basic optimization such as copy propagation across multiple routines. Another result of this technique is procedure inlining where it will improve performance.</item>
+        <item><emphasis effect="italics">Runtime profile analysis</emphasis>: It is possible to use runtime profiles to help the compiler generate improved code based on its knowledge of the patterns of runtime execution gathered from profile information.</item>
+        <item><emphasis effect="italics">Floating-point optimizations</emphasis>: The IEEE floating-point standard (IEEE 754) specifies precisely how floating- point operations are performed and the precise side effects of these operations. The compiler may identify certain algebraic transformations that increase the speed of the program (such as replacing a division with a reciprocal and a multiplication) but might change the output results from the unoptimized code.</item>
+        <item><emphasis effect="italics">Data flow analysis</emphasis>: Identifies potential parallelism between instructions, blocks, or even successive loop iterations.</item>
+        <item><emphasis effect="italics">Advanced optimization</emphasis>: May include automatic vectorization, parallelization, or data decomposition on advanced architecture computers.</item>
+      </list>
+      <para id="id7537376">These optimizations might be controlled by several different compiler options. It often takes some time to figure out the best combination of compiler flags for a particular code or set of codes. In some cases, programmers compile different routines using different optimization settings for best overall performance.</para>
+  </content>
+</document>

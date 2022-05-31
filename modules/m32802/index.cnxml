@@ -1,0 +1,112 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Techniques for Multithreaded Programs</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32802</md:content-id>
+  <md:title>Techniques for Multithreaded Programs</md:title>
+  <md:abstract/>
+  <md:uuid>f7cb77a0-e1df-4595-a710-1b5d9277287e</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1169666167097">Given that we have multithreaded capabilities and multiprocessors, we must still convince the threads to work together to accomplish some overall goal. Often we need some ways to coordinate and cooperate between the threads. There are several important techniques that are used while the program is running with multiple threads, including:</para>
+      <list id="id2404345" list-type="bulleted">
+        <item>Fork-join (or create-join) programming</item>
+        <item>Synchronization using a critical section with a lock, semaphore, or mutex</item>
+        <item>Barriers</item>
+      </list>
+      <para id="id8767378">Each of these techniques has an overhead associated with it. Because these overheads are necessary to go parallel, we must make sure that we have sufficient work to make the benefit of parallel operation worth the cost.</para>
+      <section id="id1169679859796"><title>Fork-Join Programming</title><para id="id1169663750088">This approach is the simplest method of coordinating your threads. As in the earlier examples in this chapter, a master thread sets up some global data structures that describe the tasks each thread is to perform and then use the <code display="inline">pthread_create( )</code> function to activate the proper number of threads. Each thread checks the global data structure using its thread-id as an index to find its task. The thread then performs the task and completes. The master thread waits at a <code display="inline">pthread_join( )</code> point, and when a thread has completed, it updates the global data structure and creates a new thread. These steps are repeated for each major iteration (such as a time-step) for the duration of the program:</para>
+<code id="eip-id8753058" display="block"><newline/>
+      for(ts=0;ts&lt;10000;ts++) { /* Time Step Loop */
+         /* Setup tasks */
+         for (ith=0;ith&lt;NUM_THREADS;ith++) pthread_create(..,work_routine,..)
+         for (ith=0;ith&lt;NUM_THREADS;ith++) pthread_join(...)
+      }
+      work_routine() {
+         /* Perform Task */
+         return;
+      }
+</code>
+
+        <para id="id1169660883868">The shortcoming of this approach is the overhead cost associated with creating and destroying an operating system thread for a potentially very short task.</para>
+        
+        <para id="id1169673514482">The other approach is to have the threads created at the beginning of the program and to have them communicate amongst themselves throughout the duration of the application. To do this, they use such techniques as critical sections or barriers.</para>
+      </section>
+      <section id="id4511016"><title>Synchronization</title><para id="id1169682796547">Synchronization is needed when there is a particular operation to a shared variable that can only be performed by one processor at a time. For example, in previous <code display="inline">SpinFunc( )</code> examples, consider the line:</para>
+        <code id="id1169672120888" display="block">globvar++;
+    </code>
+        <para id="id1169685607576">In assembly language, this takes at least three instructions:</para>
+        <code id="id1169682036389" display="block"><newline/>
+      LOAD   R1,globvar
+      ADD    R1,1
+      STORE  R1,globvar
+    </code>
+        <para id="id1169678903789">What if <code display="inline">globvar</code> contained 0, Thread 1 was running, and, at the precise moment it completed the <code>LOAD</code> into Register R1 and before it had completed the <code>ADD</code> or <code>STORE</code> instructions, the operating system interrupted the thread and switched to Thread 2? Thread 2 catches up and executes all three instructions using its registers: loading 0, adding 1 and storing the 1 back into <code display="inline">globvar</code>. Now Thread 2 goes to sleep and Thread 1 is restarted at the <code>ADD</code> instruction. Register R1 for Thread 1 contains the previously loaded value of 0; Thread 1 adds 1 and then stores 1 into <code display="inline">globvar</code>. What is wrong with this picture? We meant to use this code to count the number of threads that have passed this point. Two threads passed the point, but because of a bad case of bad timing, our variable indicates only that one thread passed. This is because the increment of a variable in memory is not <code display="inline">atomic</code>. That is, halfway through the increment, something else can happen.</para>
+        <para id="id1169646774560">Another way we can have a problem is on a multiprocessor when two processors execute these instructions simultaneously. They both do the <code>LOAD</code>, getting 0. Then they both add 1 and store 1 back to memory.<footnote id="id1169674452195">Boy, this is getting pretty picky. How often will either of these events really happen? Well, if it crashes your airline reservation system every 100,000 transactions or so, that would be way too often.</footnote> Which processor actually got the honor of storing <emphasis effect="italics">their</emphasis> 1 back to memory is simply a race.</para>
+        <para id="id1169669944302">We must have some way of guaranteeing that only one thread can be in these three instructions at the same time. If one thread has started these instructions, all other threads must wait to enter until the first thread has exited. These areas are called <emphasis effect="italics">critical sections</emphasis>. On single-CPU systems, there was a simple solution to critical sections: you could turn off interrupts for a few instructions and then turn them back on. This way you could guarantee that you would get all the way through before a timer or other interrupt occurred:</para>
+        <code id="id1169676511449" display="block"><newline/>
+      INTOFF                // Turn off Interrupts
+      LOAD    R1,globvar
+      ADD     R1,1
+      STORE   R1,globvar
+      INTON                 // Turn on Interrupts
+    </code>
+        <para id="id4845644">However, this technique does not work for longer critical sections or when there is more than one CPU. In these cases, you need a lock, a semaphore, or a mutex. Most thread libraries provide this type of routine. To use a mutex, we have to make some modifications to our example code:</para>
+        
+<code id="eip-id1168076894729" display="block">...
+      pthread_mutex_t my_mutex; /* MUTEX data structure */
+        ...
+
+      main() {
+        ...
+        pthread_attr_init(&amp;attr); /* Initialize attr with defaults */
+        pthread_mutex_init (&amp;my_mutex, NULL);
+         .... pthread_create( ... )
+          ...
+      }
+      void *SpinFunc(void *parm)    {
+        ...
+        pthread_mutex_lock (&amp;my_mutex);
+        globvar ++;
+        pthread_mutex_unlock (&amp;my_mutex);
+        while(globvar &lt; THREAD_COUNT ) ;
+        printf("SpinFunc me=%d – done globvar=%d...\n", me, globvar);
+        ...
+      }
+</code>
+    
+        <para id="id1169679499122">The mutex data structure must be declared in the shared area of the program. Before the threads are created, <code display="inline">pthread_mutex_init</code> must be called to initialize the mutex. Before <code display="inline">globvar</code> is incremented, we must lock the mutex and after we finish updating <code display="inline">globvar</code> (three instructions later), we unlock the mutex. With the code as shown above, there will never be more than one processor executing the <code display="inline">globvar</code>++ line of code, and the code will never hang because an increment was missed. Semaphores and locks are used in a similar way.</para>
+        <para id="id8022554">Interestingly, when using user space threads, an attempt to lock an already locked mutex, semaphore, or lock can cause a thread context switch. This allows the thread that “owns” the lock a better chance to make progress toward the point where they will unlock the critical section. Also, the act of unlocking a mutex can cause the thread waiting for the mutex to be dispatched by the thread library.</para>
+      </section>
+      <section id="id1169664997276"><title>Barriers</title><para id="id1169669559124">Barriers are different than critical sections. Sometimes in a multithreaded application, you need to have all threads arrive at a point before allowing any threads to execute beyond that point. An example of this is a <emphasis effect="italics">time-based simulation</emphasis>. Each task processes its portion of the simulation but must wait until all of the threads have completed the current time step before any thread can begin the next time step. Typically threads are created, and then each thread executes a loop with one or more barriers in the loop. The rough pseudocode for this type of approach is as follows:</para>
+<code id="eip-id8873855" display="block">main() {
+        for (ith=0;ith&lt;NUM_THREADS;ith++) pthread_create(..,work_routine,..)
+        for (ith=0;ith&lt;NUM_THREADS;ith++) pthread_join(...) /* Wait a long time */
+        exit()
+      }
+
+      work_routine() {
+
+        for(ts=0;ts&lt;10000;ts++) { /* Time Step Loop */
+               /* Compute total forces on particles */
+          wait_barrier();
+               /* Update particle positions based on the forces */
+          wait_barrier();
+        }
+        return;
+      }    
+</code>
+
+        <para id="id1169664950384">In a sense, our <code display="inline">SpinFunc( )</code> function implements a barrier. It sets a variable initially to 0. Then as threads arrive, the variable is incremented in a critical section. Immediately after the critical section, the thread spins until the precise moment that all the threads are in the spin loop, at which time all threads exit the spin loop and continue on.</para>
+        <para id="id6153600">For a critical section, only one processor can be executing in the critical section at the same time. For a barrier, all processors must arrive at the barrier before any of the processors can leave.</para>
+      </section>
+  </content>
+</document>

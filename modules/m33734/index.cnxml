@@ -1,0 +1,104 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Nested Loops</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33734</md:content-id>
+  <md:title>Nested Loops</md:title>
+  <md:abstract/>
+  <md:uuid>29169fca-c1d8-4f34-a2ff-2efaecf0df74</md:uuid>
+</metadata>
+
+<content>
+      <para id="id7806391">When you embed loops within other loops, you create a <emphasis effect="italics">loop nest</emphasis>. The loop or loops in the center are called the <emphasis effect="italics">inner</emphasis> loops. The surrounding loops are called <emphasis effect="italics">outer</emphasis> loops. Depending on the construction of the loop nest, we may have some flexibility in the ordering of the loops. At times, we can swap the outer and inner loops with great benefit. In the next sections we look at some common loop nestings and the optimizations that can be performed on these loop nests.</para>
+      <para id="id18262849">Often when we are working with nests of loops, we are working with multidimensional arrays. Computing in multidimensional arrays can lead to non-unit-stride memory access. Many of the optimizations we perform on loop nests are meant to improve the memory access patterns.</para>
+      <para id="id14643656">First, we examine the computation-related optimizations followed by the memory optimizations.</para>
+      <section id="id5742921">
+        <title>Outer Loop Unrolling</title>
+        <para id="id6323321">If you are faced with a loop nest, one simple approach is to unroll the inner loop. Unrolling the innermost loop in a nest isn’t any different from what we saw above. You just pretend the rest of the loop nest doesn’t exist and approach it in the nor- mal way. However, there are times when you want to apply loop unrolling not just to the inner loop, but to outer loops as well — or perhaps only to the outer loops. Here’s a typical loop nest:</para>
+        <code id="id5516125" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          for (j=0; j&lt;n; j++)
+              for (k=0; k&lt;n; k++)
+                  a[i][j][k] = a[i][j][k] + b[i][j][k] * c;
+    </code>
+        <para id="id5335022">To unroll an outer loop, you pick one of the outer loop index variables and replicate the innermost loop body so that several iterations are performed at the same time, just like we saw in the <link document="m33733"/>. The difference is in the index variable for which you unroll. In the code below, we have unrolled the middle <code display="inline">(j)</code> loop twice:</para>
+        <code id="id3398508" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          for (j=0; j&lt;n; j+=2)
+              for (k=0; k&lt;n; k++) {
+                  a[i][j][k] = a[i][j][k] + b[i][k][j] * c;
+                  a[i][j+1][k] = a[i][j+1][k] + b[i][k][j+1] * c;
+              }
+    </code>
+        <para id="id12903374">We left the <code display="inline">k</code> loop untouched; however, we could unroll that one, too. That would give us outer <emphasis effect="italics">and</emphasis> inner loop unrolling at the same time:</para>
+        <code id="id6700086" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          for (j=0; j&lt;n; j+=2)
+              for (k=0; k&lt;n; k+=2) {
+                  a[i][j][k]     = a[i][j][k]     + b[i][k][j] * c;
+                  a[i][j+1][k]   = a[i][j+1][k]   + b[i][k][j+1] * c;
+                  a[i][j][k+1]   = a[i][j][k+1]   + b[i][k+1][j] * c;
+                  a[i][j+1][k+1] = a[i][j+1][k+1] + b[i][k+1][j+1] * c;
+              }
+    </code>
+        <para id="id14992518">We could even unroll the <code display="inline">i</code> loop too, leaving eight copies of the loop innards. (Notice that we completely ignored preconditioning; in a real application, of course, we couldn’t.)</para>
+      </section>
+      <section id="id19423960">
+        <title>Outer Loop Unrolling to Expose Computations</title>
+        <para id="id14494255">Say that you have a doubly nested loop and that the inner loop trip count is low — perhaps 4 or 5 on average. Inner loop unrolling doesn’t make sense in this case because there won’t be enough iterations to justify the cost of the preconditioning loop. However, you may be able to unroll an outer loop. Consider this loop, assuming that <code display="inline">M</code> is small and <code display="inline">N</code> is large:</para>
+        <code id="id6829041" display="block"><newline/>
+      DO I=1,N
+        DO J=1,M
+          A(J,I) = B(J,I) + C(J,I) * D 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id8740429">Unrolling the <code display="inline">I</code> loop gives you lots of floating-point operations that can be overlapped:</para>
+        <code id="id3183397" display="block"><newline/>
+      II = IMOD (N,4) 
+      DO I=1,II
+        DO J=1,M
+          A(J,I) = B(J,I) + C(J,I) * D
+        ENDDO 
+      ENDDO
+    
+      DO I=II,N,4
+        DO J=1,M
+          A(J,I)   = B(J,I)   + C(J,I) * D
+          A(J,I+1) = B(J,I+1) + C(J,I+1) * D
+          A(J,I+2) = B(J,I+2) + C(J,I+2) * D
+          A(J,I+3) = B(J,I+3) + C(J,I+3) * D
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id6284178">In this particular case, there is bad news to go with the good news: unrolling the outer loop causes strided memory references on <code display="inline">A</code>, <code display="inline">B</code>, and <code display="inline">C</code>. However, it probably won’t be too much of a problem because the inner loop trip count is small, so it naturally groups references to conserve cache entries.</para>
+        <para id="id11905536">Outer loop unrolling can also be helpful when you have a nest with recursion in the inner loop, but not in the outer loops. In this next example, there is a first- order linear recursion in the inner loop:</para>
+        <code id="id7533890" display="block"><newline/>
+      DO J=1,M
+        DO I=2,N
+          A(I,J) = A(I,J) + A(I-1,J) * B 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id11828100">Because of the recursion, we can’t unroll the inner loop, but we can work on several copies of the outer loop at the same time. When unrolled, it looks like this:</para>
+        <code id="id11811007" display="block"><newline/>
+      JJ = IMOD (M,4) 
+      DO J=1,JJ
+        DO I=2,N
+          A(I,J) = A(I,J) + A(I-1,J) * B 
+        ENDDO
+      ENDDO
+    
+      DO J=1+JJ,M,4
+        DO I=2,N
+          A(I,J)   = A(I,J)   + A(I-1,J)   * B
+          A(I,J+1) = A(I,J+1) + A(I-1,J+1) * B
+          A(I,J+2) = A(I,J+2) + A(I-1,J+2) * B
+          A(I,J+3) = A(I,J+3) + A(I-1,J+3) * B
+        ENDDO 
+      ENDDO
+    </code>
+        <para id="id11994926">You can see the recursion still exists in the <code display="inline">I</code> loop, but we have succeeded in finding lots of work to do anyway.</para>
+        <para id="id19222421">Sometimes the reason for unrolling the outer loop is to get a hold of much larger chunks of things that can be done in parallel. If the outer loop iterations are independent, and the inner loop trip count is high, then each outer loop iteration represents a significant, parallel chunk of work. On a single CPU that doesn’t matter much, but on a tightly coupled multiprocessor, it can translate into a tremendous increase in speeds.</para>
+      </section>
+  </content>
+</document>

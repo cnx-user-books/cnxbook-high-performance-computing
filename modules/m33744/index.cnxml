@@ -1,0 +1,20 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Introduction</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33744</md:content-id>
+  <md:title>Introduction</md:title>
+  <md:abstract/>
+  <md:uuid>c1763d90-ba7b-4c47-924e-ddd88796770d</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1172478206187">This chapter discusses the programming languages that are used on the largest parallel processing systems. Usually when you are faced with porting and tuning your code on a new scalable architecture architecture, you have to sit back and think about your application for a moment. Sometimes fundamental changes to your algorithm are needed before you can begin to work on the new architecture. Don't be surprised if you need to rewrite all or portions of the application in one of these languages. Modifications on one system may not give a performance benefit on another system. But if the application is important enough, it's worth the effort to improve its performance.</para>
+      <para id="id1172486532062">In this chapter, we cover:</para>
+      <list id="id1172476102160" list-type="bulleted">
+        <item>FORTRAN 90</item>
+        <item>HPF: High Performance FORTRAN</item>
+      </list>
+      <para id="id1172484747224">These languages are designed for use on high-end computing systems. We will follow a simple program through each of these languages, using a simple finite-difference computation that roughly models heat flow. It's a classic problem that contains a great deal of parallelism and is easily solved on a wide variety of parallel architectures.</para>
+      <para id="id3736609">We introduce and discuss the concept of single program multiple data (SPMD) in that we treat MIMD computers as SIMD computers. We write our applications as if a large SIMD system were going to solve the problem. Instead of actually using a SIMD system, the resulting application is compiled for a MIMD system. The implicit synchronization of the SIMD systems is replaced by explicit synchronization at runtime on the MIMD systems.</para>
+  </content>
+</document>

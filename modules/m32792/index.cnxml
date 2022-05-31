@@ -1,0 +1,106 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32792</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>3866dc13-a55b-4d43-be22-48d4a39eff9a</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <exercise id="id9274361"><problem id="oo-id9206881">
+          <para id="id9324201">Identify the dependencies (if there are any) in the following loops. Can you think of ways to organize each loop for more parallelism?</para>
+<list id="eip-id1165415926864" list-type="enumerated" number-style="lower-alpha"><item>
+<code id="eip-id12075809" display="block"><newline/>
+      DO I=1,N-2
+        A(I+2) = A(I) + 1. 
+      ENDDO
+</code>
+</item>
+
+<item>
+<code id="eip-id12121789" display="block"><newline/>
+      DO I=1,N-1,2
+        A(I+1) = A(I) + 1. 
+      ENDDO
+</code>
+</item>
+
+<item>
+<code id="eip-id8942259" display="block"><newline/>
+      DO I=2,N
+        A(I) = A(I-1) * 2. 
+        B = A(I-1)
+      ENDDO
+</code>
+</item>
+
+<item>
+<code id="eip-id12074791" display="block"><newline/>
+      DO I=1,N
+        IF(N .GT. M) 
+          A(I) = 1.
+      ENDDO
+</code>    
+</item>
+
+<item>
+<code id="eip-id8959124" display="block"><newline/>
+      DO I=1,N
+        A(I,J) = A(I,K) + B 
+      ENDDO
+</code>
+</item>
+
+<item>
+<code id="eip-id13574161" display="block"><newline/>      
+      DO I=1,N-1
+        A(I+1,J) = A(I,K) + B 
+      ENDDO
+</code>
+</item>
+
+<item>
+<code id="eip-id15294134" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+        a[i] = b[i];
+  </code>
+</item>  
+</list>      
+  </problem>
+      </exercise>
+      
+      
+      
+      <exercise id="id9012637"><problem id="oo-id9206412">
+          <para id="id8746240">Imagine that you are a parallelizing compiler, trying to generate code for the loop below. Why are references to A a challenge? Why would it help to know that K is equal to zero? Explain how you could partially vectorize the statements involving A if you knew that K had an absolute value of at least 8.</para>
+<code id="eip-id1165807981471" display="block"><newline/>
+      DO I=1,N
+        E(I,M) = E(I-1,M+1) - 1.0
+        B(I) = A(I+K) * C 
+        A(I) = D(I) * 2.0
+      ENDDO
+    </code>      
+  </problem>
+      </exercise>
+      
+      <exercise id="id9113517"><problem id="oo-id9147434">
+          <para id="id9045362">The following three statements contain a flow dependency, an antidependency and an output dependency. Can you identify each? Given that you are allowed to reorder the statements, can you find a permutation that produces the same values for the variables <code>C</code> and <code>B</code>? Show how you can reduce the dependencies by combining or rearranging calculations and using temporary variables.</para>
+<code id="eip-id1809914" display="block"><newline/>
+      B = A + C 
+      B = C + D 
+      C = B + D 
+    </code>      
+  </problem>
+      </exercise>
+      
+  </content>
+</document>

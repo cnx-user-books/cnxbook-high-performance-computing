@@ -1,0 +1,347 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Assembly Language</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33787</md:content-id>
+  <md:title>Assembly Language</md:title>
+  <md:abstract/>
+  <md:uuid>088ecc3e-4b10-4707-b830-ada82dfb65f4</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1165971834426">In this appendix, we take a look at the assembly language produced by a number of different compilers on a number of different architectures. In this survey we revisit some of the issues of CISC versus RISC, and the strengths and weaknesses of different architectures.</para>
+      <para id="id1165971644352">For this survey, two roughly identical segments of code were used. The code was a relatively long loop adding two arrays and storing the result in a third array. The loops were written both in FORTRAN and C.</para>
+      <para id="id1165973168396">The FORTRAN loop was as follows:</para>
+      <code id="id1165971790130" display="block"><newline/>
+      SUBROUTINE ADDEM(A,B,C,N)
+      REAL A(10000),B(10000),C(10000) 
+      INTEGER N,I
+      DO 10 I=1,N
+        A(I) = B(I) + C(I) 
+      ENDDO
+      END
+    </code>
+      <para id="id1165971813874">The C version was:</para>
+      <code id="id8653014" display="block"><newline/>
+      for(i=0;i&lt;n;i++) a[i] = b[i] + c[i];
+    </code>
+      <para id="id1165971818947">We have gathered these examples over the years from a number of different compilers, and the results are not particularly scientific. This is not intended to review a particular architecture or compiler version, but rather just to show an example of the kinds of things you can learn from looking at the output of the compiler.</para>
+      <section id="id1165971653678">
+        <title>Intel 8088</title>
+        <para id="id1165971605153">The Intel 8088 processor used in the original IBM Personal Computer is a very traditional CISC processing system with features severely limited by its transistor count. It has very few registers, and the registers generally have rather specific functions. To support a large memory model, it must set its segment register leading up to each memory operation. This limitation means that every memory access takes a minimum of three instructions. Interestingly, a similar pattern occurs on RISC processors.</para>
+        <para id="id7398031">You notice that at one point, the code moves a value from the <code display="inline">ax</code> register to the <code display="inline">bx</code> register because it needs to perform another computation that can only be done in the <code display="inline">ax</code> register. Note that this is only an integer computation, as the Intel</para>
+        
+        <code id="id1165973098142" display="block"><newline/>
+              mov     word ptr -2[bp],0          # bp is I
+      $11:
+              mov     ax,word ptr -2[bp]         # Load I
+              cmp     ax,word ptr 18[bp]         # Check I&gt;=N
+              bge     $10
+              shl     ax,1                       # Multiply I by 2
+              mov     bx,ax                      # Done - now move to bx
+              add     bx,word ptr 10[bp]         # bx = Address of B + Offset 
+              mov     es,word ptr 12[bp]         # Top part of address
+              mov     ax,es: word ptr [bx]       # Load B(i)
+              mov     bx,word ptr -2[bp]         # Load I
+              shl     bx,1                       # Multiply I by 2
+              add     bx,word ptr 14[bp]         # bx = Address of C + Offset 
+              mov     es,word ptr 16[bp]         # Top part of address
+              add     ax,es: word ptr [bx]       # Load C(I)
+              mov     bx,word ptr -2[bp]         # Load I
+              shl     bx,1                       # Multiply I by 2
+              add     bx,word ptr 6[bp]          # bx = Address of A + Offset 
+              mov     es,word ptr 8[bp]          # Top part of address
+              mov     es: word ptr [bx],ax       # Store
+      $9:
+              inc     word ptr -2[bp]            # Increment I in memory 
+              jmp $11
+      $10:
+    </code>
+        <para id="id1165972583010">Because there are so few registers, the variable <code display="inline">I</code> is kept in memory and loaded several times throughout the loop. The inc instruction at the end of the loop actually updates the value in memory. Interestingly, at the top of the loop, the value is then reloaded from memory.</para>
+        <para id="id8029501">In this type of architecture, the available registers put such a strain on the flexibility of the compiler, there is often not much optimization that is practical.</para>
+      </section>
+      <section id="id7397915">
+        <title>Motorola MC68020</title>
+        <para id="id1165974064274">In this section, we examine another classic CISC processor, the Motorola MC68020, which was used to build Macintosh computers and Sun workstations. We happened to run this code on a BBN GP-1000 Butterfly parallel processing system made up of 96 MC68020 processors.</para>
+        <para id="id1165971519669">The Motorola architecture is relatively easy to program in assembly language. It has plenty of 32-bit registers, and they are relatively easy to use. It has a CISC instruction set that keeps assembly language programming quite simple. Many instructions can perform multiple operations in a single instruction.</para>
+        <para id="id1165971837633">We use this example to show a progression of optimization levels, using a f77 compiler on a floating-point version of the loop. Our first example is with no optimization:</para>
+        <code id="id1165973726006" display="block"><newline/>
+                                          ! Note d0 contains the value I
+      L5:
+            movl     d0,L13               ! Store I to memory if loop ends
+            lea      a1@(-4),a0           ! a1 = address of B
+            fmoves   a0@(0,d0:l:4),fp0    ! Load of B(I)
+            lea      a3@(-4),a0           ! a3 = address of C
+            fadds    a0@(0,d0:l:4),fp0    ! Load of C(I) (And Add)
+            lea      a2@(-4),a0           ! a2 = address of A
+            fmoves   fp0,a0@(0,d0:l:4)    ! Store of A(I)
+            addql    #1,d0                ! Increment I
+            subql    #1,d1                ! Decrement "N"
+            tstl     d1
+            bnes     L5
+    </code>
+        <para id="id1165971538143">The value for <code display="inline">I</code> is stored in the <code display="inline">d0</code> register. Each time through the loop, it’s incremented by <code display="inline">1</code>. At the same time, register <code display="inline">d1</code> is initialized to the value for <code display="inline">N</code> and decremented each time through the loop. Each time through the loop, <code display="inline">I</code> is stored into memory, so the proper value for <code display="inline">I </code>ends up in memory when the loop terminates. Registers <code display="inline">a1</code>, <code display="inline">a2</code>, and <code display="inline">a3</code> are preloaded to be the first address of the arrays <code display="inline">B</code>, <code display="inline">A</code>, and <code display="inline">C</code> respectively. However, since FORTRAN arrays begin at 1, we must subtract 4 from each of these addresses before we can use <code display="inline">I</code> as the offset. The <code display="inline">lea</code> instructions are effectively subtracting 4 from one address register and storing it in another.</para>
+        <para id="id1165971556215">The following instruction performs an address computation that is almost a one-to- one translation of an array reference:</para>
+        <code id="id1165971650140" display="block"><newline/>
+      fmoves a0@(0,d0:l:4),fp0 ! Load of B(I)
+    </code>
+        <para id="id7427029">This instruction retrieves a floating-point value from the memory. The address is computed by first multiplying <code display="inline">d0</code> by 4 (because these are 32-bit floating-point numbers) and adding that value to <code display="inline">a0</code>. As a matter of fact, the <code display="inline">lea</code> and <code display="inline">fmoves</code> instructions could have been combined as follows:</para>
+        <code id="id1165976077912" display="block"><newline/>
+      fmoves a1@(-4,d0:l:4),fp0 ! Load of B(I)
+    </code>
+        <para id="id1165972807455">To compute its memory address, this instruction multiplies <code display="inline">d0</code> by 4, adds the contents of <code display="inline">a1</code>, and then subtracts 4. The resulting address is used to load 4 bytes into floating-point register <code display="inline">fp0</code>. This is almost a literal translation of fetching <code display="inline">B(I)</code>. You can see how the assembly is set up to track high-level constructs.</para>
+        <para id="id1165972990074">It is almost as if the compiler were “trying” to show off and make use of the nifty assembly language instructions.</para>
+        
+        <para id="id1165971644137">Like the Intel, this is not a load-store architecture. The <code display="inline">fadds</code> instruction adds a value from memory to a value in a register (<code display="inline">fp0</code>) and leaves the result of the addition in the register. Unlike the Intel 8088, we have enough registers to store quite a few of the values used throughout the loop (<code display="inline">I</code>, <code display="inline">N</code>, the address of <code display="inline">A</code>, <code display="inline">B</code>, and <code display="inline">C</code>) in registers to save memory operations.</para>
+        <section id="id8521147">
+          <title>C on the MC68020</title>
+          <para id="id1165971777730">In the next example, we compiled the C version of the loop with the normal optimization (<code display="inline">-O</code>) turned on. We see the C perspective on arrays in this code. C views arrays as extensions to pointers in C; the loop index advances as an offset from a pointer to the beginning of the array:</para>
+          <code id="id1165971781447" display="block"><newline/>
+      ! d3 = I 
+      ! d1 = Address of A
+      ! d2 = Address of B
+      ! d0 = Address of C
+      ! a6@(20) = N
+              moveq   #0,d3                 ! Initialize I
+              bras    L5                    ! Jump to End of the loop
+      L1:     movl    d3,a1                 ! Make copy of I
+              movl    a1,d4                 ! Again
+              asll    #2,d4                 ! Multiply by 4 (word size)
+              movl    d4,a1                 ! Put back in an address register 
+              fmoves  a1@(0,d2:l),fp0       ! Load B(I)
+              movl    a6@(16),d0            ! Get address of C
+              fadds   a1@(0,d0:l),fp0       ! Add C(I)
+              fmoves  fp0,a1@(0,d1:l)       ! Store into A(I)
+              addql   #1,d3                 ! Increment I
+      L5:
+              cmpl    a6@(20),d3
+              bits    L1    </code>
+          
+          <para id="id1165977232010">We first see the value of <code display="inline">I</code> being copied into several registers and multiplied by 4 (using a left shift of 2, strength reduction). Interestingly, the value in register <code display="inline">a1</code> is <code display="inline">I</code> multiplied by 4. Registers <code display="inline">d0</code>, <code display="inline">d1</code>, and <code display="inline">d2</code> are the addresses of <code display="inline">C</code>, <code display="inline">B</code>, and <code display="inline">A</code> respectively. In the load, add, and store, <code display="inline">a1</code> is the base of the address computation and <code display="inline">d0</code>, <code display="inline">d1</code>, and <code display="inline">d2</code> are added as an offset to <code display="inline">a1</code> to compute each address.</para>
+          <para id="id1165973166388">This is a simplistic optimization that is primarily trying to maximize the values that are kept in registers during loop execution. Overall, it’s a relatively literal translation of the C language semantics from C to assembly. In many ways, C was designed to generate relatively efficient code without requiring a highly sophisticated optimizer.</para>
+        </section>
+        <section id="id1165973179202">
+          <title>More optimization</title>
+          <para id="id1165971881472">In this example, we are back to the FORTRAN version on the MC68020. We have compiled it with the highest level of optimization (<code display="inline">-OLM</code>) available on this compiler. Now we see a much more aggressive approach to the loop:</para>
+          <code id="id1165977344971" display="block"><newline/>
+      ! a0 = Address of C(I)
+      ! a1 = Address of B(I)
+      ! a2 = Address of A(I) 
+      L3:
+              fmoves  a1@,fp0                    ! Load B(I)
+              fadds   a0@,fp0                    ! Add C(I)
+              fmoves  fp0,a2@                    ! Store A(I)
+              addql   #4,a0                      ! Advance by 4
+              addql   #4,a1                      ! Advance by 4
+              addql   #4,a2                      ! Advance by 4
+              subql   #1,d0                      ! Decrement I
+              tstl    d0
+              bnes    L3
+    </code>
+          <para id="id1165971638491">First off, the compiler is smart enough to do all of its address adjustment outside the loop and store the adjusted addresses of <code display="inline">A</code>, <code display="inline">B</code>, and <code display="inline">C</code> in registers. We do the load, add, and store in quick succession. Then we advance the array addresses by 4 and perform the subtraction to determine when the loop is complete.</para>
+          <para id="id8773039">This is very tight code and bears little resemblance to the original FORTRAN code.</para>
+        </section>
+      </section>
+      <section id="id1165972611255">
+        <title>SPARC Architecture</title>
+        <para id="id1165974008146">These next examples were performed using a SPARC architecture system using FORTRAN. The SPARC architecture is a classic RISC processor using load-store access to memory, many registers and delayed branching. We first examine the code at the lowest optimization:</para>
+        <code id="id1165971404536" display="block"><newline/>
+      .L18:                                 ! Top of the loop
+              ld      [%fp-4],%l2           ! Address of B
+              sethi   %hi(GPB.addem.i),%l0  ! Address of I in %l0
+              or      %l0,%lo(GPB.addem.i),%l0
+              ld      [%l0+0],%l0           ! Load I
+              sll     %l0,2,%l1             ! Multiply by 4
+              add     %l2,%l1,%l0           ! Figure effective address of B(I)
+              ld      [%l0+0],%f3           ! Load B(I)
+              ld      [%fp-8],%l2           ! Address of C
+              sethi   %hi(GPB.addem.i),%l0  ! Address of I in %l0
+              or      %l0,%lo(GPB.addem.i),%l0
+              ld      [%l0+0],%l0           ! Load I
+              sll     %l0,2,%l1             ! Multiply by 4
+              add     %l2,%l1,%l0           ! Figure effective address of B(I)
+              ld      [%l0+0],%f2           ! Load C(I)
+              fadds   %f3,%f2,%f2           ! Do the Floating Point Add
+              ld      [%fp-12],%l2          ! Address of A
+              sethi   %hi(GPB.addem.i),%l0  ! Address of i in %l0
+              or      %l0,%lo(GPB.addem.i),%l0
+              ld      [%l0+0],%l0           ! Load I
+              sll     %l0,2,%l1             ! Multiply by 4
+              add     %l2,%l1,%l0           ! Figure effective address of A(I)
+              st      %f2,[%l0+0]           ! Store A(I)
+              sethi   %hi(GPB.addem.i),%l0  ! Address of i in %l0
+              or      %l0,%lo(GPB.addem.i),%l0
+              ld      [%l0+0],%l0           ! Load I
+              add     %l0,1,%l1             ! Increment I
+              sethi   %hi(GPB.addem.i),%l0  ! Address of I in %l0
+              or      %l0,%lo(GPB.addem.i),%l0
+              st      %l1,[%l0+0]           ! Store I
+              sethi   %hi(GPB.addem.i),%l0  ! Address of I in %l0 
+              or      %l0,%lo(GPB.addem.i),%l0
+              ld      [%l0+0],%l1           ! Load I
+              ld      [%fp-20],%l0          ! Load N
+              cmp     %l1,%l0               ! Compare
+              ble     .L18
+              nop                           ! Branch Delay Slot
+    </code>
+        <para id="id1165971556143">This is some pretty poor code. We don’t need to go through it line by line, but there are a few quick observations we can make. The value for <code display="inline">I</code> is loaded from memory five times in the loop. The address of <code display="inline">I</code> is computed six times throughout the loop (each time takes two instructions). There are no tricky memory addressing modes, so multiplying <code display="inline">I</code> by 4 to get a byte offset is done explicitly three times (at least they use a shift). To add insult to injury, they even put a NO-OP in the branch delay slot.</para>
+        <para id="id1165971316469">One might ask, “Why do they ever generate code this bad?” Well, it’s not because the compiler isn’t capable of generating efficient code, as we shall see below. One explanation is that in this optimization level, it simply does a one-to-one translation of the tuples (intermediate code) into machine language. You can almost draw lines in the above example and precisely identify which instructions came from which tuples.</para>
+        <para id="id1165971188539">One reason to generate the code using this simplistic approach is to guarantee that the program will produce the correct results. Looking at the above code, it’s pretty easy to argue that it indeed does exactly what the FORTRAN code does. You can track every single assembly statement directly back to part of a FORTRAN statement.</para>
+        <para id="id1165971449118">It’s pretty clear that you don’t want to execute this code in a high performance production environment without some more optimization.</para>
+        <section id="id1165970916650">
+          <title>Moderate optimization</title>
+          <para id="id1165970860026">In this example, we enable some optimization (<code display="inline">-O1</code>):</para>
+          <code id="id1165971174647" display="block"><newline/>
+            save    %sp,-120,%sp           ! Rotate the register window
+            add     %i0,-4,%o0             ! Address of A(0)
+            st      %o0,[%fp-12]           ! Store on the stack
+            add     %i1,-4,%o0             ! Address of B(0)
+            st      %o0,[%fp-4]            ! Store on the stack
+            add     %i2,-4,%o0             ! Address of C(0)
+            st      %o0,[%fp-8]            ! Store on the stack
+            sethi   %hi(GPB.addem.i),%o0   ! Address of I (top portion)
+            add     %o0,%lo(GPB.addem.i),%o2 ! Address of I (lower portion)
+            ld      [%i3],%o0              ! %o0 = N (fourth parameter)
+            or      %g0,1,%o1              ! %o1 = 1 (for addition)
+            st      %o0,[%fp-20]           ! store N on the stack
+            st      %o1,[%o2]              ! Set memory copy of I to 1
+            ld      [%o2],%o1              ! o1 = I (kind of redundant)
+            cmp     %o1,%o0                ! Check I &gt; N (zero-trip?)
+            bg      .L12                   ! Don’t do loop at all
+            nop                             ! Delay Slot
+            ld      [%o2],%o0              ! Pre-load for Branch Delay Slot
+      .L900000110:                          ! Top of the loop
+            ld      [%fp-4],%o1            ! o1 = Address of B(0)
+            sll     %o0,2,%o0              ! Multiply I by 4
+            ld      [%o1+%o0],%f2          ! f2 = B(I)
+            ld      [%o2],%o0              ! Load I from memory
+            ld      [%fp-8],%o1            ! o1 = Address of C(0)
+            sll     %o0,2,%o0              ! Multiply I by 4
+            ld      [%o1+%o0],%f3          ! f3 = C(I)
+            fadds   %f2,%f3,%f2            ! Register-to-register add
+            ld      [%o2],%o0              ! Load I from memory (not again!)
+            ld      [%fp-12],%o1           ! o1 = Address of A(0)
+            sll     %o0,2,%o0              ! Multiply I by 4 (yes, again)
+            st      %f2,[%o1+%o0]          ! A(I) = f2
+            ld      [%o2],%o0              ! Load I from memory
+            add     %o0,1,%o0              ! Increment I in register
+            st      %o0,[%o2]              ! Store I back into memory
+            ld      [%o2],%o0              ! Load I back into a register
+            ld      [%fp-20],%o1           ! Load N into a register
+            cmp     %o0,%o1                ! I &gt; N ??
+            ble,a   .L900000110
+             ld      [%o2],%o0              ! Branch Delay Slot
+    </code>
+          <para id="id1165970789178">This is a significant improvement from the previous example. Some loop constant computations (subtracting 4) were hoisted out of the loop. We only loaded <code display="inline">I</code> 4 times during a loop iteration. Strangely, the compiler didn’t choose to store the addresses of <code display="inline">A(0)</code>, <code display="inline">B(0)</code>, and <code display="inline">C(0)</code> in registers at all even though there were plenty of registers. Even more perplexing is the fact that it loaded a value from memory immediately after it had stored it from the exact same register!</para>
+          <para id="id1165971773717">But one bright spot is the branch delay slot. For the first iteration, the load was done before the loop started. For the successive iterations, the first load was done in the branch delay slot at the bottom of the loop.</para>
+          <para id="id1165971202618">Comparing this code to the moderate optimization code on the MC68020, you can begin to get a sense of why RISC was not an overnight sensation. It turned out that an unsophisticated compiler could generate much tighter code for a CISC processor than a RISC processor. RISC processors are always executing extra instructions here and there to compensate for the lack of slick features in their instruction set. If a processor has a faster clock rate but has to execute more instructions, it does not always have better performance than a slower, more efficient processor.</para>
+          <para id="id1165971516593">But as we shall soon see, this CISC advantage is about to evaporate in this particular example.</para>
+        </section>
+        <section id="id1165971337231">
+          <title>Higher optimization</title>
+          <para id="id1165971359456">We now increase the optimization to <code display="inline">-O2</code>. Now the compiler generates much better code. It’s important you remember that this is the same compiler being used for all three examples.</para>
+          <para id="id1165971285739">At this optimization level, the compiler looked through the code sufficiently well to know it didn’t even need to rotate the register windows (no save instruction). Clearly the compiler looked at the register usage of the entire routine:</para>
+          <code id="id1165970957530" display="block"><newline/>
+      ! Note, didn’t even rotate the register Window
+      ! We just use the %o registers from the caller
+    
+      ! %o0 = Address of first element of A (from calling convention)
+      ! %o1 = Address of first element of B (from calling convention)
+      ! %o2 = Address of first element of C (from calling convention)
+      ! %o3 = Address of N (from calling convention)
+    
+      addem_:
+             ld      [%o3],%g2                 ! Load N
+             cmp     %g2,1                     ! Check to see if it is &lt;1 
+             bl      .L77000006                ! Check for zero trip loop 
+             or      %g0,1,%g1                 ! Delay slot - Set I to 1 
+       .L77000003:
+             ld      [%o1],%f0                 ! Load B(I) First time Only
+       .L900000109:
+             ld      [%o2],%f1                 ! Load C(I)
+             fadds   %f0,%f1,%f0               ! Add
+             add     %g1,1,%g1                 ! Increment I
+             add     %o1,4,%o1                 ! Increment Address of B
+             add     %o2,4,%o2                 ! Increment Address of C
+             cmp     %g1,%g2                   ! Check Loop Termination
+             st      %f0,[%o0]                 ! Store A(I)
+             add     %o0,4,%o0                 ! Increment Address of A
+             ble,a   .L900000109               ! Branch w/ annul
+             ld      [%o1],%f0                 ! Load the B(I)
+       .L77000006:
+             retl                              ! Leaf Return (No window)
+             nop                               ! Branch Delay Slot
+    </code>
+          
+          <para id="id1165970815044">This is tight code. The registers <code display="inline">o0</code>, <code display="inline">o1</code>, and <code display="inline">o2</code> contain the addresses of the first elements of <code display="inline">A</code>, <code display="inline">B</code>, and <code display="inline">C</code> respectively. They already point to the right value for the first iteration of the loop. The value for <code display="inline">I</code> is never stored in memory; it is kept in global register <code display="inline">g1</code>. Instead of multiplying <code display="inline">I </code>by 4, we simply advance the three addresses by 4 bytes each iteration.</para>
+          <para id="id1165970967107">The branch delay slots are utilized for both branches. The branch at the bottom of the loop uses the <code display="inline">annul</code> feature to cancel the following load if the branch falls through.</para>
+          <para id="id1165970907465">The most interesting observation regarding this code is the striking similarity to the code and the code generated for the MC68020 at its top optimization level:</para>
+          <code id="id1165970959960" display="block">L3:
+               fmoves  a1@,fp0                   ! Load B(I)
+               fadds   a0@,fp0                   ! Add C(I)
+               fmoves  fp0,a2@                   ! Store A(I)
+               addql   #4,a0                     ! Advance by 4
+               addql   #4,a1                     ! Advance by 4
+               addql   #4,a2                     ! Advance by 4
+               subql   #1,d0                     ! Decrement I
+               tstl    d0
+               bnes    L3
+    </code>
+          <para id="id1165971637196">The two code sequences are nearly identical! For the SPARC, it does an extra load because of its load-store architecture. On the SPARC, <code display="inline">I</code> is incremented and compared to <code display="inline">N</code>, while on the MC68020, <code display="inline">I</code> is decremented and compared to zero.</para>
+          <para id="id1165970861634">This aptly shows how the advancing compiler optimization capabilities quickly made the “nifty” features of the CISC architectures rather useless. Even on the CISC processor, the post-optimization code used the simple forms of the instructions because they produce they fastest execution time.</para>
+          <para id="id1165971325364">Note that these code sequences were generated on an MC68020. An MC68060 should be able to eliminate the three <code display="inline">addql</code> instructions by using post-increment, saving three instructions. Add a little loop unrolling, and you have some very tight code. Of course, the MC68060 was never a broadly deployed workstation processor, so we never really got a chance to take it for a test drive.</para>
+        </section>
+      </section>
+      <section id="id1165971325615">
+        <title>Convex C-240</title>
+        <para id="id1165971314288">This section shows the results of compiling on the Convex C-Series of parallel/vector supercomputers. In addition to their normal registers, vector computers have vector registers that contain up to 256 64-bit elements. These processors can perform operations on any subset of these registers with a single instruction.</para>
+        <para id="id1165971188146">It is hard to claim that these vector supercomputers are more RISC or CISC. They have simple lean instruction sets and, hence, are RISC-like. However, they have instructions that implement loops, and so they are somewhat CISC-like.</para>
+        <para id="id1165970891034">The Convex C-240 has scalar registers <code display="inline">(s2)</code>, vector registers <code display="inline">(v2)</code>, and address registers <code display="inline">(a3)</code>. Each vector register has 128 elements. The vector length register controls how many of the elements of each vector register are processed by vector instructions. If vector length is above 128, the entire register is processed.</para>
+        <para id="id1165971283020">The code to implement our loop is as follows:</para>
+        <code id="id1165971413292" display="block"><newline/>
+      L4:      mov.ws   2,vl                      ; Set the Vector length to N
+               ld.w     0(a5),v0                  ; Load B into Vector Register
+               ld.w     0(a2),v1                  ; Load C into Vector Register
+               add.s    v1,v0,v2                  ; Add the vector registers
+               st.w     v2,0(a3)                  ; Store results into A
+               add.w    #-128,s2                  ; Decrement "N"
+               add.w    #512,a2                   ; Advance address for A
+               add.w    #512,a3                   ; Advance address for B
+               add.w    #512,a5                   ; Advance address for C
+               lt.w     #0,s2                     ; Check to see if "N" is &lt; 0
+               jbrs.t   L4
+    </code>
+        <para id="id1165971185074">Initially, the vector length register is set to <code display="inline">N</code>. We assume that for the first iteration, <code display="inline">N</code> is greater than 128. The next instruction is a vector load instruction into register v0. This loads 128 32-bit elements into this register. The next instruction also loads 128 elements, and the following instruction adds those two registers and places the results into a third vector register. Then the 128 elements in Register v2 are stored back into memory. After those elements have been processed, <code display="inline">N</code> is decremented by 128 (after all, we did process 128 elements). Then we add 512 to each of the addresses (4 bytes per element) and loop back up. At some point, during the last iteration, if <code display="inline">N</code> is not an exact multiple of 128, the vector length register is less than 128, and the vector instructions only process those remaining elements up to <code display="inline">N</code>.</para>
+        <para id="id1165971258081">One of the challenges of vector processors is to allow an instruction to begin executing before the previous instruction has completed. For example, once the load into Register v1 has partially completed, the processor could actually begin adding the first few elements of v0 and v1 while waiting for the rest of the elements of v1 to arrive. This approach of starting the next vector instruction before the previous vector instruction has completed is called chaining. Chaining is an important feature to get maximum performance from vector processors.</para>
+      </section>
+      <section id="id1165971188324">
+        <title>IBM RS-6000</title>
+        <para id="id1165970907859">The IBM RS-6000 is generally credited as the first RISC processor to have cracked the Linpack 100×100 benchmark. The RS-6000 is characterized by strong floating-point performance and excellent memory bandwidth among RISC workstations. The RS-6000 was the basis for IBM’s scalable parallel processor: the IBM-SP1 and SP2.</para>
+        <para id="id1165970915761">When our example program is run on the RS-6000, we can see the use of a CISC- style instruction in the middle of a RISC processor. The RS-6000 supports a branch- on-count instruction that combines the decrement, test, and branch operations into a single instruction. Moreover, there is a special register (the count register) that is part of the instruction fetch unit that stores the current value of the counter. The fetch unit also has its own add unit to perform the decrements for this instruction.</para>
+        <para id="id1165971461341">These types of features creeping into RISC architectures are occuring because there is plenty of chip space for them. If a wide range of programs can run faster with this type of instruction, it’s often added.</para>
+        <para id="id1165971170787"/>
+        <para id="id1165971353846">The assembly code on the RS-6000 is:</para>
+        <code id="id1165971486644" display="block"><newline/>
+             ai       r3,r3,-4                # Address of A(0) 
+             ai       r5,r5,-4                # Address of B(0) 
+             ai       r4,r4,-4                # Address of C(0) 
+             bcr      BO_IF_NOT,CR0_GT
+             mtspr    CTR,r6                  # Store in the Counter Register
+      __L18:
+             lfsu     fp0,4(r4)               # Pre Increment Load 
+             lfsu     fp1,4(r5)               # Pre Increment Load 
+             fa       fp0,fp0,fp1
+             frsp     fp0,fp0
+             stfsu    fp0,4(r3)               # Pre-increment Store
+             bc       BO_dCTR_NZERO,CR0_LT,__L18    # Branch on Counter
+    </code>
+        <para id="id1165970901785">The RS-6000 also supports a memory addressing mode that can add a value to its address register before using the address register. Interestingly, these two features (branch on count and pre-increment load) eliminate several instructions when compared to the more “pure” SPARC processor. The SPARC processor has 10 instructions in the body of its loop, while the RS-6000 has 6 instructions.</para>
+        <para id="id1165970890569">The advantage of the RS-6000 in this particular loop may be less significant if both processors were two-way superscalar. The instructions were eliminated on the RS-6000 were integer instructions. On a two-way superscalar processor, those integer instructions may simply execute on the integer units while the floating-point units are busy performing the floating-point computations.</para>
+      </section>
+      <section id="id1165970890532">
+        <title>Conclusion</title>
+        <para id="id1165971245965">In this section, we have attempted to give you some understanding of the variety of assembly language that is produced by compilers at different optimization levels and on different computer architectures. At some point during the tuning of your code, it can be quite instructive to take a look at the generated assembly language to be sure that the compiler is not doing something really stupid that is slowing you down.</para>
+        <para id="id1165970809864">Please don’t be tempted to rewrite portions in assembly language. Usually any problems can be solved by cleaning up and streamlining your high-level source code and setting the proper compiler flags.</para>
+        <para id="id1165970933158">It is interesting that very few people actually learn assembly language any more. Most folks find that the compiler is the best teacher of assembly language. By adding the appropriate option (often <code display="inline">-S</code>), the compiler starts giving you lessons. I suggest that you don’t print out all of the code. There are many pages of useless variable declarations, etc. For these examples, I cut out all of that useless information. It is best to view the assembly in an editor and only print out the portion that pertains to the particular loop you are tuning.</para>
+      </section>
+  </content>
+</document>

@@ -1,0 +1,62 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32765</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>57d436e0-1f63-4620-9177-492db8209f59</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <exercise id="id1167616756074">
+        <problem id="oo-id1167616006126">
+          <para id="id1167625699091">Run the following code to count the number of inverses that are not perfectly accurate:</para>
+      
+      
+      <code id="id1167617353277" display="block"><newline/>
+      REAL*4 X,Y,Z 
+      INTEGER I
+      I = 0 
+      DO X=1.0,1000.0,1.0
+        Y = 1.0 / X
+        Z = Y * X 
+        IF ( Z .NE. 1.0 ) THEN 
+          I = I + 1 
+        ENDIF 
+      ENDDO
+      PRINT *,’Found ’,I 
+      END
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id1167619259046">
+        <problem id="oo-id1167620460857">
+          <para id="id1167618844402">Change the type of the variables to <code>REAL*8</code> and repeat. Make sure to keep the optimization at a sufficiently low level (-00) to keep the compiler from eliminating the computations.</para>
+        </problem>
+      </exercise>
+      <exercise id="id1167622452226">
+        <problem id="oo-id1167617286286">
+          <para id="id1167618343903">Write a program to determine the number of digits of precision for <code>REAL*4</code> and <code>REAL*8</code>.</para>
+        </problem>
+      </exercise>
+      
+      <exercise id="id1167619756692">
+        <problem id="oo-id1167621522177">
+          <para id="id1226517">Write a program to demonstrate how summing an array forward to backward and backward to forward can yield a different result.</para>
+        </problem>
+      </exercise>
+      <exercise id="id1167624356572">
+        <problem id="oo-id1167620305276">
+          <para id="id6905798">Assuming your compiler supports varying levels of IEEE compliance, take a significant computational code and test its overall performance under the various IEEE compliance options. Do the results of the program change?</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

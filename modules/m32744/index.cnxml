@@ -1,0 +1,32 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Improving Accuracy Using Guard Digits</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32744</md:content-id>
+  <md:title>Improving Accuracy Using Guard Digits</md:title>
+  <md:abstract/>
+  <md:uuid>2f9aa4ad-4580-4252-926b-9cc19fc9ba4a</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1167880219361">In this section we explore a technique to improve the precision of floating-point computations without using additional storage space for the floating-point numbers.</para>
+      <para id="id1402619">Consider the following example of a base-10 system with five digits of accuracy performing the following subtraction:</para>
+      <code id="eip-78" display="block">10.001 - 9.9993 = 0.0017</code>
+      <para id="id1167879394885">All of these values can be perfectly represented using our floating-point format. However, if we only have five digits of precision available while aligning the decimal points during the computation, the results end up with significant error as shown in <link target-id="id1167876790841"/>.</para>
+      <figure id="id1167876790841"><title>Need for guard digits </title><media id="id1167876790841_media" alt="This figure shows an equation that reads, ten point zero zero one minus nine point nine nine nine equals zero point zero zero two. At the answer is an arrow labeled incorrect result, and pointing at the nine point nine nine nine is labeled, we only have five digits for interim values.">
+          <image mime-type="image/png" src="../../media/graphics1-e0a1.png" id="id1167876790841__onlineimage" height="112" width="600"/>
+        </media>
+        
+      </figure>
+      <para id="id1167875818349">To perform this computation and round it correctly, we do not need to increase the number of significant digits for <emphasis effect="italics">stored</emphasis> values. We do, however, need additional digits of precision while performing the computation.</para>
+      <para id="id1167871834136">The solution is to add extra <emphasis effect="italics">guard digits</emphasis> which are maintained during the interim steps of the computation. In our case, if we maintained six digits of accuracy while aligning operands, and rounded before normalizing and assigning the final value, we would get the proper result. The guard digits only need to be present as part of the floating-point execution unit in the CPU. It is not necessary to add guard digits to the registers or to the values stored in memory.</para>
+      <para id="id1167879040347">It is not necessary to have an extremely large number of guard digits. At some point, the difference in the magnitude between the operands becomes so great that lost digits do not affect the addition or rounding results.</para>
+  </content>
+</document>

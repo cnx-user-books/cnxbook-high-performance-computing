@@ -1,0 +1,17 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Closing Notes</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33784</md:content-id>
+  <md:title>Closing Notes</md:title>
+  <md:abstract/>
+  <md:uuid>7ba40f52-562e-41e0-9b0e-e1ef08ec9b2a</md:uuid>
+</metadata>
+
+<content>
+      <para id="id41354657">In this chapter we have looked at the “assembly language” of parallel programming. While it can seem daunting to rethink your application, there are often some simple changes you can make to port your code to message passing. Depending on the application, a master-slave, broadcast-gather, or decomposed data approach might be most appropriate.</para>
+      <para id="id42528084">It’s important to realize that some applications just don’t decompose into message passing very well. You may be working with just such an application. Once you have some experience with message passing, it becomes easier to identify the critical points where data must be communicated between processes.</para>
+      <para id="id46520923">While HPF, PVM, and MPI are all mature and popular technologies, it’s not clear whether any of these technologies will be the long-term solution that we will use 10 years from now. One possibility is that we will use FORTRAN 90 (or FORTRAN 95) without any data layout directives or that the directives will be optional. Another interesting possibility is simply to keep using FORTRAN 77. As scalable, cache-coherent, non-uniform memory systems become more popular, they will evolve their own data allocation primitives. For example, the HP/Exemplar supports the following data storage attributes: shared, node-private, and thread-private. As dynamic data structures are allocated, they can be placed in any one of these classes. Node-private memory is shared across all the threads on a single node but not shared beyond those threads. Perhaps we will only have to declare the storage class of the data but not the data layout for these new machines.</para>
+      <para id="id43469829">PVM and MPI still need the capability of supporting a fault-tolerant style of computing that allows an application to complete as resources fail or otherwise become available. The amount of compute power that will be available to applications that can tolerate some unreliability in the resources will be very large. There have been a number of moderately successful attempts in this area such as Condor, but none have really caught on in the mainstream. </para>
+      <para id="id44862964">To run the most powerful computers in the world at their absolute maximum performance levels, the need to be portable is somewhat reduced. Making your particular application go ever faster and scale to ever higher numbers of processors is a fascinating activity. May the FLOPS be with you!</para>
+  </content>
+</document>

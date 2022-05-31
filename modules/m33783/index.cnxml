@@ -1,0 +1,369 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Message-Passing Interface</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33783</md:content-id>
+  <md:title>Message-Passing Interface</md:title>
+  <md:abstract/>
+  <md:uuid>1d418e86-e3f1-42e6-9d6d-e41dc2ab19e6</md:uuid>
+</metadata>
+
+<content>
+      <para id="id10359768">The Message-Passing Interface (MPI) was designed to be an industrial-strength message-passing environment that is portable across a wide range of hardware environments.</para>
+      <para id="id15371916">Much like High Performance FORTRAN, MPI was developed by a group of computer vendors, application developers, and computer scientists. The idea was to come up with a specification that would take the strengths of many of the existing proprietary message passing environments on a wide variety of architectures and come up with a specification that could be implemented on architectures ranging from SIMD systems with thousands of small processors to MIMD networks of workstations and everything in between.</para>
+      <para id="id13882521">Interestingly, the MPI effort was completed a year <emphasis effect="italics">after</emphasis> the High Performance FORTRAN (HPF) effort was completed. Some viewed MPI as a portable message-passing interface that could support a good HPF compiler. Having MPI makes the compiler more portable. Also having the compiler use MPI as its message-passing environment insures that MPI is heavily tested and that sufficient resources are invested into the MPI implementation. </para>
+      <section id="id13423745">
+        <title>PVM Versus MPI</title>
+        <para id="id10390171">While many of the folks involved in PVM participated in the MPI effort, MPI is not simply a follow-on to PVM. PVM was developed in a university/research lab environment and evolved over time as new features were needed. For example, the group capability was not designed into PVM at a fundamental level. Some of the underlying assumptions of PVM were based “on a network of workstations connected via Ethernet” model and didn’t export well to scalable computers.<footnote id="id11523909">One should not diminish the positive contributions of PVM, however. PVM was the first widely avail- able portable message-passing environment. PVM pioneered the idea of heterogeneous distributed computing with built-in format conversion.</footnote> In some ways, MPI is more robust than PVM, and in other ways, MPI is simpler than PVM. MPI doesn’t specify the system management details as in PVM; MPI doesn’t specify how a virtual machine is to be created, operated, and used.</para>
+      </section>
+      <section id="id5320700">
+        <title>MPI Features</title>
+        <para id="id17691022">MPI has a number of useful features beyond the basic send and receive capabilities. These include:</para>
+        <list id="id6915676" list-type="labeled-item"><item><label>Communicators</label>: A communicator is a subset of the active processes that can be treated as a group for collective operations such as broadcast, reduction, barriers, sending, or receiving. Within each communicator, a process has a <emphasis effect="italics">rank</emphasis> that ranges from zero to the size of the group. A process may be a member of more than one communicator and have a different rank within each communicator. There is a default communicator that refers to all the MPI processes that is called <code display="inline">MPI_COMM_WORLD</code>.</item>
+          <item><label>Topologies</label>: A communicator can have a topology associated with it. This arranges the processes that belong to a communicator into some layout. The most common layout is a Cartesian decomposition. For example, 12 processes may be arranged into a 3×4 grid.<footnote id="id9249521">Sounds a little like HPF, no?</footnote> Once these topologies are defined, they can be queried to find the neighboring processes in the topology. In addition to the Cartesian (grid) topology, MPI also supports a graph-based topology.</item>
+          <item><label>Communication modes</label>: MPI supports multiple styles of communication, including blocking and non- blocking. Users can also choose to use explicit buffers for sending or allow MPI to manage the buffers. The nonblocking capabilities allow the overlap of communication and computation. MPI can support a model in which there is no available memory space for buffers and the data must be copied directly from the address space of the sending process to the memory space of the receiving process. MPI also supports a single call to perform a send and receive that is quite useful when processes need to exchange data.</item>
+          <item><label>Single-call collective operations</label>: Some of the calls in MPI automate collective operations in a single call. For example, the broadcast operation sends values from the master to the slaves and receives the values on the slaves in the same operation. The net result is that the values are updated on all processes. Similarly, there is a single call to sum a value across all of the processes to a single value. By bundling all this functionality into a single call, systems that have support for collective operations in hardware can make best use of this hardware. Also, when MPI is operating on a shared-memory environment, the broadcast can be simplified as all the slaves simply make a local copy of a shared variable.</item>
+        </list>
+        <para id="id3989031">Clearly, the developers of the MPI specification had significant experience with developing message-passing applications and added many widely used features to the message-passing library. Without these features, each programmer needed to use more primitive operations to construct their own versions of the higher-level operations.</para>
+      </section>
+      <section id="id16123480">
+        <title>Heat Flow in MPI</title>
+        <para id="id10857966">In this example, we implement our heat flow problem in MPI using a similar decomposition to the PVM example. There are several ways to approach the prob- lem. We could almost translate PVM calls to corresponding MPI calls using the <code display="inline">MPI_COMM_WORLD</code> communicator. However, to showcase some of the MPI features, we create a Cartesian communicator:</para>
+        <code id="id10797312" display="block"><newline/>
+            PROGRAM MHEATC 
+            INCLUDE ’mpif.h’ 
+            INCLUDE ’mpef.h’
+            INTEGER ROWS,COLS,TOTCOLS 
+            PARAMETER(MAXTIME=200)
+      * This simulation can be run on MINPROC or greater processes.
+      * It is OK to set MINPROC to 1 for testing purposes
+      * For a large number of rows and columns, it is best to set MINPROC
+      * to the actual number of runtime processes
+            PARAMETER(MINPROC=2) PARAMETER(ROWS=200,TOTCOLS=200,COLS=TOTCOLS/MINPROC)
+            DOUBLE PRECISION RED(0:ROWS+1,0:COLS+1),BLACK(0:ROWS+1,0:COLS+1)
+            INTEGER S,E,MYLEN,R,C
+            INTEGER TICK,MAXTIME
+            CHARACTER*30 FNAME
+    </code>
+        <para id="id10760862">The basic data structures are much the same as in the PVM example. We allocate a subset of the heat arrays in each process. In this example, the amount of space allocated in each process is set by the compile-time variable <code display="inline">MINPROC</code>. The simulation can execute on more than <code display="inline">MINPROC</code> processes (wasting some space in each process), but it can’t execute on less than <code display="inline">MINPROC</code> processes, or there won’t be sufficient total space across all of the processes to hold the array:</para>
+        <code id="id5561984" display="block"><newline/>
+      INTEGER COMM1D,INUM,NPROC,IERR
+      INTEGER DIMS(1),COORDS(1)
+      LOGICAL PERIODS(1)
+      LOGICAL REORDER
+      INTEGER NDIM
+      INTEGER STATUS(MPI_STATUS_SIZE)
+      INTEGER RIGHTPROC, LEFTPROC
+    </code>
+        <para id="id9456788">These data structures are used for our interaction with MPI. As we will be doing a one-dimensional Cartesian decomposition, our arrays are dimensioned to one. If you were to do a two-dimensional decomposition, these arrays would need two elements:</para>
+        <code id="id15970593" display="block"><newline/>
+      PRINT *,’Calling MPI_INIT’
+      CALL MPI_INIT( IERR )
+      PRINT *,’Back from MPI_INIT’
+      CALL MPI_COMM_SIZE( MPI_COMM_WORLD, NPROC, IERR )
+    </code>
+        <para id="id5586451">The call to <code display="inline">MPI_INIT</code> creates the appropriate number of processes. Note that in the output, the PRINT statement before the call only appears once, but the second PRINT appears once for each process. We call <code display="inline">MPI_COMM_SIZE</code> to determine the size of the global communicator <code display="inline">MPI_COMM_WORLD</code>. We use this value to set up our Cartesian topology:</para>
+        
+        
+        <code id="id16148748" display="block"><newline/>
+      * Create new communicator that has a Cartesian topology associated
+      * with it - MPI_CART_CREATE returns COMM1D - A communicator descriptor
+
+            DIMS(1) = NPROC
+            PERIODS(1) = .FALSE.
+            REORDER = .TRUE.
+            NDIM = 1
+    
+            CALL MPI_CART_CREATE(MPI_COMM_WORLD, NDIM, DIMS, PERIODS,
+            +     REORDER, COMM1D, IERR)
+    </code>
+        <para id="id16188766">Now we create a one-dimensional (<code display="inline">NDIM=1</code>) arrangement of all of our processes (<code display="inline">MPI_COMM_WORLD</code>). All of the parameters on this call are input values except for <code display="inline">COMM1D</code> and <code display="inline">IERR</code>. <code display="inline">COMM1D</code> is an integer “communicator handle.” If you print it out, it will be a value such as 134. It is not actually data, it is merely a handle that is used in other calls. It is quite similar to a file descriptor or unit number used when performing input-output to and from files.</para>
+        <para id="id16618821">The topology we use is a one-dimensional decomposition that isn’t periodic. If we specified that we wanted a periodic decomposition, the far-left and far-right processes would be neighbors in a wrapped-around fashion making a ring. Given that it isn’t periodic, the far-left and far-right processes have no neighbors.</para>
+        <para id="id13402675">In our PVM example above, we declared that Process 0 was the far-right process, Process <code display="inline">NPROC-1</code> was the far-left process, and the other processes were arranged linearly between those two. If we set <code display="inline">REORDER</code> to <code display="inline">.FALSE.</code>, <code display="inline">MPI</code> also chooses this arrangement. However, if we set <code display="inline">REORDER</code> to <code display="inline">.TRUE.</code>, <code display="inline">MPI</code> may choose to arrange the processes in some other fashion to achieve better performance, assuming that you are communicating with close neighbors.</para>
+        <para id="id11547212">Once the communicator is set up, we use it in all of our communication operations:</para>
+        <code id="id11036673" display="block"><newline/>
+      * Get my rank in the new communicator
+    
+            CALL MPI_COMM_RANK( COMM1D, INUM, IERR)
+    </code>
+        <para id="id8908486">Within each communicator, each process has a rank from zero to the size of the communicator minus 1. The <code display="inline">MPI_COMM_RANK</code> tells each process its rank within the communicator. A process may have a different rank in the <code display="inline">COMM1D</code> communicator than in the <code display="inline">MPI_COMM_WORLD</code> communicator because of some reordering.</para>
+        <para id="id10940501">Given a Cartesian topology communicator,<footnote id="id11968190">Remember, each communicator may have a topology associated with it. A topology can be grid, graph, or none. Interestingly, the <code display="inline">MPI_COMM_WORLD</code> communicator has no topology associated with it.</footnote> we can extract information from the communicator using the <code>MPI_CART_GET</code> routine:</para>
+        <code id="id11521644" display="block"><newline/>
+      * Given a communicator handle COMM1D, get the topology, and my position
+      * in the topology
+    
+            CALL MPI_CART_GET(COMM1D, NDIM, DIMS, PERIODS, COORDS, IERR)
+    </code>
+        <para id="id10840947">In this call, all of the parameters are output values rather than input values as in the <code display="inline">MPI_CART_CREATE</code> call. The <code display="inline">COORDS</code> variable tells us our coordinates within the communicator. This is not so useful in our one-dimensional example, but in a two-dimensional process decomposition, it would tell our current position in that two-dimensional grid:</para>
+        <code id="id12152266" display="block"><newline/>
+      * Returns the left and right neighbors 1 unit away in the zeroth dimension
+      * of our Cartesian map - since we are not periodic, our neighbors may
+      * not always exist - MPI_CART_SHIFT handles this for us
+    
+            CALL MPI_CART_SHIFT(COMM1D, 0, 1, LEFTPROC, RIGHTPROC, IERR)
+            CALL MPE_DECOMP1D(TOTCOLS, NPROC, INUM, S, E)
+            MYLEN = ( E - S ) + 1
+            IF ( MYLEN.GT.COLS ) THEN
+              PRINT *,’Not enough space, need’,MYLEN,’ have ’,COLS
+              PRINT *,TOTCOLS,NPROC,INUM,S,E
+              STOP
+            ENDIF
+            PRINT *,INUM,NPROC,COORDS(1),LEFTPROC,RIGHTPROC, S, E
+    </code>
+        <para id="id9819386">We can use <code display="inline">MPI_CART_SHIFT</code> to determine the rank number of our left and right neighbors, so we can exchange our common points with these neighbors. This is necessary because we can’t simply send to <code display="inline">INUM-1</code> and <code display="inline">INUM+1</code> if MPI has chosen to reorder our Cartesian decomposition. If we are the far-left or far-right process, the neighbor that doesn’t exist is set to <code display="inline">MPI_PROC_NULL</code>, which indicates that we have no neighbor. Later when we are performing message sending, it checks this value and sends messages only to real processes. By not sending the message to the “null process,” MPI has saved us an <code display="inline">IF</code> test.</para>
+        <para id="id11549726">To determine which strip of the global array we store and compute in this process, we call a utility routine called <code display="inline">MPE_DECOMP1D</code> that simply does several calculations to evenly split our 200 columns among our processes in contiguous strips. In the PVM version, we need to perform this computation by hand.</para>
+        <para id="id13468326">The <code display="inline">MPE_DECOMP1D</code> routine is an example of an extended MPI library call (hence the MPE prefix). These extensions include graphics support and logging tools in addition to some general utilities. The MPE library consists of routines that were useful enough to standardize but not required to be supported by all MPI implementations. You will find the MPE routines supported on most MPI implementations.</para>
+        <para id="id8467865">Now that we have our communicator group set up, and we know which strip each process will handle, we begin the computation:</para>
+        <code id="id11301920" display="block"><newline/>
+      * Start Cold
+    
+            DO C=0,COLS+1
+              DO R=0,ROWS+1
+                BLACK(R,C) = 0.0
+              ENDDO
+            ENDDO
+    </code>
+        <para id="id11644984">As in the PVM example, we set the plate (including boundary values) to zero.</para>
+        <para id="id11927791">All processes begin the time step loop. Interestingly, like in PVM, there is no need for any synchronization. The messages implicitly synchronize our loops.</para>
+        <para id="id10818242">The first step is to store the permanent heat sources. We need to use a routine because we must make the store operations relative to our strip of the global array:</para>
+        <code id="id12034798" display="block"><newline/>
+      * Begin running the time steps
+            DO TICK=1,MAXTIME
+    
+      * Set the persistent heat sources
+              CALL STORE(BLACK,ROWS,COLS,S,E,ROWS/3,TOTCOLS/3,10.0,INUM)
+              CALL STORE(BLACK,ROWS,COLS,S,E,2*ROWS/3,TOTCOLS/3,20.0,INUM)
+              CALL STORE(BLACK,ROWS,COLS,S,E,ROWS/3,2*TOTCOLS/3,-20.0,INUM)
+              CALL STORE(BLACK,ROWS,COLS,S,E,2*ROWS/3,2*TOTCOLS/3,20.0,INUM)
+    </code>
+        <para id="id6143618">All of the processes set these values independently depending on which process has which strip of the overall array.</para>
+        <para id="id19753882">Now we exchange the data with our neighbors as determined by the Cartesian communicator. Note that we don’t need an IF test to determine if we are the far-left or far-right process. If we are at the edge, our neighbor setting is <code display="inline">MPI_PROC_NULL</code> and the <code display="inline">MPI_SEND</code> and <code display="inline">MPI_RECV</code> calls do nothing when given this as a source or destination value, thus saving us an IF test.</para>
+        <para id="id3974131">Note that we specify the communicator <code display="inline">COMM1D</code> because the rank values we are using in these calls are relative to that communicator:</para>
+        <code id="id18292884" display="block"><newline/>
+      * Send left and receive right
+              CALL MPI_SEND(BLACK(1,1),ROWS,MPI_DOUBLE_PRECISION,
+           +                LEFTPROC,1,COMM1D,IERR)
+              CALL MPI_RECV(BLACK(1,MYLEN+1),ROWS,MPI_DOUBLE_PRECISION,
+           +                RIGHTPROC,1,COMM1D,STATUS,IERR)
+    
+      * Send Right and Receive left in a single statement
+              CALL MPI_SENDRECV(
+           +       BLACK(1,MYLEN),ROWS,COMM1D,RIGHTPROC,2,
+           +       BLACK(1,0),ROWS,COMM1D,LEFTPROC, 2,
+           +       MPI_COMM_WORLD, STATUS, IERR)
+    </code>
+        <para id="id10234902">Just to show off, we use both the separate send and receive, and the combined send and receive. When given a choice, it’s probably a good idea to use the combined operations to give the runtime environment more flexibility in terms of buffering. One downside to this that occurs on a network of workstations (or any other high-latency interconnect) is that you can’t do both send operations first and then do both receive operations to overlap some of the communication delay.</para>
+        <para id="id19721694">Once we have all of our ghost points from our neighbors, we can perform the algorithm on our subset of the space:</para>
+        <code id="id10386945" display="block"><newline/>
+      * Perform the flow
+              DO C=1,MYLEN
+                DO R=1,ROWS
+                  RED(R,C) = ( BLACK(R,C) +
+           +                   BLACK(R,C-1) + BLACK(R-1,C) +
+           +                   BLACK(R+1,C) + BLACK(R,C+1) ) / 5.0
+                ENDDO
+              ENDDO
+    
+      * Copy back - Normally we would do a red and black version of the loop
+             DO C=1,MYLEN
+               DO R=1,ROWS
+                 BLACK(R,C) = RED(R,C)
+               ENDDO
+             ENDDO
+           ENDDO
+    </code>
+        <para id="id19616128">Again, for simplicity, we don’t do the complete red-black computation.<footnote id="id13495185">Note that you could do two time steps (one black-red-black iteration) if you exchanged two ghost columns at the top of the loop.</footnote> We have no synchronization at the bottom of the loop because the messages implicitly synchronize the processes at the top of the next loop.</para>
+        <para id="id19157014">Again, we dump out the data for verification. As in the PVM example, one good test of basic correctness is to make sure you get exactly the same results for varying numbers of processes:</para>
+        <code id="id10798189" display="block"><newline/>
+      * Dump out data for verification
+            IF ( ROWS .LE. 20 ) THEN
+              FNAME = ’/tmp/mheatcout.’ // CHAR(ICHAR(’0’)+INUM)
+              OPEN(UNIT=9,NAME=FNAME,FORM=’formatted’)
+              DO C=1,MYLEN
+                WRITE(9,100)(BLACK(R,C),R=1,ROWS)
+      100        FORMAT(20F12.6)
+              ENDDO
+             CLOSE(UNIT=9)
+           ENDIF
+    </code>
+        <para id="id19628798">To terminate the program, we call <code display="inline">MPI_FINALIZE</code>:</para>
+        <code id="id12095166" display="block"><newline/>
+      * Lets all go together
+            CALL MPI_FINALIZE(IERR)
+            END
+    </code>
+        <para id="id16122918">As in the PVM example, we need a routine to store a value into the proper strip of the global array. This routine simply checks to see if a particular global element is in this process and if so, computes the proper location within its strip for the value. If the global element is not in this process, this routine simply returns doing nothing:</para>
+        <code id="id18498329" display="block"><newline/>
+            SUBROUTINE STORE(RED,ROWS,COLS,S,E,R,C,VALUE,INUM)
+            REAL*8 RED(0:ROWS+1,0:COLS+1)
+            REAL VALUE
+            INTEGER ROWS,COLS,S,E,R,C,I,INUM
+            IF ( C .LT. S .OR. C .GT. E ) RETURN
+            I = ( C - S ) + 1 
+      *     PRINT *,’STORE, INUM,R,C,S,E,R,I’,INUM,R,C,S,E,R,I,VALUE RED(R,I) = VALUE
+            RETURN
+            END
+    </code>
+        <para id="id8562651">When this program is executed, it has the following output:</para>
+        <code id="id15937342" display="block"><newline/>
+      % mpif77 -c mheatc.f mheatc.f:
+      MAIN mheatc:
+      store:
+      % mpif77 -o mheatc mheatc.o -lmpe
+      % mheatc -np 4
+      Calling MPI_INIT
+      Back from MPI_INIT
+      Back from MPI_INIT
+      Back from MPI_INIT
+      Back from MPI_INIT
+      0  4  0  -1  1  1  50
+      2  4  2  1  3  101  150
+      3  4  3  2  -1  151  200
+      1  4  1  0  2  51  100
+     %
+    </code>
+        <para id="id16627894">As you can see, we call <code display="inline">MPI_INIT</code> to activate the four processes. The <code display="inline">PRINT</code> statement immediately after the <code display="inline">MPI_INIT</code> call appears four times, once for each of the activated processes. Then each process prints out the strip of the array it will process. We can also see the neighbors of each process including -1 when a process has no neighbor to the left or right. Notice that Process 0 has no left neighbor, and Process 3 has no right neighbor. MPI has provided us the utilities to simplify message-passing code that we need to add to implement this type of grid- based application.</para>
+        <para id="id5468101">When you compare this example with a PVM implementation of the same problem, you can see some of the contrasts between the two approaches. Programmers who wrote the same six lines of code over and over in PVM combined them into a single call in MPI. In MPI, you can think “data parallel” and express your program in a more data-parallel fashion.</para>
+        <para id="id16697262">In some ways, MPI feels less like assembly language than PVM. However, MPI does take a little getting used to when compared to PVM. The concept of a Cartesian communicator may seem foreign at first, but with understanding, it becomes a flexible and powerful tool.</para>
+      </section>
+      <section id="id12539630">
+        <title>Heat in MPI Using Broadcast/Gather</title>
+        <para id="id8632400">One style of parallel programming that we have not yet seen is the <emphasis effect="italics">broadcast/gather</emphasis> style. Not all applications can be naturally solved using this style of programming. However, if an application can use this approach effectively, the amount of modification that is required to make a code run in a message-passing environment is minimal.</para>
+        <para id="id10794237">Applications that most benefit from this approach generally do a lot of computation using some small amount of shared information. One requirement is that one complete copy of the “shared” information must fit in each of the processes.</para>
+        <para id="id19779173">If we keep our grid size small enough, we can actually program our heat flow application using this approach. This is almost certainly a less efficient implementation than any of the earlier implementations of this problem because the core computation is so simple. However, if the core computations were more complex and needed access to values farther than one unit away, this might be a good approach.</para>
+        <para id="id5571266">The data structures are simpler for this approach and, actually, are no different than the single-process FORTRAN 90 or HPF versions. We will allocate a complete <code display="inline">RED</code> and <code display="inline">BLACK</code> array in every process:</para>
+        <code id="id8505451" display="block"><newline/>
+      PROGRAM MHEAT
+      INCLUDE ’mpif.h’
+      INCLUDE ’mpef.h’
+      INTEGER ROWS,COLS
+      PARAMETER(MAXTIME=200)
+      PARAMETER(ROWS=200,COLS=200)
+      DOUBLE PRECISION RED(0:ROWS+1,0:COLS+1),BLACK(0:ROWS+1,0:COLS+1)
+    </code>
+        <para id="id19895184">We need fewer variables for the MPI calls because we aren’t creating a communicator. We simply use the default communicator <code display="inline">MPI_COMM_WORLD</code>. We start up our processes, and find the size and rank of our process group:</para>
+        <code id="id19175575" display="block"><newline/>
+      INTEGER INUM,NPROC,IERR,SRC,DEST,TAG
+      INTEGER S,E,LS,LE,MYLEN
+      INTEGER STATUS(MPI_STATUS_SIZE)
+      INTEGER I,R,C
+      INTEGER TICK,MAXTIME
+      CHARACTER*30 FNAME
+    
+      PRINT *,’Calling MPI_INIT’
+      CALL MPI_INIT( IERR )
+      CALL MPI_COMM_SIZE( MPI_COMM_WORLD, NPROC, IERR )
+      CALL MPI_COMM_RANK( MPI_COMM_WORLD, INUM, IERR)
+      CALL MPE_DECOMP1D(COLS, NPROC, INUM, S, E, IERR)
+      PRINT *,’My Share ’, INUM, NPROC, S, E
+    </code>
+        <para id="id19735642">Since we are broadcasting initial values to all of the processes, we only have to set things up on the master process:</para>
+        <code id="id14200204" display="block"><newline/>
+      * Start Cold
+    
+            IF ( INUM.EQ.0 ) THEN
+              DO C=0,COLS+1
+                DO R=0,ROWS+1
+                  BLACK(R,C) = 0.0
+                ENDDO
+              ENDDO
+            ENDIF
+    </code>
+        <para id="id14405911">As we run the time steps (again with no synchronization), we set the persistent heat sources directly. Since the shape of the data structure is the same in the master and all other processes, we can use the real array coordinates rather than mapping them as with the previous examples. We could skip the persistent settings on the nonmaster processes, but it doesn’t hurt to do it on all processes:</para>
+        <code id="id11021329" display="block"><newline/>
+      * Begin running the time steps
+            DO TICK=1,MAXTIME
+    
+      * Set the heat sources
+              BLACK(ROWS/3, COLS/3)= 10.0
+              BLACK(2*ROWS/3, COLS/3) = 20.0
+              BLACK(ROWS/3, 2*COLS/3) = -20.0
+              BLACK(2*ROWS/3, 2*COLS/3) = 20.0
+    </code>
+        <para id="id19745851">Now we broadcast the entire array from process rank zero to all of the other processes in the <code display="inline">MPI_COMM_WORLD</code> communicator. Note that this call does the sending on rank zero process and receiving on the other processes. The net result of this call is that all the processes have the values formerly in the master process in a single call:</para>
+        <code id="id19831902" display="block"><newline/>
+      * Broadcast the array
+             CALL MPI_BCAST(BLACK,(ROWS+2)*(COLS+2),MPI_DOUBLE_PRECISION,
+           +                 0,MPI_COMM_WORLD,IERR)
+    </code>
+        <para id="id13239274">Now we perform the subset computation on each process. Note that we are using global coordinates because the array has the same shape on each of the processes. All we need to do is make sure we set up our particular strip of columns according to S and E:</para>
+        <code id="id17120524" display="block"><newline/>
+      * Perform the flow on our subset
+    
+              DO C=S,E
+                DO R=1,ROWS
+                  RED(R,C) = ( BLACK(R,C) +
+           +                   BLACK(R,C-1) + BLACK(R-1,C) +
+           +                   BLACK(R+1,C) + BLACK(R,C+1) ) / 5.0
+                ENDDO
+              ENDDO
+    </code>
+        <para id="id16140245">Now we need to gather the appropriate strips from the processes into the appropriate strip in the master array for rebroadcast in the next time step. We could change the loop in the master to receive the messages in any order and check the <code display="inline">STATUS</code> variable to see which strip it received:</para>
+        <code id="id19757163" display="block"><newline/>
+      * Gather back up into the BLACK array in master (INUM = 0) 
+             IF ( INUM .EQ. 0 ) THEN
+               DO C=S,E
+                 DO R=1,ROWS
+                   BLACK(R,C) = RED(R,C)
+                 ENDDO
+               ENDDO
+             DO I=1,NPROC-1
+               CALL MPE_DECOMP1D(COLS, NPROC, I, LS, LE, IERR)
+               MYLEN = ( LE - LS ) + 1
+               SRC = I TAG = 0
+               CALL MPI_RECV(BLACK(0,LS),MYLEN*(ROWS+2),
+           +                     MPI_DOUBLE_PRECISION, SRC, TAG,
+           +                     MPI_COMM_WORLD, STATUS, IERR)
+      *         Print *,’Recv’,I,MYLEN
+             ENDDO
+           ELSE
+             MYLEN = ( E - S ) + 1
+             DEST = 0
+             TAG = 0
+             CALL MPI_SEND(RED(0,S),MYLEN*(ROWS+2),MPI_DOUBLE_PRECISION,
+           +                DEST, TAG, MPI_COMM_WORLD, IERR)
+                Print *,’Send’,INUM,MYLEN
+            ENDIF
+           ENDDO
+    </code>
+        <para id="id18599843">We use <code display="inline">MPE_DECOMP1D</code> to determine which strip we’re receiving from each process.</para>
+        <para id="id6522119">In some applications, the value that must be gathered is a sum or another single value. To accomplish this, you can use one of the MPI reduction routines that coalesce a set of distributed values into a single value using a single call.</para>
+        <para id="id18249488">Again at the end, we dump out the data for testing. However, since it has all been gathered back onto the master process, we only need to dump it on one process:</para>
+        <code id="id18483812" display="block"><newline/>
+      * Dump out data for verification
+            IF ( INUM .EQ.0 .AND. ROWS .LE. 20 ) THEN
+              FNAME = ’/tmp/mheatout’
+              OPEN(UNIT=9,NAME=FNAME,FORM=’formatted’)
+              DO C=1,COLS
+                WRITE(9,100)(BLACK(R,C),R=1,ROWS)
+      100        FORMAT(20F12.6)
+              ENDDO
+             CLOSE(UNIT=9)
+            ENDIF
+    
+            CALL MPI_FINALIZE(IERR)
+            END
+    </code>
+        <para id="id16697290">When this program executes with four processes, it produces the following output:</para>
+        <code id="id11154606" display="block"><newline/>
+      % mpif77 -c mheat.f
+      mheat.f:
+      MAIN mheat:
+      % mpif77 -o mheat mheat.o -lmpe
+      % mheat -np 4
+      Calling MPI_INIT
+      My Share 1 4 51 100
+      My Share 0 4 1 50
+      My Share 3 4 151 200
+      My Share 2 4 101 150
+      %
+    </code>
+        <para id="id6411221">The ranks of the processes and the subsets of the computations for each process are shown in the output.</para>
+        <para id="id9476295">So that is a somewhat contrived example of the broadcast/gather approach to parallelizing an application. If the data structures are the right size and the amount of computation relative to communication is appropriate, this can be a very effective approach that may require the smallest number of code modifications compared to a single-processor version of the code.</para>
+      </section>
+      <section id="id11350916">
+        <title>MPI Summary</title>
+        <para id="id9186326">Whether you chose PVM or MPI depends on which library the vendor of your system prefers. Sometimes MPI is the better choice because it contains the newest features, such as support for hardware-supported multicast or broadcast, that can significantly improve the overall performance of a scatter-gather application.</para>
+        <para id="id19247988">A good text on MPI is Using <emphasis effect="italics">MPI — Portable Parallel Programming</emphasis><emphasis effect="italics">with the Message-Passing Interface</emphasis>, by William Gropp, Ewing Lusk, and Anthony Skjellum (MIT Press). You may also want to retrieve and print the MPI specification from <link url="http://www.netlib.org/mpi/">http://www.netlib.org/mpi/</link>.</para>
+      </section>
+  </content>
+</document>

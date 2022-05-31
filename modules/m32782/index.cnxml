@@ -1,0 +1,168 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Loop-Carried Dependencies </title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32782</md:content-id>
+  <md:title>Loop-Carried Dependencies </md:title>
+  <md:abstract/>
+  <md:uuid>42fded58-9f81-468c-a34c-5ee87df76e1b</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1166278565849">The notion of data dependence is particularly important when we look at loops, the hub of activity inside numerical applications. A well-designed loop can produce millions of operations that can all be performed in parallel. However, a single misplaced dependency in the loop can force it all to be run in serial. So the stakes are higher when looking for dependencies in loops.</para>
+      <para id="id1166277996351">Some constructs are completely independent, right out of the box. The question we want to ask is “Can two different iterations execute at the same time, or is there a data dependency between them?” Consider the following loop:</para>
+      <code id="id7693820" display="block"><newline/>
+      DO I=1,N
+        A(I) = A(I) + B(I) 
+      ENDDO
+    </code>
+      <para id="id1917091">For any two values of <code>I</code> and <code>K</code>, can we calculate the value of <code>A(I)</code> and <code>A(K)</code> at the same time? Below, we have manually unrolled several iterations of the previous loop, so they can be executed together:</para>
+      <code id="id1166282819732" display="block"><newline/>
+      A(I) = A(I) + B(I) 
+      A(I+1) = A(I+1) + B(I+1) 
+      A(I+2) = A(I+2) + B(I+2)
+    </code>
+      <para id="id1166276532624">You can see that none of the results are used as an operand for another calculation. For instance, the calculation for <code>A(I+1)</code> can occur at the same time as the calculation for <code>A(I)</code> because the calculations are independent; you don’t need the results of the first to determine the second. In fact, mixing up the order of the calculations won’t change the results in the least. Relaxing the serial order imposed on these calculations makes it possible to execute this loop very quickly on parallel hardware.</para>
+      <section id="id6753326">
+        <title>Flow Dependencies</title>
+        <para id="id1166279337451">For comparison, look at the next code fragment:</para>
+        <code id="id1166278652927" display="block"><newline/>
+      DO I=2,N 
+        A(I) = A(I-1) + B(I) 
+      ENDDO
+    </code>
+        <para id="id1166278659592">This loop has the regularity of the previous example, but one of the subscripts is changed. Again, it’s useful to manually unroll the loop and look at several iterations together:</para>
+        <code id="id1166279375677" display="block"><newline/>
+      A(I) = A(I-1) + B(I) 
+      A(I+1) = A(I) + B(I+1) 
+      A(I+2) = A(I+1) + B(I+2)
+    </code>
+        <para id="id1166278599353">In this case, there is a dependency problem. The value of <code>A(I+1)</code> depends on the value of <code>A(I)</code>, the value of <code>A(I+2)</code> depends on <code>A(I+1)</code>, and so on; every iteration depends on the result of a previous one. Dependencies that extend back to a previous calculation and perhaps a previous iteration (like this one), are loop carried <emphasis effect="italics">flow dependencies</emphasis> or <emphasis effect="italics">backward dependencies</emphasis>. You often see such dependencies in applications that perform Gaussian elimination on certain types of matrices, or numerical solutions to systems of differential equations. However, it is impossible to run such a loop in parallel (as written); the processor must wait for intermediate results before it can proceed.</para>
+        <para id="id1166278659272">In some cases, flow dependencies are impossible to fix; calculations are so dependent upon one another that we have no choice but to wait for previous ones to complete. Other times, dependencies are a function of the way the calculations are expressed. For instance, the loop above can be changed to reduce the dependency. By replicating some of the arithmetic, we can make it so that the second and third iterations depend on the first, but not on one another. The operation count goes up — we have an extra addition that we didn’t have before — but we have reduced the dependency between iterations:</para>
+        <code id="id1166278659893" display="block"><newline/>
+      DO I=2,N,2
+        A(I)   = A(I-1) + B(I)
+        A(I+1) = A(I-1) + B(I) + B(I+1) 
+      ENDDO
+    </code>
+        <para id="id1166278642531">The speed increase on a workstation won’t be great (most machines run the recast loop more slowly). However, some parallel computers can trade off additional calculations for reduced dependency and chalk up a net win.</para>
+      </section>
+      <section id="id1166278638927">
+        <title>Antidependencies</title>
+        <para id="id1166279374253">It’s a different story when there is a loop-carried antidependency, as in the code below:</para>
+        <code id="id1166277420738" display="block"><newline/>
+      DO I=1,N
+        A(I)   = B(I)   * E 
+        B(I)   = A(I+2) * C
+      ENDDO
+    </code>
+        <para id="id1166276176314">In this loop, there is an antidependency between the variable A(I) and the variable A(I+2). That is, you must be sure that the instruction that uses A(I+2) does so before the previous one redefines it. Clearly, this is not a problem if the loop is executed serially, but remember, we are looking for opportunities to overlap instructions. Again, it helps to pull the loop apart and look at several iterations together. We have recast the loop by making many copies of the first statement, followed by copies of the second:</para>
+        <code id="id1166279420192" display="block"><newline/>
+      A(I)   = B(I)   * E 
+      A(I+1) = B(I+1) * E 
+      A(I+2) = B(I+2) * E
+      ...
+      B(I)   = A(I+2) * C  ← assignment makes use of the new 
+      B(I+1) = A(I+3) * C      value of A(I+2) incorrect. 
+      B(I+2) = A(I+4) * C
+    </code>
+        <para id="id1555613">The reference to <code>A(I+2)</code> needs to access an “old” value, rather than one of the new ones being calculated. If you perform all of the first statement followed by all of the second statement, the answers will be wrong. If you perform all of the second statement followed by all of the first statement, the answers will also be wrong. In a sense, to run the iterations in parallel, you must either save the <code>A</code> values to use for the second statement or store all of the <code>B</code> value in a temporary area until the loop completes.</para>
+        <para id="id1166278652686">We can also directly unroll the loop and find <emphasis effect="italics">some</emphasis> parallelism:</para>
+        <code id="id1166278631844" display="block"><newline/>
+      1  A(I)   = B(I)   * E
+      2  B(I)   = A(I+2) * C →
+      3  A(I+1) = B(I+1) * E  | Output dependency
+      4  B(I+1) = A(I+3) * C  |
+      5  A(I+2) = B(I+2) * E ←
+      6  B(I+2) = A(I+4) * C
+    </code>
+        <para id="id1166281259549">Statements 1–4 could all be executed simultaneously. Once those statements completed execution, statements 5–8 could execute in parallel. Using this approach, there are sufficient intervening statements between the dependent statements that we can see some parallel performance improvement from a superscalar RISC processor.</para>
+      </section>
+      <section id="id1166279372998">
+        <title>Output Dependencies</title>
+        <para id="id1166278657641">The third class of data dependencies, <emphasis effect="italics">output dependencies</emphasis>, is of particular interest to users of parallel computers, particularly multiprocessors. Output dependencies involve getting the right values to the right variables when all calculations have been completed. Otherwise, an output dependency is violated. The loop below assigns new values to two elements of the vector A with each iteration:</para>
+        <code id="id1166278657791" display="block"><newline/>
+      DO I=1,N
+        A(I)   = C(I) * 2. 
+        A(I+2) = D(I) + E
+      ENDDO
+    </code>
+        <para id="id7376702">As always, we won’t have any problems if we execute the code sequentially. But if several iterations are performed together, and statements are reordered, then incorrect values can be assigned to the last elements of <code>A</code>. For example, in the naive vectorized equivalent below, <code>A(I+2)</code> takes the wrong value because the assignments occur out of order:</para>
+        <code id="id1166279378829" display="block"><newline/>
+      A(I)   = C(I)   * 2. 
+      A(I+1) = C(I+1) * 2. 
+      A(I+2) = C(I+2) * 2.
+      A(I+2) = D(I)   + E ← Output dependency violated
+      A(I+3) = D(I+1) + E 
+      A(I+4) = D(I+2) + E
+    </code>
+        <para id="id1166279375978">Whether or not you have to worry about output dependencies depends on whether you are actually parallelizing the code. Your compiler will be conscious of the danger, and will be able to generate legal code — and possibly even fast code, if it’s clever enough. But output dependencies occasionally become a problem for programmers.</para>
+      </section>
+      <section id="id1166279337105">
+        <title>Dependencies Within an Iteration</title>
+        <para id="id1166278636344">We have looked at dependencies that cross iteration boundaries but we haven’t looked at dependencies within the same iteration. Consider the following code fragment:</para>
+        <code id="id1166278793371" display="block"><newline/>
+      DO I = 1,N
+        D = B(I) * 17
+        A(I) = D + 14
+      ENDDO
+    </code>
+        <para id="id1166276244015">When we look at the loop, the variable <code>D</code> has a flow dependency. The second statement cannot start until the first statement has completed. At first glance this might appear to limit parallelism significantly. When we look closer and manually unroll several iterations of the loop, the situation gets worse:</para>
+        <code id="id1166278777108" display="block"><newline/>
+      D = B(I) * 17
+      A(I) = D + 14
+      D = B(I+1) * 17
+      A(I+1) = D + 14
+      D = B(I+2) * 17
+      A(I+2) = D + 14
+    </code>
+        <para id="id1166277962954">Now, the variable <code>D</code> has flow, output, and antidependencies. It looks like this loop has no hope of running in parallel. However, there is a simple solution to this problem at the cost of some extra memory space, using a technique called <emphasis effect="italics">promoting a scalar to a vector</emphasis>. We define <code>D</code> as an array <code>withN</code> elements and rewrite the code as follows:</para>
+        <code id="id7561731" display="block"><newline/>
+      DO I = 1,N
+        D(I) = B(I) * 17
+        A(I) = D(I) + 14
+      ENDDO
+    </code>
+        <para id="id1166278654231">Now the iterations are all independent and can be run in parallel. Within each iteration, the first statement must run before the second statement.</para>
+      </section>
+      <section id="id1166278648522">
+        <title>Reductions</title>
+        <para id="id1166280766485">The sum of an array of numbers is one example of a <emphasis effect="italics">reduction</emphasis> — so called because it reduces a vector to a scalar. The following loop to determine the total of the values in an array certainly looks as though it might be able to be run in parallel:</para>
+        <code id="id1166279338137" display="block"><newline/>
+      SUM = 0.0
+      DO I=1,N
+        SUM = SUM + A(I) 
+      ENDDO
+    </code>
+        <para id="id1166278657909">However, if we perform our unrolling trick, it doesn’t look very parallel:</para>
+        <code id="id1351335" display="block"><newline/>
+      SUM = SUM + A(I) 
+      SUM = SUM + A(I+1) 
+      SUM = SUM + A(I+2)
+    </code>
+        <para id="id7703733">This loop also has all three types of dependencies and looks impossible to parallelize. If we are willing to accept the potential effect of rounding, we can add some parallelism to this loop as follows (again we did not add the preconditioning loop):</para>
+        <code id="id1166285009413" display="block"><newline/>
+      SUM0 = 0.0
+      SUM1 = 0.0
+      SUM2 = 0.0
+      SUM3 = 0.0
+      DO I=1,N,4
+        SUM0 = SUM0 + A(I) 
+        SUM1 = SUM1 + A(I+1) 
+        SUM2 = SUM2 + A(I+2) 
+        SUM3 = SUM3 + A(I+3)
+      ENDDO
+      SUM = SUM0 + SUM1 + SUM2 + SUM3
+    </code>
+        <para id="id1166278633187">Again, this is not precisely the same computation, but all four partial sums can be computed independently. The partial sums are combined at the end of the loop.</para>
+        <para id="id1166278631745">Loops that look for the maximum or minimum elements in an array, or multiply all the elements of an array, are also reductions. Likewise, some of these can be reorganized into partial results, as with the sum, to expose more computations. Note that the maximum and minimum are associative operators, so the results of the reorganized loop are identical to the sequential loop.</para>
+      </section>
+  </content>
+</document>

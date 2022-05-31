@@ -1,0 +1,163 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Automatic Parallelization</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32821</md:content-id>
+  <md:title>Automatic Parallelization</md:title>
+  <md:abstract/>
+  <md:uuid>e6676257-f293-47fc-b53b-7758721bbb79</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<para id="id17196385">So far in the book, we’ve covered the tough things you need to know to do parallel processing. At this point, assuming that your loops are clean, they use unit stride, and the iterations can all be done in parallel, all you have to do is turn on a compiler flag and buy a good parallel processor. For example, look at the following code:</para>
+      <code id="id10666872" display="block"><newline/>
+      PARAMETER(NITER=300,N=1000000) 
+      REAL*8 A(N),X(N),B(N),C
+      DO ITIME=1,NITER 
+        DO I=1,N
+            A(I) = X(I) + B(I) * C 
+        ENDDO
+        CALL WHATEVER(A,X,B,C) 
+      ENDDO
+    </code>
+      <para id="id9167198">Here we have an iterative code that satisfies all the criteria for a good parallel loop. On a good parallel processor with a modern compiler, you are two flags away from executing in parallel. On Sun Solaris systems, the <code>autopar</code> flag turns on the automatic parallelization, and the <code>loopinfo</code> flag causes the compiler to describe the particular optimization performed for each loop. To compile this code under Solaris, you simply add these flags to your <code>f77</code> call:</para>
+      
+      <code id="id3564482" display="block"><newline/>
+      E6000: f77 -O3 -autopar -loopinfo -o daxpy daxpy.f 
+      daxpy.f:
+      "daxpy.f", line 6: not parallelized, call may be unsafe
+      "daxpy.f", line 8: PARALLELIZED 
+      E6000: /bin/time daxpy
+    
+      real       30.9 
+      user       30.7 
+      sys         0.1
+      E6000:
+    </code>
+      <para id="id7692899">If you simply run the code, it’s executed using one thread. However, the code is enabled for parallel processing for those loops that can be executed in parallel. To execute the code in parallel, you need to set the UNIX environment to the number of parallel threads you wish to use to execute the code. On Solaris, this is done using the <code>PARALLEL</code> variable:</para>
+      <code id="id16341062" display="block"><newline/>
+      E6000: setenv PARALLEL 1
+      E6000: /bin/time daxpy
+    
+      real        30.9
+      user        30.7
+      sys          0.1
+      E6000: setenv PARALLEL 2
+      E6000: /bin/time daxpy
+
+      real        15.6
+      user        31.0
+      sys          0.2
+      E6000: setenv PARALLEL 4
+      E6000: /bin/time daxpy
+    
+      real        8.2
+      user       32.0
+      sys         0.5
+      E6000: setenv PARALLEL 8
+      E6000: /bin/time daxpy
+
+      real        4.3
+      user       33.0
+      sys         0.8
+    </code>
+      <para id="id12737139"><emphasis effect="italics">Speedup</emphasis> is the term used to capture how much faster the job runs using N processors compared to the performance on one processor. It is computed by dividing the single processor time by the multiprocessor time for each number of processors. <link target-id="id7891448"/> shows the wall time and speedup for this application.</para>
+      <para id="id10256580"><figure id="id7891448"><title>Improving performance by adding processors</title><media id="id7891448_media" alt="This figure is a table with header columns, processors, time, and speedup, describing the differences in time and speedup depending on the number of processors."><image mime-type="image/png" src="../../media/graphics1-11ec.png" id="id7891448__onlineimage" height="220" width="599"/></media>
+<!--Figure 11-1--></figure></para>
+      <para id="id18627460"><link target-id="id10592425"/> shows this information graphically, plotting speedup versus the number of processors.</para>
+      <figure id="id10592425"><title>Ideal and actual performance improvement</title><media id="id10592425_media" alt="This figure is a cartesian graph with horizontal axis labeled Processors and vertical axis labeled Speedup. There are two strings of plots, ideal and actual, that both increase as the number of processors increases, although the plot for actual tapers off eventually.">
+          <image mime-type="image/png" src="../../media/graphics2-7d1f.png" id="id10592425__onlineimage" height="326" width="599"/>
+        </media>
+      <!--Figure 11-2--></figure>
+      <para id="id14215548">Note that for a while we get nearly perfect speedup, but we begin to see a measurable drop in speedup at four and eight processors. There are several causes for this. In all parallel applications, there is some portion of the code that can’t run in parallel. During those nonparallel times, the other processors are waiting for work and aren’t contributing to efficiency. This nonparallel code begins to affect the overall performance as more processors are added to the application.</para>
+      <para id="id16353440">So you say, “this is more like it!” and immediately try to run with 12 and 16 threads. Now, we see the graph in <link target-id="id3474251"/> and the data from <link target-id="id9679898"/>.</para>
+      <figure id="id9679898"><title>Increasing the number of threads</title><media id="id9679898_media" alt="This figure is a table describing the changes in time and speedup for different numbers of processors.">
+          <image mime-type="image/png" src="../../media/graphics3-9795.png" id="id9679898__onlineimage" height="263" width="600"/>
+        </media>
+      <!--Figure 11-3--> </figure>
+      <para id="id4167923">
+        <figure id="id3474251"><title>Diminishing returns</title><media id="id3474251_media" alt="This figure is a cartesian graph with horizontal axis labeled processors and vertical axis labeled speedup. There are two strings of plots on the graph, ideal and actual. The Ideal plot appears to increase in speedup constantly with an increase in processors, whereas the actual string increases for some time, but peaks at approximately 8 processors and 8 units of speedup, where it then decreases back down to zero units of speedup for sixteen processors.">
+            <image mime-type="image/png" src="../../media/graphics4-f3fb.png" id="id3474251__onlineimage" height="322" width="600"/>
+          </media>
+        <!--Figure 11-4--></figure>
+      </para>
+      <para id="id16800012">What has happened here? Things were going so well, and then they slowed down. We are running this program on a 16-processor system, and there are eight other active threads, as indicated below:</para>
+      <code id="id17473652" display="block"><newline/>
+E6000:uptime
+  4:00pm  up 19 day(s), 37 min(s), 5 users, load average: 8.00, 8.05, 8.14
+E6000:
+    </code>
+      <para id="id9791836">Once we pass eight threads, there are no available processors for our threads. So the threads must be time-shared between the processors, significantly slowing the overall operation. By the end, we are executing 16 threads on eight processors, and our performance is slower than with one thread. So it is important that you don’t create too many threads in these types of applications.</para>
+      <section id="id7956716">
+        <title>Compiler Considerations</title>
+        <para id="id7991847">Improving performance by turning on automatic parallelization is an example of the “smarter compiler” we discussed in earlier chapters. The addition of a single compiler flag has triggered a great deal of analysis on the part of the compiler including:</para>
+        <list id="id9086844" list-type="bulleted">
+          <item>Which loops can execute in parallel, producing the exact same results as the sequential executions of the loops? This is done by checking for dependencies that span iterations. A loop with no interiteration dependencies is called a <code display="inline">DOALL</code> loop.</item>
+          <item>Which loops are worth executing in parallel? Generally very short loops gain no benefit and may execute more slowly when executing in parallel. As with loop unrolling, parallelism always has a cost. It is best used when the benefit far outweighs the cost.</item>
+          <item>In a loop nest, which loop is the best candidate to be parallelized? Generally the best performance occurs when we parallelize the outermost loop of a loop nest. This way the overhead associated with beginning a parallel loop is amortized over a longer parallel loop duration.</item>
+          <item>Can and should the loop nest be interchanged? The compiler may detect that the loops in a nest can be done in any order. One order may work very well for parallel code while giving poor memory performance. Another order may give unit stride but perform poorly with multiple threads. The compiler must analyze the cost/benefit of each approach and make the best choice.</item>
+          <item>How do we break up the iterations among the threads executing a parallel loop? Are the iterations short with uniform duration, or long with wide variation of execution time? We will see that there are a number of different ways to accomplish this. When the programmer has given no guidance, the compiler must make an educated guess.</item>
+        </list>
+        <para id="id14568268">Even though it seems complicated, the compiler can do a surprisingly good job on a wide variety of codes. It is not magic, however. For example, in the following code we have a loop-carried flow dependency:</para>
+        <code id="id17569876" display="block"><newline/>
+      PROGRAM DEP 
+      PARAMETER(NITER=300,N=1000000) 
+      REAL*4 A(N)
+
+      DO ITIME=1,NITER 
+        CALL WHATEVER(A) 
+        DO I=2,N
+            A(I) = A(I-1) + A(I) * C 
+        ENDDO
+      ENDDO 
+      END
+    </code>
+        <para id="id13901331">When we compile the code, the compiler gives us the following message:</para>
+        
+        
+        <code id="id4361606" display="block"><newline/>
+      E6000: f77 -O3 -autopar -loopinfo -o dep dep.f
+      dep.f: 
+      "dep.f", line 6: not parallelized, call may be unsafe 
+      "dep.f", line 8: not parallelized, unsafe dependence (a) 
+      E6000:
+    </code>
+        <para id="id7611102">The compiler throws its hands up in despair, and lets you know that the loop at Line 8 had an unsafe dependence, and so it won’t automatically parallelize the loop. When the code is executed below, adding a thread does not affect the execution performance:</para>
+        
+        
+        <code id="id7900036" display="block"><newline/>
+      E6000:setenv PARALLEL 1
+      E6000:/bin/time dep
+
+      real       18.1
+      user       18.1
+      sys         0.0
+      E6000:setenv PARALLEL 2
+      E6000:/bin/time dep
+    
+      real       18.3 
+      user       18.2 
+      sys         0.0
+      E6000:
+    </code>
+        <para id="id13223008">A typical application has many loops. Not all the loops are executed in parallel. It’s a good idea to run a profile of your application, and in the routines that use most of the CPU time, check to find out which loops are not being parallelized. Within a loop nest, the compiler generally chooses only one loop to execute in parallel.</para>
+      </section>
+      <section id="id8003021">
+        <title>Other Compiler Flags</title>
+        <para id="id13763706">In addition to the flags shown above, you may have other compiler flags available to you that apply across the entire program:</para>
+        <list id="id18827872" list-type="bulleted">
+          <item>You may have a compiler flag to enable the automatic parallelization of reduction operations. Because the order of additions can affect the final value when computing a sum of floating-point numbers, the compiler needs permission to parallelize summation loops.</item>
+          <item>Flags that relax the compliance with IEEE floating-point rules may also give the compiler more flexibility when trying to parallelize a loop. However, you must be sure that it’s not causing accuracy problems in other areas of your code.</item>
+          <item>Often a compiler has a flag called “unsafe optimization” or “assume no dependencies.” While this flag may indeed enhance the performance of an application with loops that have dependencies, it almost certainly produces incorrect results.</item>
+        </list>
+        <para id="id13374432">There is some value in experimenting with a compiler to see the particular combination that will yield good performance across a variety of applications. Then that set of compiler options can be used as a starting point when you encounter a new application.</para>
+      </section>
+  </content>
+</document>

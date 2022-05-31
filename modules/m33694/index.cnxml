@@ -1,0 +1,94 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimizing Compiler Tour</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33694</md:content-id>
+  <md:title>Optimizing Compiler Tour</md:title>
+  <md:abstract/>
+  <md:uuid>35e84eee-f2ad-40cd-9edc-64dc5fdb047c</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1168793180042">We will start by taking a walk through an optimizing compiler to see one at work. We think it’s interesting, and if you can empathize with the compiler, you will be a better programmer; you will know what the compiler wants from you, and what it can do on its own.</para>
+      <section id="id1168792117152"><title>Compilation Process</title><figure id="id8620750"><title>Basic compiler processes</title><media id="id8620750_media" alt="This figure is a flowchart showing movement from numerous lines of code to numerous boxes. From the beginning is a group of code, the first line showing A=B*C+5, and the second line D=B*C. From the bottom of this group of code is a line pointing to a box labeled Lexical Analysis. Below this is a line pointing to a line of code, A=B*C+5. The A is labeled variable, the * is labeled Operator, and the 5 is labeled constant. Below this line of code is an arrow pointing down at a box labeled Parse. Below this box is a grouping of code. The first line reads, T1:=B*C, the second line reads, A:=T1+5, and the third line reads D:=B*C. Pointing towards the upper-right is an arrow that points at a box labeled Optimization. ">
+            <image mime-type="image/png" src="../../media/Picture 1-61f8.png" id="id8620750__onlineimage" height="422" width="700"/>
+          </media>
+        </figure>
+        
+<para id="id1168792618299">The compilation process is typically broken down into a number of identifiable steps, as shown in <link target-id="id8620750"/>. While not all compilers are implemented in exactly this way, it helps to understand the different functions a compiler must perform:</para>
+        
+        <list id="id1168792364781" list-type="enumerated" number-style="arabic">
+          <item>A precompiler or preprocessor phase is where some simple textual manipulation of the source code is performed. The preprocessing step can be processing of include files and making simple string substitutions throughout the code.</item>
+          <item>The lexical analysis phase is where the incoming source statements are decomposed into tokens such as variables, constants, comments, or language elements.</item>
+          <item>The parsing phase is where the input is checked for syntax, and the compiler translates the incoming program into an intermediate language that is ready for optimization.</item>
+          <item>One or more optimization passes are performed on the intermediate language.</item>
+          <item>An object code generator translates the intermediate language into assembly code, taking into consideration the particular architectural details of the processor in question.</item>
+        </list>
+        <para id="id1168792111577">As compilers become more and more sophisticated in order to wring the last bit of performance from the processor, some of these steps (especially the optimization and code-generation steps) become more and more blurred. In this chapter, we focus on the traditional optimizing compiler, and in later chapters we will look more closely at how modern compilers do more sophisticated optimizations.</para>
+      </section>
+      <section id="id1168790074727">
+        <title>Intermediate Language Representation</title>
+        <para id="id1168789898631">Because we are most interested in the optimization of our program, we start our discussion at the output of the parse phase of the compiler. The parse phase output is in the form of an an <emphasis effect="italics">intermediate language</emphasis> (IL) that is somewhere between a high-level language and assembly language. The intermediate language expresses the same calculations that were in the original program, in a form the compiler can manipulate more easily. Furthermore, instructions that aren’t present in the source, such as address expressions for array references, become visible along with the rest of the program, making them subject to optimizations too.</para>
+        <para id="id8938507">How would an intermediate language look? In terms of complexity, it’s similar to assembly code but not so simple that the definitions<footnote id="id4782011">By “definitions,” we mean the assignment of values: not declarations.</footnote> and uses of variables are lost. We’ll need definition and use information to analyze the flow of data through the program. Typically, calculations are expressed as a stream of <emphasis effect="italics">quadruples</emphasis> — statements with exactly one operator, (up to) two operands, and a result.<footnote id="id1168790028574">More generally, code can be cast as <emphasis effect="italics">n</emphasis>-tuples. It depends on the level of the intermediate language.</footnote> Presuming that anything in the original source program can be recast in terms of quadruples, we have a usable intermediate language. To give you an idea of how this works, We’re going to rewrite the statement below as a series of four quadruples:</para>
+        <code id="id1168790341451" display="block">A = -B + C * D / E 
+    </code>
+        <para id="id2288794">Taken all at once, this statement has four operators and four operands: <code>/</code>, <code>*</code>, <code>+</code>, and <code>-</code> (negate), and <code>B</code>, <code>C</code>, <code>D</code>, and <code>E</code>. This is clearly too much to fit into one quadruple. We need a form with exactly one operator and, at most, two operands per statement. The recast version that follows manages to do this, employing temporary variables to hold the intermediate results:</para>
+        <code id="id1168792935516" display="block"><newline/>
+      T1 = D / E 
+      T2 = C * T1
+      T3 = -B
+      A  = T3 + T2
+    </code>
+        <para id="id4598870">A workable intermediate language would, of course, need some other features, like pointers. We’re going to suggest that we create our own intermediate language to investigate how optimizations work. To begin, we need to establish a few rules:</para>
+        <list id="id1168793411908" list-type="bulleted">
+          <item>Instructions consist of one opcode, two operands, and a result. Depending on the instruction, the operands may be empty.</item>
+          <item>Assignments are of the form <code display="inline">X := Y op Z</code>, meaning <code display="inline">X</code> gets the result of <code display="inline">op</code> applied to <code display="inline">Y</code> and <code display="inline">Z</code>.</item>
+          <item>All memory references are explicit load from or store to “temporaries” <code display="inline">t</code><emphasis effect="italics">n</emphasis>.</item>
+          <item>Logical values used in branches are calculated separately from the actual branch.</item>
+          <item>Jumps go to absolute addresses.</item>
+        </list>
+        <para id="id7033353">If we were building a compiler, we’d need to be a little more specific. For our purposes, this will do. Consider the following bit of C code:</para>
+        <code id="id7324447" display="block"><newline/>
+      while (j &lt; n) {
+          k = k + j * 2;
+          m = j * 2;
+          j++;
+      }
+    </code>
+        <para id="id1168788589528">This loop translates into the intermediate language representation shown here:</para>
+        <code id="id1168790498696" display="block"><newline/>
+      A:: t1  := j 
+          t2  := n
+          t3  := t1 &lt; t2 
+          jmp (B) t3
+          jmp (C) TRUE
+    
+      B:: t4  := k 
+          t5  := j
+          t6  := t5 * 2 
+          t7  := t4 + t6 
+          k   := t7
+          t8  := j
+          t9  := t8 * 2 
+          m   := t9
+          t10 := j
+          t11 := t10 + 1 
+          j   := t11
+          jmp (A) TRUE
+      C::
+    </code>
+        <para id="id1168788634658">Each C source line is represented by several IL statements. On many RISC processors, our IL code is so close to machine language that we could turn it directly into object code.<footnote id="id2607920">See <link document="m33787"/> for some examples of machine code translated directly from intermediate language.</footnote> Often the lowest optimization level does a literal translation from the intermediate language to machine code. When this is done, the code generally is very large and performs very poorly. Looking at it, you can see places to save a few instructions. For instance, <code>j</code> gets loaded into temporaries in four places; surely we can reduce that. We have to do some analysis and make some optimizations.</para>
+      </section>
+      <section id="id5220954">
+        <title>Basic Blocks</title>
+        <para id="id4460620">After generating our intermediate language, we want to cut it into <emphasis effect="italics">basic blocks</emphasis>. These are code sequences that start with an instruction that either follows a branch or is itself a target for a branch. Put another way, each basic block has one entrance (at the top) and one exit (at the bottom). <link target-id="id1168788709423"/> represents our IL code as a group of three basic blocks. Basic blocks make code easier to analyze. By restricting flow of control within a basic block from top to bottom and eliminating all the branches, we can be sure that if the first statement gets executed, the second one does too, and so on. Of course, the branches haven’t disappeared, but we have forced them outside the blocks in the form of the connecting arrows — the <emphasis effect="italics">flow graph</emphasis>.</para>
+        <para id="id1168792615856">
+          <figure id="id1168788709423"><title>Intermediate language divided into basic blocks</title><media id="id1168788709423_media" alt="This figure is comprised of three blocks containing lines of code. The first reads A : : as a title, then the first column reads t1, t2, t3, jmp. The second column reads := j, := n, := t1 less than t2, (B) t3. The second block contains two items that fit the same columns as in the first block. In the first column is jmp, and in the second, (C) TRUE. In the third block are the same columns, this time headed as B : :. The first column reads, t4, t5, t6, t7, k, t8, t9, m, t10, t11, j, jmp. The second column reads := k, := j, := t5 * 2, := t4 +t6, := t7, := j, := t8 * 2, := t9, := j, := t10 + 1, := t11, (A) TRUE. There is an arrow pointing from the first block to the second block, and another arrow pointing from the first block to the third block. There is an arrow pointing from the end of the third block to the beginning of the first block. And there is a dashed arrow pointing out from the right of the second block straight down away from the blocks.">
+              <image mime-type="image/png" src="../../media/Picture 2-ba86.png" id="id1168788709423__onlineimage" height="486" width="700"/>
+            </media>
+          </figure>
+        </para>
+        
+        <para id="id2902157">We are now free to extract information from the blocks themselves. For instance, we can say with certainty which variables a given block uses and which variables it defines (sets the value of ). We might not be able to do that if the block contained a branch. We can also gather the same kind of information about the calculations it performs. After we have analyzed the blocks so that we know what goes in and what comes out, we can modify them to improve performance and just worry about the interaction between blocks.</para>
+      </section>
+  </content>
+</document>

@@ -1,0 +1,100 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Ambiguous References</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32788</md:content-id>
+  <md:title>Ambiguous References</md:title>
+  <md:abstract/>
+  <md:uuid>1956de0d-a170-446c-b530-2823a43cecf8</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id7494432">Every dependency we have looked at so far has been clear cut; you could see exactly what you were dealing with by looking at the source code. But other times, describing a dependency isn’t so easy. Recall this loop from the “Antidependencies” section <link document="m32782" target-id="id1166278638927"/> earlier in this chapter:</para>
+      <code id="id1170769086802" display="block"><newline/>
+      DO I=1,N
+        A(I) = B(I) * E 
+        B(I) = A(I+2) * C
+      ENDDO
+    </code>
+      <para id="id7972002">Because each variable reference is solely a function of the index, <code>I</code>, it’s clear what kind of dependency we are dealing with. Furthermore, we can describe how far apart (in iterations) a variable reference is from its definition. This is called the <emphasis effect="italics">dependency distance</emphasis>. A negative value represents a flow dependency; a positive value means there is an antidependency. A value of zero says that no dependency exists between the reference and the definition. In this loop, the dependency distance for <code>A</code> is <code>+2</code> iterations.</para>
+      <para id="id8763233">However, array subscripts may be functions of other variables besides the loop index. It may be difficult to tell the distance between the use and definition of a particular element. It may even be impossible to tell whether the dependency is a flow dependency or an antidependency, or whether a dependency exists at all. Consequently, it may be impossible to determine if it’s safe to overlap execution of different statements, as in the following loop:</para>
+      <code id="id1170767136678" display="block"><newline/>
+      DO I=1,N
+        A(I) = B(I) * E
+        B(I) = A(I+K) * C ← K unknown
+      ENDDO
+    </code>
+      <para id="id1170767197225">If the loop made use of <code>A(I+K)</code>, where the value of <code>K</code> was unknown, we wouldn’t be able to tell (at least by looking at the code) anything about the kind of dependency we might be facing. If <code>K</code> is zero, we have a dependency within the iteration and no loop-carried dependencies. If <code>K</code> is positive we have an antidependency with distance <code>K</code>. Depending on the value for <code>K</code>, we might have enough parallelism for a superscalar processor. If <code>K</code> is negative, we have a loop-carried flow dependency, and we may have to execute the loop serially.</para>
+      
+      <para id="id1170769405547"><emphasis effect="italics">Ambiguous references</emphasis>, like <code>A(I+K)</code> above, have an effect on the parallelism we can detect in a loop. From the compiler perspective, it may be that this loop does contain two independent calculations that the author whimsically decided to throw into a single loop. But when they appear together, the compiler has to treat them conservatively, as if they were interrelated. This has a big effect on performance. If the compiler has to assume that consecutive memory references may ultimately access the same location, the instructions involved cannot be overlapped. One other option is for the compiler to generate two versions of the loop and check the value for <code>K</code> at runtime to determine which version of the loop to execute.</para>
+      <para id="id8412402">A similar situation occurs when we use integer index arrays in a loop. The loop below contains only a single statement, but you can’t be sure that any iteration is independent without knowing the contents of the <code>K</code> and <code>J</code> arrays:</para>
+      <code id="id1170765831214" display="block"><newline/>
+      DO I=1,N
+        A(K(I)) = A(K(I)) + B(J(I)) * C 
+      ENDDO
+    </code>
+      <para id="id1170769460012">For instance, what if all of the values for <code>K(I)</code> were the same? This causes the same element of the array <code>A</code> to be rereferenced with each iteration! That may seem ridiculous to you, but the compiler can’t tell.</para>
+      <para id="id1170764512324">With code like this, it’s common for every value of <code>K(I)</code> to be unique. This is called a <emphasis effect="italics">permutation</emphasis>. If you can tell a compiler that it is dealing with a permutation, the penalty is lessened in some cases. Even so, there is insult being added to injury. Indirect references require more memory activity than direct references, and this slows you down.</para>
+      <section id="id1170766070967">
+        <title>Pointer Ambiguity in Numerical C Applications</title>
+        <para id="id1170767163636">FORTRAN compilers depend on programmers to observe aliasing rules. That is, programmers are not supposed to modify locations through pointers that may be aliases of one another. They can become aliases in several ways, such as when two dummy arguments receive pointers to the same storage locations:</para>
+        <code id="id1170766076418" display="block"><newline/>
+      CALL BOB (A,A)
+        ... 
+      END
+      SUBROUTINE BOB (X,Y) ← X,Y become aliases
+    </code>
+        <para id="id7165607">C compilers don’t enjoy the same restrictions on aliasing. In fact, there are cases where aliasing could be desirable. Additionally, C is blessed with pointer types, increasing the opportunities for aliasing to occur. This means that a C compiler has to approach operations through pointers more conservatively than a FORTRAN compiler would. Let’s look at some examples to see why.</para>
+        <para id="id1170767177515">The following loop nest looks like a FORTRAN loop cast in C. The arrays are declared or allocated all at once at the top of the routine, and the starting address and leading dimensions are visible to the compiler. This is important because it means that the storage relationship between the array elements is well known. Hence, you could expect good performance:</para>
+        <code id="id6218748" display="block"><newline/>
+      #define N ...
+      double *a[N][N], c[N][N], d;
+      for (i=0; i&lt;N; i++)
+          for (j=0; j&lt;N; j++)
+              a[i][j] = a[i][j] + c[j][i] * d;
+    </code>
+        <para id="id1170766850084">Now imagine what happens if you allocate the rows dynamically. This makes the address calculations more complicated. The loop nest hasn’t changed; however, there is no guaranteed stride that can get you from one row to the next. This is because the storage relationship between the rows is unknown:</para>
+        <code id="id7181949" display="block"><newline/>
+      #define N ...
+      double *a[N], *c[N], d;
+          for (i=0; i&lt;N; i++) {
+              a[i] = (double *) malloc (N*sizeof(double));
+              c[i] = (double *) malloc (N*sizeof(double));
+          }
+          for (i=0; i&lt;N; i++)
+              for (j=0; j&lt;N; j++)
+                  a[i][j] = a[i][j] + c[j][i] * d;
+    </code>
+        <para id="id8572390">In fact, your compiler knows even less than you might expect about the storage relationship. For instance, how can it be sure that references to a and c aren’t aliases? It may be obvious to you that they’re not. You might point out that <emphasis effect="italics">malloc</emphasis> never overlaps storage. But the compiler isn’t free to assume that. Who knows? You may be substituting your own version of <emphasis effect="italics">malloc</emphasis>!</para>
+        <para id="id2475178">Let’s look at a different example, where storage is allocated all at once, though the declarations are not visible to all routines that are using it. The following subroutine bob performs the same computation as our previous example. However, because the compiler can’t see the declarations for a and c (they’re in the main routine), it doesn’t have enough information to be able to overlap memory references from successive iterations; the references could be aliases:</para>
+        <code id="id1170771217910" display="block"><newline/>
+      #define N... 
+      main()
+      {
+          double a[N][N], c[N][N], d;
+          ...
+          bob (a,c,d,N);
+      }
+      bob (double *a,double *c,double d,int n)
+      {
+          int i,j;
+          double *ap, *cp;
+          for (i=0;i&lt;n;i++) { 
+              ap = a + (i*n); 
+              cp = c + i;
+              for (j=0; j&lt;n; j++)
+                  *(ap+j) = *(ap+j) + *(cp+(j*n)) * d;
+          }
+      }
+    </code>
+        <para id="id1170765697708">To get the best performance, make available to the compiler as many details about the size and shape of your data structures as possible. Pointers, whether in the form of formal arguments to a subroutine or explicitly declared, can hide important facts about how you are using memory. The more information the compiler has, the more it can overlap memory references. This information can come from compiler directives or from making declarations visible in the routines where performance is most critical.</para>
+      </section>
+  </content>
+</document>

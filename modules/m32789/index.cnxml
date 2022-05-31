@@ -1,0 +1,30 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Closing Notes</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32789</md:content-id>
+  <md:title>Closing Notes</md:title>
+  <md:abstract/>
+  <md:uuid>4f23d333-3cc2-45ec-b9e2-5e8e3118da0c</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id2583533">You already knew there was a limit to the amount of parallelism in any given program. Now you know why. Clearly, if a program had no dependencies, you could execute the whole thing at once, given suitable hardware. But programs aren’t infinitely parallel; they are often hardly parallel at all. This is because they contain dependencies of the types we saw above.</para>
+      <para id="id2012003">When we are writing and/or tuning our loops, we have a number of (sometimes conflicting) goals to keep in mind:</para>
+      <list id="id2237525" list-type="bulleted">
+        <item>Balance memory operations and computations.</item>
+        <item>Minimize unnecessary operations.</item>
+        <item>Access memory using unit stride if at all possible.</item>
+        <item>Allow all of the loop iterations to be computed in parallel.</item>
+      </list>
+      <para id="id2676711">In the coming chapters, we will begin to learn more about executing our programs on parallel multiprocessors. At some point we will escape the bonds of compiler automatic optimization and begin to explicitly code the parallel portions of our code.</para>
+      <para id="id2659928">To learn more about compilers and dataflow, read The Art of Compiler Design: Theory and Practice by Thomas Pittman and James Peters (Prentice-Hall).</para>
+  </content>
+</document>

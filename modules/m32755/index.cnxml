@@ -1,0 +1,48 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Effects of Floating-Point Representation</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32755</md:content-id>
+  <md:title>Effects of Floating-Point Representation</md:title>
+  <md:abstract/>
+  <md:uuid>c8db3958-7fa3-457e-ab9a-0b94437641d8</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id8448013">One problem with the mantissa/base/exponent representation is that not all base-10 numbers can be expressed perfectly as a base-2 number. For example, 1/2 and 0.25 can be represented perfectly as base-2 values, while 1/3 and 0.1 produce infinitely repeating base-2 decimals. These values must be rounded to be stored in the floating-point format. With sufficient digits of precision, this generally is not a problem for computations. However, it does lead to some anomalies where algebraic rules do not appear to apply. Consider the following example:</para>
+      <code id="id8428946" display="block"><newline/>
+      REAL*4 X,Y 
+      X = 0.1
+      Y = 0 
+      DO I=1,10
+        Y = Y + X 
+      ENDDO
+      IF ( Y .EQ. 1.0 ) THEN
+        PRINT *,’Algebra is truth’ 
+      ELSE
+        PRINT *,’Not here’ 
+      ENDIF
+      PRINT *,1.0-Y 
+      END
+    </code>
+      <para id="id3147285">At first glance, this appears simple enough. Mathematics tells us ten times 0.1 should be one. Unfortunately, because 0.1 cannot be represented exactly as a base-2 decimal, it must be rounded. It ends up being rounded down to the last bit. When ten of these slightly smaller numbers are added together, it does not quite add up to 1.0. When X and Y are <code>REAL*4</code>, the difference is about 10<sup>-7</sup>, and when they are <code>REAL*8</code>, the difference is about 10<sup>-16</sup>.</para>
+      <para id="id8461872">One possible method for comparing computed values to constants is to subtract the values and test to see how close the two values become. For example, one can rewrite the test in the above code to be:</para>
+      
+      <code id="id6581436" display="block"><newline/>
+      IF ( ABS(1.0-Y).LT. 1E-6) THEN
+        PRINT *,’Close enough for government work’ 
+      ELSE
+        PRINT *,’Not even close’ 
+      ENDIF
+    </code>
+      <para id="id6585357">The type of the variables in question and the expected error in the computation that produces Y determines the appropriate value used to declare that two values are close enough to be declared equal.</para>
+      <para id="id6584636">Another area where inexact representation becomes a problem is the fact that algebraic inverses do not hold with all floating-point numbers. For example, using <code>REAL*4</code>, the value <code>(1.0/X) * X</code> does not evaluate to 1.0 for 135 values of X from one to 1000. This can be a problem when computing the inverse of a matrix using LU-decomposition. LU-decomposition repeatedly does division, multiplication, addition, and subtraction. If you do the straightforward LU-decomposition on a matrix with integer coefficients that has an integer solution, there is a pretty good chance you won’t get the exact solution when you run your algorithm. Discussing techniques for improving the accuracy of matrix inverse computation is best left to a numerical analysis text.</para>
+  </content>
+</document>

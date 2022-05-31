@@ -1,0 +1,73 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cache Organization</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32722</md:content-id>
+  <md:title>Cache Organization</md:title>
+  <md:abstract/>
+  <md:uuid>9fab23cb-726e-48f0-8319-a42f17bc51f4</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id8380266">The process of pairing memory locations with cache lines is called <emphasis effect="italics">mapping</emphasis>. Of course, given that a cache is smaller than main memory, you have to share the same cache lines for different memory locations. In caches, each cache line has a record of the memory address (called the <emphasis effect="italics">tag</emphasis>) it represents and perhaps when it was last used. The tag is used to track which area of memory is stored in a particular cache line.</para>
+      <para id="id7910529">The way memory locations (tags) are mapped to cache lines can have a beneficial effect on the way your program runs, because if two heavily used memory locations map onto the same cache line, the miss rate will be higher than you would like it to be. Caches can be organized in one of several ways: direct mapped, fully associative, and set associative.</para>
+      <section id="id2032005">
+        <title>Direct-Mapped Cache</title>
+        <para id="id7081166">Direct mapping, as shown in <link target-id="id7024638"/>, is the simplest algorithm for deciding how memory maps onto the cache. Say, for example, that your computer has a 4-KB cache. In a direct mapped scheme, memory location 0 maps into cache location 0, as do memory locations 4K, 8K, 12K, etc. In other words, memory maps onto the cache size. Another way to think about it is to imagine a metal spring with a chalk line marked down the side. Every time around the spring, you encounter the chalk line at the same place modulo the circumference of the spring. If the spring is very long, the chalk line crosses many coils, the analog being a large memory with many locations mapping into the same cache line.</para>
+        <para id="id3184276">Problems occur when alternating runtime memory references in a direct-mapped cache point to the same cache line. Each reference causes a cache miss and replaces the entry just replaced, causing a lot of overhead. The popular word for this is <emphasis effect="italics">thrashing</emphasis>. When there is lots of thrashing, a cache can be more of a liability than an asset because each cache miss requires that a cache line be refilled — an operation that moves more data than merely satisfying the reference directly from main memory. It is easy to construct a pathological case that causes thrashing in a 4-KB direct-mapped cache:</para>
+        <para id="id2155434">
+          <figure id="id7024638"><title>Many memory addresses map to the same cache line</title><media id="id7024638_media" alt="This figure contains two graphics. The first is a grey horizontal line, with spots evenly placed along the line labeled 0K, 4K, 8K, 12K, and 16K. After 16K, the horizontal line spaced out and becomes dashed. The second graphic is a vertical spiral , and each rung of the spiral is labeled from top to bottom, 0K, 4K, 8K, 12K, 16K, 20K, 24K, and 32K. In the middle of the spiral, there is a shaded segment across all of the rungs, labeled cache line.">
+              <image mime-type="image/png" src="../../media/graphics1-0924.png" id="id7024638__onlineimage" height="341" width="599"/>
+            </media>
+            
+          </figure>
+        </para>
+        <code id="id6983140" display="block"><newline/>
+      REAL*4 A(1024), B(1024) 
+      COMMON /STUFF/ A,B
+      DO I=1,1024
+        A(I) = A(I) * B(I) 
+      END DO
+      END
+    </code>
+        <para id="id8280022">The arrays A and B both take up exactly 4 KB of storage, and their inclusion together in <code display="inline">COMMON</code> assures that the arrays start exactly 4 KB apart in memory. In a 4-KB direct mapped cache, the same line that is used for A(1) is used for B(1), and likewise for A(2) and B(2), etc., so alternating references cause repeated cache misses. To fix it, you could either adjust the size of the array A, or put some other variables into <code display="inline">COMMON</code>, between them. For this reason one should generally avoid array dimensions that are close to powers of two.</para>
+      </section>
+      <section id="id7218641">
+        <title>Fully Associative Cache</title>
+        <para id="id8763860">At the other extreme from a direct mapped cache is a <emphasis effect="italics">fully associative cache</emphasis>, where any memory location can be mapped into any cache line, regardless of memory address. Fully associative caches get their name from the type of memory used to construct them — associative memory. Associative memory is like regular memory, except that each memory cell knows something about the data it contains.</para>
+        <para id="id1451240">When the processor goes looking for a piece of data, the cache lines are asked all at once whether any of them has it. The cache line containing the data holds up its hand and says “I have it”; if none of them do, there is a cache miss. It then becomes a question of which cache line will be replaced with the new data. Rather than map memory locations to cache lines via an algorithm, like a direct- mapped cache, the memory system can ask the fully associative cache lines to choose among themselves which memory locations they will represent. Usually the least recently used line is the one that gets overwritten with new data. The assumption is that if the data hasn’t been used in quite a while, it is least likely to be used in the future.</para>
+        <para id="id7221367">Fully associative caches have superior utilization when compared to direct mapped caches. It’s difficult to find real-world examples of programs that will cause thrashing in a fully associative cache. The expense of fully associative caches is very high, in terms of size, price, and speed. The associative caches that do exist tend to be small.</para>
+      </section>
+      <section id="id6615886">
+        <title>Set-Associative Cache</title>
+        <para id="id6721045">Now imagine that you have two direct mapped caches sitting side by side in a single cache unit as shown in <link target-id="id4804514"/>. Each memory location corresponds to a particular cache line in each of the two direct-mapped caches. The one you choose to replace during a cache miss is subject to a decision about whose line was used last — the same way the decision was made in a fully associative cache except that now there are only two choices. This is called a <emphasis effect="italics">set-associative cache</emphasis>. Set-associative caches generally come in two and four separate banks of cache. These are called <emphasis effect="italics">two-way</emphasis> and <emphasis effect="italics">four-way</emphasis> set associative caches, respectively. Of course, there are benefits and drawbacks to each type of cache. A set-associative cache is more immune to cache thrashing than a direct-mapped cache of the same size, because for each mapping of a memory address into a cache line, there are two or more choices where it can go. The beauty of a direct-mapped cache, however, is that it’s easy to implement and, if made large enough, will perform roughly as well as a set-associative design. Your machine may contain multiple caches for several different purposes. Here’s a little program for causing thrashing in a 4-KB two-way set- associative cache:</para>
+        <code id="id7098473" display="block"><newline/>
+      REAL*4 A(1024), B(1024), C(1024) 
+      COMMON /STUFF/ A,B,C
+      DO I=1,1024
+        A(I) = A(I) * B(I) + C(I) 
+      END DO
+      END
+    </code>
+        <para id="id3363381">Like the previous cache thrasher program, this forces repeated accesses to the same cache lines, except that now there are three variables contending for the choose set same mapping instead of two. Again, the way to fix it would be to change the size of the arrays or insert something in between them, in <code display="inline">COMMON</code>. By the way, if you accidentally arranged a program to thrash like this, it would be hard for you to detect it — aside from a feeling that the program runs a little slow. Few vendors provide tools for measuring cache misses.</para>
+        <figure id="id4804514"><title>Two-way set-associative cache</title><media id="id4804514_media" alt="This figure contains two spirals similar to figure 1. Above the spirals is the label, choose set, and below it is an arrow that splits to point at the top of each spiral. There are shaded sections below the arrows through the middle of the spirals. and along the parts that are shaded, there is a label in the middle from top to bottom on the dashes, 0K, 4K, 8K, 12K, 16K, 20K, 24K, and 32K.">
+            <image mime-type="image/png" src="../../media/graphics2-ef64.png" id="id4804514__onlineimage" height="344" width="600"/>
+          </media>
+          
+        </figure>
+      </section>
+      <section id="id7385895">
+        <title>Instruction Cache</title>
+        <para id="id3416345">So far we have glossed over the two kinds of information you would expect to find in a cache between main memory and the CPU: instructions and data. But if you think about it, the demand for data is separate from the demand for instructions. In superscalar processors, for example, it’s possible to execute an instruction that causes a data cache miss alongside other instructions that require no data from cache at all, i.e., they operate on registers. It doesn’t seem fair that a cache miss on a data reference in one instruction should keep you from fetching other instructions because the cache is tied up. Furthermore, a cache depends on locality of reference between bits of data and other bits of data or instructions and other instructions, but what kind of interplay is there between instructions and data? It would seem possible for instructions to bump perfectly useful data from cache, or vice versa, with complete disregard for locality of reference.</para>
+        <para id="id2997554">Many designs from the 1980s used a single cache for both instructions and data. But newer designs are employing what is known as the <emphasis effect="italics">Harvard Memory Architecture</emphasis>, where the demand for data is segregated from the demand for instructions.</para>
+        <para id="id3722631">Main memory is a still a single large pool, but these processors have separate data and instruction caches, possibly of different designs. By providing two independent sources for data and instructions, the aggregate rate of information coming from memory is increased, and interference between the two types of memory references is minimized. Also, instructions generally have an extremely high level of locality of reference because of the sequential nature of most programs. Because the instruction caches don’t have to be particularly large to be effective, a typical architecture is to have separate L1 caches for instructions and data and to have a combined L2 cache. For example, the IBM/Motorola PowerPC 604e has separate 32-K four-way set-associative L1 caches for instruction and data and a combined L2 cache.</para>
+      </section>
+  </content>
+</document>

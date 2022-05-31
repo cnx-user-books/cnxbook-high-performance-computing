@@ -1,0 +1,73 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>More Algebra That Doesn't Work</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32754</md:content-id>
+  <md:title>More Algebra That Doesn't Work</md:title>
+  <md:abstract/>
+  <md:uuid>8adb41c6-97d2-4d96-9e14-74ca09755448</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id4490422">While the examples in the proceeding section focused on the limitations of multiplication and division, addition and subtraction are not, by any means, perfect. Because of the limitation of the number of digits of precision, certain additions or subtractions have no effect. Consider the following example using <code display="inline">REAL*4</code> with 7 digits of precision:</para>
+      <code id="id4695927" display="block"><newline/>
+      X = 1.25E8
+      Y = X + 7.5E-3
+      IF ( X.EQ.Y ) THEN
+        PRINT *,’Am I nuts or what?’ 
+      ENDIF
+    </code>
+      <para id="id7354242">While both of these numbers are precisely representable in floating-point, adding them is problematic. Prior to adding these numbers together, their decimal points must be aligned as in <link target-id="id2442978"/>.</para>
+      <figure id="id2442978"><title>Figure 4-4: Loss of accuracy while aligning decimal points</title><media id="id2442978_media" alt="This figure shows an addition equation that reads as follows, one hundred twenty five million point zero zero zero zero plus zero point zero zero seven five equals one hundred twenty five million point zero zero seven five.">
+          <image mime-type="image/png" src="../../media/graphics1-f9f3.png" id="id2442978__onlineimage" height="136" width="600"/>
+        </media>
+        
+      </figure>
+      <para id="id1172458620073">Unfortunately, while we have computed the exact result, it cannot fit back into a <code display="inline">REAL*4</code> variable (7 digits of accuracy) without truncating the 0.0075. So after the addition, the value in Y is exactly 1.25E8. Even sadder, the addition could be performed <emphasis effect="italics">millions</emphasis> of times, and the value for Y would still be 1.25E8.</para>
+      <para id="id4496059">Because of the limitation on precision, not all algebraic laws apply all the time. For instance, the answer you obtain from X+Y will be the same as Y+X, as per the commutative law for addition. Whichever operand you pick first, the operation yields the same result; they are mathematically equivalent. It also means that you can choose either of the following two forms and get the same answer:</para>
+      <code id="id1172458701021" display="block"><newline/>
+      (X + Y) + Z 
+      (Y + X) + Z
+    </code>
+      
+      <para id="id5672313">However, this is not equivalent:</para>
+      <code id="id7330860" display="block">(Y + Z) + X
+    </code>
+      <para id="id7300507">The third version isn’t equivalent to the first two because the order of the calculations has changed. Again, the rearrangement is equivalent algebraically, but not computationally. By changing the order of the calculations, we have taken advantage of the associativity of the operations; we have made an <emphasis effect="italics">associative transformation</emphasis> of the original code.</para>
+      <para id="id5392401">To understand why the order of the calculations matters, imagine that your computer can perform arithmetic significant to only five decimal places.</para>
+      <para id="id1144905">Also assume that the values of X, Y, and Z are .00005, .00005, and 1.0000, respectively. This means that:</para>
+      <code id="id1148434" display="block"><newline/>
+      (X + Y) + Z = .00005 + .00005 + 1.0000
+                  = .0001           + 1.0000     = 1.0001
+    </code>
+      <para id="id732797">but:</para>
+      <code id="id8618744" display="block"><newline/>
+      (Y + Z) + X =  .00005 + 1.0000 + .00005
+                  = 1.0000           + .00005   = 1.0000
+    </code>
+      <para id="id1172461074581">The two versions give slightly different answers. When adding <code>Y+Z+X</code>, the sum of the smaller numbers was insignificant when added to the larger number. But when computing <code>X+Y+Z</code>, we add the two small numbers first, and their combined sum is large enough to influence the final answer. For this reason, compilers that rearrange operations for the sake of performance generally only do so after the user has requested optimizations beyond the defaults.</para>
+      <para id="id5417611">For these reasons, the FORTRAN language is very strict about the exact order of evaluation of expressions. To be compliant, the compiler must ensure that the operations occur exactly as you express them.<footnote id="id4720986">Often even if you didn’t mean it.</footnote></para>
+      <para id="id568863">For Kernighan and Ritchie C, the operator precedence rules are different. Although the precedences between operators are honored (i.e., * comes before +, and evaluation generally occurs left to right for operators of equal precedence), the compiler is allowed to treat a few commutative operations (+, *, &amp;, ˆ and |) as if they were fully associative, <emphasis effect="italics">even</emphasis> if they are parenthesized. For instance, you might tell the C compiler:</para>
+      
+      <code id="id1172458584619" display="block">a = x + (y + z);
+    </code>
+      <para id="id1135148">However, the C compiler is free to ignore you, and combine X, Y, and Z in any order it pleases.</para>
+      <para id="id1172468717231">Now armed with this knowledge, view the following harmless-looking code segment:</para>
+      <code id="id1172468589871" display="block"><newline/>
+      REAL*4 SUM,A(1000000)
+      SUM = 0.0
+      DO I=1,1000000
+        SUM = SUM + A(I) 
+      ENDDO
+    </code>
+      <para id="id1172461094828">Begins to look like a nightmare waiting to happen. The accuracy of this sum depends of the relative magnitudes and order of the values in the array A. If we sort the array from smallest to largest and then perform the additions, we have a more accurate value. There are other algorithms for computing the sum of an array that reduce the error without requiring a full sort of the data. Consult a good textbook on numerical analysis for the details on these algorithms.</para>
+      <para id="id1172466437832">If the range of magnitudes of the values in the array is relatively small, the straight- forward computation of the sum is probably sufficient.</para>
+  </content>
+</document>

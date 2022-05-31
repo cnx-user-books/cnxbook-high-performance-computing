@@ -1,0 +1,19 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Introduction</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33671</md:content-id>
+  <md:title>Introduction</md:title>
+  <md:abstract/>
+  <md:uuid>980a6bf3-646c-41b3-b698-50f6e84aece7</md:uuid>
+</metadata>
+
+<content>
+    <section id="id1170696936398">
+      <title>High Performance Microprocessors</title>
+      <para id="id1170682526316">It has been said that history is rewritten by the victors. It is clear that high performance RISC-based microprocessors are defining the current history of high performance computing. We begin our study with the basic building blocks of modern high performance computing: the high performance RISC microprocessors.</para>
+      <para id="id1170692241181">A <emphasis effect="italics">complex instruction set computer</emphasis> (CISC) instruction set is made up of powerful primitives, close in functionality to the primitives of high-level languages like C or FORTRAN. It captures the sense of “don’t do in software what you can do in hardware.” RISC, on the other hand, emphasizes low-level primitives, far below the complexity of a high-level language. You can compute anything you want using either approach, though it will probably take more machine instructions if you’re using RISC. The important difference is that with RISC you can trade instruction-set complexity for speed.</para>
+      <para id="id1170685315388">To be fair, RISC isn’t really all that new. There were some important early machines that pioneered RISC philosophies, such as the CDC 6600 (1964) and the IBM 801 project (1975). It was in the mid-1980s, however, that RISC machines first posed a direct challenge to the CISC installed base. Heated debate broke out — RISC versus CISC — and even lingers today, though it is clear that the RISC<footnote id="id1170687550364">One of the most interesting remaining topics is the definition of “RISC.” Don’t be fooled into thinking there is one definition of RISC. The best I have heard so far is from John Mashey: “RISC is a label most commonly used for a set of instruction set architecture characteristics chosen to ease the use of aggressive implementation techniques found in high performance processors (regardless of RISC, CISC, or irrelevant).”</footnote> approach is in greatest favor; late-generation CISC machines are looking more RISC-like, and some very old families of CISC, such as the DEC VAX, are being retired.</para>
+      <para id="id1170689907337">This chapter is about CISC and RISC instruction set architectures and the differences between them. We also describe newer processors that can execute more than one instruction at a time and can execute instructions out of order.</para>
+    </section>
+  </content>
+</document>

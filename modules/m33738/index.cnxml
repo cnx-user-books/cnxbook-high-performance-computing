@@ -1,0 +1,90 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Memory Access Patterns</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33738</md:content-id>
+  <md:title>Memory Access Patterns</md:title>
+  <md:abstract/>
+  <md:uuid>a2c3e9c5-63ec-45aa-9869-f91f09bb52ad</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1164518883692">The best pattern is the most straightforward: increasing and unit sequential. For an array with a single dimension, stepping through one element at a time will accomplish this. For multiply-dimensioned arrays, access is fastest if you iterate on the array subscript offering the smallest <emphasis effect="italics">stride</emphasis> or step size. In FORTRAN programs, this is the leftmost subscript; in C, it is the rightmost. The FORTRAN loop below has unit stride, and therefore will run quickly:</para>
+      <code id="id1164518830389" display="block"><newline/>
+      DO J=1,N
+        DO I=1,N
+          A(I,J) = B(I,J) + C(I,J) * D
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id1164518693919">In contrast, the next loop is slower because its stride is <code display="inline">N</code> (which, we assume, is greater than 1). As N increases from one to the length of the cache line (adjusting for the length of each element), the performance worsens. Once <code display="inline">N</code> is longer than the length of the cache line (again adjusted for element size), the performance won’t decrease:</para>
+      <code id="id1164518646448" display="block"><newline/>
+      DO J=1,N
+        DO I=1,N
+          A(J,I) = B(J,I) + C(J,I) * D
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id1164518843608">Here’s a unit-stride loop like the previous one, but written in C:</para>
+      <code id="id1164518892943" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          for (j=0; j&lt;n; j++)
+              a[i][j] = a[i][j] + c[i][j] * d;
+    </code>
+      <para id="id1164518877124">Unit stride gives you the best performance because it conserves cache entries. Recall how a data cache works.<footnote id="id1164518885540">See <link document="m32733"/>.</footnote> Your program makes a memory reference; if the data is in the cache, it gets returned immediately. If not, your program suffers a cache miss while a new cache line is fetched from main memory, replacing an old one. The line holds the values taken from a handful of neighboring memory locations, including the one that caused the cache miss. If you loaded a cache line, took one piece of data from it, and threw the rest away, you would be wasting a lot of time and memory bandwidth. However, if you brought a line into the cache and consumed everything in it, you would benefit from a large number of memory references for a small number of cache misses. This is exactly what you get when your program makes unit-stride memory references.</para>
+      <para id="id1164518882832">The worst-case patterns are those that jump through memory, especially a large amount of memory, and particularly those that do so without apparent rhyme or reason (viewed from the outside). On jobs that operate on very large data structures, you pay a penalty not only for cache misses, but for TLB misses too.<footnote id="id1164518901697">The Translation Lookaside Buffer (TLB) is a cache of translations from virtual memory addresses to physical memory addresses. For more information, refer back to <link document="m32733"/>.</footnote> It would be nice to be able to rein these jobs in so that they make better use of memory. Of course, you can’t eliminate memory references; programs have to get to their data one way or another. The question is, then: how can we restructure memory access patterns for the best performance?</para>
+      <para id="id1164519354508">In the next few sections, we are going to look at some tricks for restructuring loops with strided, albeit predictable, access patterns. The tricks will be familiar; they are mostly loop optimizations from <link document="m33720"/>, used here for different reasons. The underlying goal is to minimize cache and TLB misses as much as possible. You will see that we can do quite a lot, although some of this is going to be ugly. </para>
+      <section id="id1164519249120">
+        <title>Loop Interchange to Ease Memory Access Patterns</title>
+        <para id="id1164519365260">Loop interchange is a good technique for lessening the impact of strided memory references. Let’s revisit our FORTRAN loop with non-unit stride. The good news is that we can easily interchange the loops; each iteration is independent of every other:</para>
+        <code id="id1164519363755" display="block"><newline/>
+      DO J=1,N
+        DO I=1,N
+          A(J,I) = B(J,I) + C(J,I) * D
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164519364017">After interchange, <code display="inline">A</code>, <code display="inline">B</code>, and <code display="inline">C</code> are referenced with the leftmost subscript varying most quickly. This modification can make an important difference in performance. We traded three N-strided memory references for unit strides:</para>
+        <code id="id1164519355972" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          A(J,I) = B(J,I) + C(J,I) * D
+        ENDDO
+      ENDDO
+    </code>
+      </section>
+      <section id="id1164520018340">
+        <title>Matrix Multiplication</title>
+        <para id="id1164518711156">Matrix multiplication is a common operation we can use to explore the options that are available in optimizing a loop nest. A programmer who has just finished reading a linear algebra textbook would probably write matrix multiply as it appears in the example below:</para>
+        <code id="id1164519354210" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          SUM = 0
+          DO K=1,N
+            SUM = SUM + A(I,K) * B(K,J)
+          ENDDO
+          C(I,J) = SUM
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164519126981">The problem with this loop is that the <code display="inline">A(I,K)</code> will be non-unit stride. Each iteration in the inner loop consists of two loads (one non-unit stride), a multiplication, and an addition.</para>
+        <para id="id1164519200359">Given the nature of the matrix multiplication, it might appear that you can’t eliminate the non-unit stride. However, with a simple rewrite of the loops all the memory accesses can be made unit stride:</para>
+        <code id="id1164518814597" display="block"><newline/>
+      DO J=1,N
+        DO I=1,N
+          C(I,J) = 0.0
+        ENDDO
+      ENDDO
+    
+      DO K=1,N
+        DO J=1,N
+          SCALE = B(K,J)
+          DO I=1,N
+            C(I,J) = C(I,J) + A(I,K) * SCALE
+          ENDDO
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164518782761">Now, the inner loop accesses memory using unit stride. Each iteration performs two loads, one store, a multiplication, and an addition. When comparing this to the previous loop, the non-unit stride loads have been eliminated, but there is an additional store operation. Assuming that we are operating on a cache-based system, and the matrix is larger than the cache, this extra store won’t add much to the execution time. The store is to the location in <code display="inline">C(I,J)</code> that was used in the load. In most cases, the store is to a line that is already in the in the cache. The <code display="inline">B(K,J)</code> becomes a constant scaling factor within the inner loop.</para>
+      </section>
+  </content>
+</document>

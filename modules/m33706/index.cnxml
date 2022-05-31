@@ -1,0 +1,152 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Timing</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33706</md:content-id>
+  <md:title>Timing</md:title>
+  <md:abstract/>
+  <md:uuid>669d3e60-7d87-4d12-a269-a907db480d6a</md:uuid>
+</metadata>
+
+<content>
+      <para id="id6913110">We assume that your program runs correctly. It would be rather ridiculous to time a program that’s not running right, though this doesn’t mean it doesn’t happen. Depending on what you are doing, you may be interested in knowing how much time is spent overall, or you may be looking at just a portion of the program. We show you how to time the whole program first, and then talk about timing individual loops or subroutines.</para>
+      <section id="id9907809">
+        <title>Timing a Whole Program</title>
+        <para id="id12397003">Under UNIX, you can time program execution by placing the time command before everything else you normally type on the command line. When the program finishes, a timing summary is produced. For instance, if your program is called <emphasis effect="italics">foo</emphasis>, you can time its execution by typing <code display="inline">time foo</code>. If you are using the C shell or Korn shell, time is one of the shell’s built-in commands. With a Bourne shell, <emphasis effect="italics">time</emphasis> is a separate command executable in <emphasis effect="italics">/bin</emphasis>. In any case, the following information appears at the end of the run:</para>
+        <list id="id12471476" list-type="bulleted">
+          <item>User time</item>
+          <item>System time</item>
+          <item>Elapsed time</item>
+        </list>
+        <para id="id7118427">These timing figures are easier to understand with a little background. As your program runs, it switches back and forth between two fundamentally different modes: <emphasis effect="italics">user mode</emphasis> and <emphasis effect="italics">kernel mode</emphasis>. The normal operating state is user mode. It is in user mode that the instructions the compiler generated on your behalf get executed, in addition to any subroutine library calls linked with your program.<footnote id="id10499040">Cache miss time is buried in here too.</footnote> It might be enough to run in user mode forever, except that programs generally need other services, such as I/O, and these require the intervention of the operating system — the kernel. A kernel service request made by your program, or perhaps an event from outside your program, causes a switch from user mode into kernel mode.</para>
+        <para id="id11018023">Time spent executing in the two modes is accounted for separately. The <emphasis effect="italics">user time</emphasis> figure describes time spent in user mode. Similarly, <emphasis effect="italics">system time</emphasis> is a measure of the time spent in kernel mode. As far as user time goes, each program on the machine is accounted for separately. That is, you won’t be charged for activity in somebody else’s application. System time accounting works the same way, for the most part; however, you can, in some instances, be charged for some system services performed on other people’s behalf, in addition to your own. Incorrect charging occurs because your program may be executing at the moment some outside activity causes an interrupt. This seems unfair, but take consolation in the fact that it works both ways: other users may be charged for your system activity too, for the same reason.</para>
+        <para id="id9214819">Taken together, user time and system time are called <emphasis effect="italics">CPU time</emphasis>. Generally, the user time is far greater than the system time. You would expect this because most applications only occasionally ask for system services. In fact, a disproportionately large system time probably indicates some trouble. For instance, programs that are repeatedly generating exception conditions, such as page faults, misaligned memory references, or floating-point exceptions, use an inordinate amount of system time. Time spent doing things like seeking on a disk, rewinding a tape, or waiting for characters at the terminal doesn’t show up in CPU time. That’s because these activities don’t require the CPU; the CPU is free to go off and execute other programs.</para>
+        <para id="id12187361">The third piece of information (corresponding to the third set of hands on the watch), <emphasis effect="italics">elapsed time</emphasis>, is a measure of the actual (wall clock) time that has passed since the program was started. For programs that spend most of their time computing, the elapsed time should be close to the CPU time. Reasons why elapsed time might be greater are:</para>
+        <list id="id15083992" list-type="bulleted">
+          <item>You are timesharing the machine with other active programs.<footnote id="id11410981">The uptime command gives you a rough indication of the other activity on your machine. The last three fields tell the average number of processes ready to run during the last 1, 5, and 15 minutes, respectively.</footnote></item>
+          <item>Your application performs a lot of I/O.</item>
+          <item>Your application requires more memory bandwidth than is available on the machine.</item>
+          <item>Your program was paging or swapped.</item>
+        </list>
+        <para id="id10260290">People often record the CPU time and use it as an estimate for elapsed time. Using CPU time is okay on a single CPU machine, provided you have seen the program run when the machine was quiet and noticed the two numbers were very close together. But for multiprocessors, the total CPU time can be far different from the elapsed time. Whenever there is a doubt, wait until you have the machine to your- self and time your program then, using elapsed time. It is very important to produce timing results that can be verified using another run when the results are being used to make important purchasing decisions.</para>
+        <para id="id9182975">If you are running on a Berkeley UNIX derivative, the C shell’s built-in time command can report a number of other useful statistics. The default form of the output is shown in <link target-id="id10922558"/>. Check with your <emphasis effect="italics">csh</emphasis> manual page for more possibilities.</para>
+        <para id="id15096264">In addition to figures for CPU and elapsed time, <emphasis effect="italics">csh</emphasis> time command produces information about CPU utilization, page faults, swaps, blocked I/O operations (usually disk activity), and some measures of how much physical memory our pro- gram occupied when it ran. We describe each of them in turn.</para>
+        <section id="id10436887">
+          <title>Percent utilization</title>
+          <para id="id11416387"><emphasis effect="italics">Percent utilization</emphasis> corresponds to the ratio of elapsed time to CPU time. As we mentioned above, there can be a number of reasons why the CPU utilization wouldn’t be 100% or mighty close. You can often get a hint from the other fields as to whether it is a problem with your program or whether you were sharing the machine when you ran it.</para>
+        </section>
+        <section id="id7830202">
+          <title>Average real memory utilization</title>
+          <para id="id10922579">The two <emphasis effect="italics">average memory utilization</emphasis> measurements shown in <link target-id="id10922558"/> characterize the program’s resource requirements as it ran.</para>
+          <para id="id10183554">The first measurement, <emphasis effect="italics">shared-memory space</emphasis>, accounts for the average amount of real memory taken by your program’s text segment — the portion that holds the machine instructions. It is called “shared” because several concurrently running copies of a program can share the same text segment (to save memory). Years ago, it was possible for the text segment to consume a significant portion of the memory system, but these days, with memory sizes starting around 32 MB, you have to compile a pretty huge source program and use every bit of it to create a shared-memory usage figure big enough to cause concern. The shared-memory space requirement is usually quite low relative to the amount of memory available on your machine.</para>
+          <figure id="id10922558"><title>The built-in csh time function</title><media id="id10922558_media" alt="This figure contains the caption, % time foo, at the top, followed by a string of text in a horizontal line, with labels below each element in the string. From left to right, the first element in the string reads 14.9u, and is labeled, seconds of user time devoted to process. The second element reads 1.4s, and is labeled, seconds of system time devoted to process. The third element reads 0:19, and is labeled, elapsed time. The fourth element reads, 83%, and is labeled, percent utilization. The fifth element is the number 4, and is labeled, average amount of shared memory in kb. In between the fifth and sixth element is a plus sign. The sixth element reads 1060k, and is labeled, Average amount of unshared data space in KB. The seventh element is the number 27, and is labeled, number of block input operations. In between the seventh and eighth element is a plus sign. The eighth element reads 86io, and is labeled, number of block output operations. The ninth element reads 47pf, and is labeled, page faults. In between the ninth and tenth elements is a plus sign. The tenth element reads 0w, and is labeled, number of swaps.">
+              <image mime-type="image/png" src="../../media/graphics1-7dde.png" id="id10922558__onlineimage" height="349" width="700"/>
+            </media>
+          </figure>
+          
+          <para id="id12519090">The second average memory utilization measurement, <emphasis effect="italics">unshared-memory space</emphasis>, describes the average <emphasis effect="italics">real </emphasis>storage dedicated to your program’s data structures as it ran. This storage includes saved local variables and <code display="inline">COMMON</code> for <code display="inline">FORTRAN</code>, and static and external variables for C. We stress the word “real” here and above because these numbers talk about physical memory usage, taken over time. It may be that you have allocated arrays with 1 trillion elements (virtual space), but if your program only crawls into a corner of that space, your runtime memory requirements will be pretty low.</para>
+          <para id="id15226466">What the unshared-memory space measurement doesn’t tell you, unfortunately, is your program’s demand for memory at its greediest. An application that requires 100 MB 1/10th of the time and 1 KB the rest of the time appears to need only 10 MB on average — not a revealing picture of the program’s memory requirements.</para>
+        </section>
+        <section id="id10803025">
+          <title>Blocked I/O operations</title>
+          <para id="id12187037">The two figures for <emphasis effect="italics">blocked I/O</emphasis> operations primarily describe disk usage, though tape devices and some other peripherals may also be used with blocked I/O. Character I/O operations, such as terminal input and output, do not appear here. A large number of blocked I/O operations could explain a lower-than-expected CPU utilization.</para>
+        </section>
+        <section id="id9791679">
+          <title>Page faults and swaps</title>
+          <para id="id10508199">An unusually high number of <emphasis effect="italics">page faults</emphasis> or any swaps probably indicates a system choked for memory, which would also explain a longer-than-expected elapsed time. It may be that other programs are competing for the same space. And don’t forget that even under optimal conditions, every program suffers some number of page faults, as explained in <link document="m32733"/>. Techniques for minimizing page faults are described in <link document="m33728"/>.</para>
+        </section>
+      </section>
+      <section id="id11390582">
+        <title>Timing a Portion of the Program</title>
+        <para id="id4621330">For some benchmarking or tuning efforts, measurements taken on the “outside” of the program tell you everything you need to know. But if you are trying to isolate performance figures for individual loops or portions of the code, you may want to include timing routines on the inside too. The basic technique is simple enough:</para>
+        <list id="id15056053" list-type="enumerated" number-style="arabic">
+          <item>Record the time before you start doing X.</item>
+          <item>Do X.</item>
+          <item>Record the time at completion of X.</item>
+          <item>Subtract the start time from the completion time.</item>
+        </list>
+        <para id="id14457383">If, for instance, X’s primary job is to calculate particle positions, divide by the total time to obtain a number for particle positions/second. You have to be careful though; too many calls to the timing routines, and the observer becomes part of the experiment. The timing routines take time too, and their very presence can increase instruction cache miss or paging. Furthermore, you want X to take a significant amount of time so that the measurements are meaningful. Paying attention to the time between timer calls is really important because the clock used by the timing functions has a limited resolution. An event that occurs within a fraction of a second is hard to measure with any accuracy.</para>
+      </section>
+      <section id="id12000501">
+        <title>Getting Time Information</title>
+        <para id="id13258440">In this section, we discuss methods for getting various timer values during the execution of your program.</para>
+        <para id="id9232479">For FORTRAN programs, a library timing function found on many machines is called <emphasis effect="italics">etime</emphasis>, which takes a two-element <code display="inline">REAL*4</code> array as an argument and fills the slots with the user CPU time and system CPU time, respectively. The value returned by the function is the sum of the two. Here’s how <emphasis effect="italics">etime</emphasis> is often used:</para>
+        <code id="id8876252" display="block"><newline/>
+      real*4 tarray(2), etime 
+      real*4 start, finish
+    
+      start = etime(tarray)
+      finish = etime(tarray)
+    
+      write (*,*) ’CPU time: ’, finish - start
+    </code>
+        <para id="id8979064">Not every vendor supplies an <emphasis effect="italics">etime</emphasis> function; in fact, one doesn’t provide a timing routine for FORTRAN at all. Try it first. If it shows up as an undefined symbol when the program is linked, you can use the following C routine. It provides the same functionality as <emphasis effect="italics">etime</emphasis>:</para>
+        <code id="id12219432" display="block"><newline/>
+      #include &lt;sys/times.h&gt;
+      #define TICKS 100.
+    
+      float etime (parts)
+      struct {
+              float user;
+              float system;
+      } *parts;
+      {
+              struct tms local;
+              times (&amp;local);
+              parts-&gt;user= (float) local.tms_utime/TICKS; 
+              parts-&gt;system = (float) local.tms_stime/TICKS; 
+              return (parts-&gt;user + parts-&gt;system);
+      }
+    </code>
+        <para id="id11599651">There are a couple of things you might have to tweak to make it work. First of all, linking C routines with FORTRAN routines on your computer may require you to add an underscore <code display="inline">(_)</code> after the function name. This changes the entry to <code display="inline">float etime_ (parts)</code>. Furthermore, you might have to adjust the <code display="inline">TICKS</code> parameter. We assumed that the system clock had a resolution of 1/100 of a second (true for the Hewlett-Packard machines that this version of <emphasis effect="italics">etime</emphasis> was written for). 1/60 is very common. On an RS-6000 the number would be 1000. You may find the value in a file named <emphasis effect="italics">/usr/include/sys/param.h</emphasis> on your machine, or you can determine it empirically.</para>
+        <para id="id5213427">A C routine for retrieving the wall time using calling <emphasis effect="italics">gettimeofday</emphasis> is shown below. It is suitable for use with either C or FORTRAN programs as it uses call-by-value parameter passing:</para>
+        <code id="id6575480" display="block"><newline/>
+      #include &lt;stdio.h&gt;
+      #include &lt;stdlib.h&gt;
+      #include &lt;sys/time.h&gt;
+    
+      void hpcwall(double *retval)
+      {
+        static long zsec = 0; 
+        static long zusec = 0; 
+        double esec;
+        struct timeval tp;
+        struct timezone tzp;
+    
+        gettimeofday(&amp;tp, &amp;tzp);
+    
+        if ( zsec == 0 ) zsec = tp.tv_sec;
+        if ( zusec == 0 ) zusec = tp.tv_usec;
+    
+        *retval = (tp.tv_sec - zsec) + (tp.tv_usec - zusec ) * 0.000001 ;
+      }
+    
+      void hpcwall_(double *retval) { hpcwall(retval); } /* Other convention */
+     </code>
+        <para id="id10484163">Given that you will often need both CPU and wall time, and you will be continu- ally computing the difference between successive calls to these routines, you may want to write a routine to return the elapsed wall and CPU time upon each call as follows:</para>
+        <code id="id7297394" display="block"><newline/>
+            SUBROUTINE HPCTIM(WTIME,CTIME) 
+            IMPLICIT NONE
+     *
+            REAL WTIME,CTIME 
+            COMMON/HPCTIMC/CBEGIN,WBEGIN 
+            REAL*8 CBEGIN,CEND,WBEGIN,WEND 
+            REAL ETIME,CSCRATCH(2)
+     *
+            CALL HPCWALL(WEND) 
+            CEND=ETIME(CSCRATCH)
+     *
+            WTIME = WEND - WBEGIN 
+            CTIME = CEND - CBEGIN
+     *
+            WBEGIN = WEND 
+            CBEGIN = CEND 
+            END
+    </code>
+      </section>
+      <section id="id6842110">
+        <title>Using Timing Information</title>
+        <para id="id9522032">You can get a lot information from the timing facilities on a UNIX machine. Not only can you tell how long it takes to perform a given job, but you can also get hints about whether the machine is operating efficiently, or whether there is some other problem that needs to be factored in, such as inadequate memory.</para>
+        <para id="id10906806">Once the program is running with all anomalies explained away, you can record the time as a baseline. If you are tuning, the baseline will be a reference with which you can tell how much (or little) tuning has improved things. If you are benchmarking, you can use the baseline to judge how much overall incremental performance a new machine will give you. But remember to watch the other figures — paging, CPU utilization, etc. These may differ from machine to machine for reasons unrelated to raw CPU performance. You want to be sure you are getting the full picture. </para>
+      </section>
+  </content>
+</document>

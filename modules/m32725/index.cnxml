@@ -1,0 +1,110 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Caches</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32725</md:content-id>
+  <md:title>Caches</md:title>
+  <md:abstract/>
+  <md:uuid>e989cdf0-3cc5-4b72-9a25-cb6b46eca378</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1164760792665">Once we go beyond the registers in the memory hierarchy, we encounter caches. Caches are small amounts of SRAM that store a subset of the contents of the memory. The hope is that the cache will have the right subset of main memory at the right time.</para>
+      <para id="id1164755341328">The actual cache architecture has had to change as the cycle time of the processors has improved. The processors are so fast that off-chip SRAM chips are not even fast enough. This has lead to a multilevel cache approach with one, or even two, levels of cache implemented as part of the processor. <link target-id="id1164755338569"/> shows the approximate speed of accessing the memory hierarchy on a 500-MHz DEC 21164 Alpha.</para>
+      
+      
+      <table id="id1164755338569" summary="Table describing times needed for specific items.">
+<tgroup cols="2"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <tbody>
+            <row>
+              <entry>Registers</entry>
+              <entry>2 ns</entry>
+            </row>
+            <row>
+              <entry>L1 On-Chip</entry>
+              <entry>4 ns</entry>
+            </row>
+            <row>
+              <entry>L2 On-Chip</entry>
+              <entry>5 ns</entry>
+            </row>
+            <row>
+              <entry>L3 Off-Chip</entry>
+              <entry>30 ns</entry>
+            </row>
+            <row>
+              <entry>Memory</entry>
+              <entry>220 ns</entry>
+            </row>
+          </tbody>
+        
+
+
+</tgroup><caption>Memory Access Speed on a DEC 21164 Alpha</caption>
+</table>
+      
+      <para id="id1164755344307">When every reference can be found in a cache, you say that you have a 100% hit rate. Generally, a hit rate of 90% or better is considered good for a level-one (L1) cache. In level-two (L2) cache, a hit rate of above 50% is considered acceptable. Below that, application performance can drop off steeply.</para>
+      <para id="id1164755642194">One can characterize the average read performance of the memory hierarchy by examining the probability that a particular load will be satisfied at a particular level of the hierarchy. For example, assume a memory architecture with an L1 cache speed of 10 ns, L2 speed of 30 ns, and memory speed of 300 ns. If a memory reference were satisfied from L1 cache 75% of the time, L2 cache 20% of the time, and main memory 5% of the time, the average memory performance would be:</para>
+      
+      <code id="id1164761900426" display="block">(0.75 * 10 ) + ( 0.20 * 30 ) + ( 0.05 * 300 ) = 28.5 ns
+    </code>
+      <para id="id1164755590078">You can easily see why it’s important to have an L1 cache hit rate of 90% or higher.</para>
+      <para id="id116475548443234232342432">Given that a cache holds only a subset of the main memory at any time, it’s important to keep an index of which areas of the main memory are currently stored in the cache. To reduce the amount of space that must be dedicated to tracking which memory areas are in cache, the cache is divided into a number of equal sized slots known as <emphasis effect="italics">lines</emphasis>. Each line contains some number of sequential main memory locations, generally four to sixteen integers or real numbers. Whereas the data within a line comes from the same part of memory, other lines can contain data that is far separated within your program, or perhaps data from somebody else’s program, as in <link target-id="id1164760711103"/>. When you ask for something from memory, the computer checks to see if the data is available within one of these cache lines. If it is, the data is returned with a minimal delay. If it’s not, your program may be delayed while a new line is fetched from main memory. Of course, if a new line is brought in, another has to be thrown out. If you’re lucky, it won’t be the one containing the data you are just about to need.</para>
+      <figure id="id1164760711103"><title>Cache lines can come from different parts of memory</title><media id="id1164760711103_media" alt="This figure shows a grid labeled, Main Memory, and a from a couple cells in the grid, arrows point to the left at cache lines in a box. The lines are displayed in a list, labeled from 0 to 3 and et ceteral.">
+          <image mime-type="image/png" src="../../media/graphics1-31b3.png" id="id1164760711103__onlineimage" height="226" width="599"/>
+        </media>
+        
+      </figure>
+      
+      
+      <para id="id116475567897658738647">On multiprocessors (computers with several CPUs), written data must be returned to main memory so the rest of the processors can see it, or all other processors must be made aware of local cache activity. Perhaps they need to be told to invalidate old lines containing the previous value of the written variable so that they don’t accidentally use stale data. This is known as maintaining <emphasis effect="italics">coherency</emphasis> between the different caches. The problem can become very complex in a multiprocessor system.<footnote id="id4677285598798823"><link document="m32797"/> describes cache coherency in more detail.</footnote></para>
+      <para id="eip-757">Caches are effective because programs often exhibit characteristics that help kep the hit rate high. These characteristics are called <emphasis effect="italics">spatial</emphasis> and <emphasis effect="italics">temporal locality of reference</emphasis>; programs often make use of instructions and data that are near to other instructions and data, both in space and time. When a cache line is retrieved from main memory, it contains not only the information that caused the cache miss, but also some neighboring information. Chances are good that the next time your program needs data, it will be in the cache line just fetched or another one recently fetched.</para><para id="id1164755342047">Caches work best when a program is reading sequentially through the memory. Assume a program is reading 32-bit integers with a cache line size of 256 bits. When the program references the first word in the cache line, it waits while the cache line is loaded from main memory. Then the next seven references to memory are satisfied quickly from the cache. This is called <emphasis effect="italics">unit stride</emphasis> because the address of each successive data element is incremented by one and all the data retrieved into the cache is used. The following loop is a unit-stride loop:</para>
+      <code id="id2890135" display="block"><newline/>
+      DO I=1,1000000
+        SUM = SUM + A(I) 
+      END DO
+    </code>
+      <para id="id1164755410032">When a program accesses a large data structure using “non-unit stride,” performance suffers because data is loaded into cache that is not used. For example:</para>
+      <code id="id1164758091560" display="block"><newline/>
+      DO I=1,1000000, 8
+        SUM = SUM + A(I) 
+      END DO
+    </code>
+      <para id="id1164762875732">This code would experience the same number of cache misses as the previous loop, and the same amount of data would be loaded into the cache. However, the program needs only one of the eight 32-bit words loaded into cache. Even though this program performs one-eighth the additions of the previous loop, its elapsed time is roughly the same as the previous loop because the memory operations dominate performance.</para>
+      <para id="id1164760935959">While this example may seem a bit contrived, there are several situations in which non-unit strides occur quite often. First, when a FORTRAN two-dimensional array is stored in memory, successive elements in the first column are stored sequentially followed by the elements of the second column. If the array is processed with the row iteration as the inner loop, it produces a unit-stride reference pattern as follows:</para>
+      <code id="id1164755750089" display="block"><newline/>
+      REAL*4 A(200,200) 
+      DO J = 1,200
+        DO I = 1,200
+          SUM = SUM + A(I,J) 
+        END DO
+      END DO
+    </code>
+      <para id="id1164755347150">Interestingly, a FORTRAN programmer would most likely write the loop (in alphabetical order) as follows, producing a non-unit stride of 800 bytes between successive load operations:</para>
+      <code id="id1164755754107" display="block"><newline/>
+      REAL*4 A(200,200) 
+      DO I = 1,200
+        DO J = 1,200
+          SUM = SUM + A(I,J) 
+        END DO
+      END DO
+    </code>
+      
+      <para id="id1164760264010">Because of this, some compilers can detect this suboptimal loop order and reverse the order of the loops to make best use of the memory system. As we will see in <link document="m32739"/>, however, this code transformation may produce different results, and so you may have to give the compiler “permission” to interchange these loops in this particular example (or, after reading this book, you could just code it properly in the first place).</para>
+      <code id="id1164763897306" display="block">while ( ptr != NULL ) ptr = ptr-&gt;next;
+    </code>
+      <para id="id8484808">The next element that is retrieved is based on the contents of the current element. This type of loop bounces all around memory in no particular pattern. This is called <emphasis effect="italics">pointer chasing</emphasis> and there are no good ways to improve the performance of this code.</para>
+      <para id="id1164755671681">A third pattern often found in certain types of codes is called gather (or scatter) and occurs in loops such as:</para>
+      
+      
+      <code id="eip-671" display="block">SUM = SUM + ARR ( IND(I) )</code><para id="id8726250">where the IND array contains offsets into the ARR array. Again, like the linked list, the exact pattern of memory references is known only at runtime when the values stored in the IND array are known. Some special-purpose systems have special hardware support to accelerate this particular operation.</para>
+  </content>
+</document>

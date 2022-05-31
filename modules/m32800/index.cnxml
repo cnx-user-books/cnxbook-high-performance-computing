@@ -1,0 +1,324 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Multiprocessor Software Concepts </title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32800</md:content-id>
+  <md:title>Multiprocessor Software Concepts </md:title>
+  <md:abstract/>
+  <md:uuid>d2e6ebe5-ad0a-41bf-9c53-2496190702a1</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id17333861">Now that we have examined the way shared-memory multiprocessor hardware operates, we need to examine how software operates on these types of computers. We still have to wait until the next chapters to begin making our FORTRAN programs run in parallel. For now, we use C programs to examine the fundamentals of multiprocessing and multithreading. There are several techniques used to implement multithreading, so the topics we will cover include:</para>
+      <list id="id13199465" list-type="bulleted">
+        <item>Operating system–supported multiprocessing</item>
+        <item>User space multithreading</item>
+        <item>Operating system-supported multithreading</item>
+      </list>
+      <para id="id13168967">The last of these is what we primarily will use to reduce the walltime of our applications.</para>
+      <section id="id13131884"><title>Operating System–Supported Multiprocessing</title><para id="id9595575">Most modern general-purpose operating systems support some form of multiprocessing. Multiprocessing doesn’t require more than one physical CPU; it is simply the operating system’s ability to run more than one <emphasis effect="italics">process</emphasis> on the system. The operating system context-switches between each process at fixed time intervals, or on interrupts or input-output activity. For example, in UNIX, if you use the <code>ps</code> command, you can see the processes on the system:</para>
+        <code id="id11492614" display="block"><newline/>
+% ps -a
+  PID TTY     TIME CMD
+28410 pts/34  0:00 tcsh
+28213 pts/38  0:00 xterm
+10488 pts/51  0:01 telnet
+28411 pts/34  0:00 xbiff
+11123 pts/25  0:00 pine
+ 3805 pts/21  0:00 elm
+ 6773 pts/44  5:48 ansys
+   ...
+% ps –a | grep ansys
+  6773 pts/44 6:00 ansys
+    </code>
+        <para id="id10573458">For each process we see the process identifier (PID), the terminal that is executing the command, the amount of CPU time the command has used, and the name of the command. The PID is unique across the entire system. Most UNIX commands are executed in a separate process. In the above example, most of the processes are waiting for some type of event, so they are taking very few resources except for memory. Process 6773<footnote id="id16983455">ANSYS is a commonly used structural-analysis package.</footnote> seems to be executing and using resources. Running <emphasis effect="italics">ps</emphasis> again confirms that the CPU time is increasing for the <emphasis effect="italics">ansys</emphasis> process:</para>
+<code id="eip-id1166403810270" display="block"><newline/>
+% vmstat 5
+procs     memory          page            disk         faults     cpu
+r b w   swap  free re mf pi po fr de sr f0 s0 -- --  in   sy  cs us sy id
+3 0 0 353624 45432  0  0  1  0  0  0  0  0  0  0  0 461 5626 354 91  9  0
+3 0 0 353248 43960  0 22  0  0  0  0  0  0 14  0  0 518 6227 385 89 11  0
+</code>
+        <para id="id11743807">Running the <emphasis effect="italics">vmstat 5</emphasis> command tells us many things about the activity on the system. First, there are three runnable processes. If we had one CPU, only one would actually be running at a given instant. To allow all three jobs to progress, the operating system time-shares between the processes. Assuming equal priority, each process executes about 1/3 of the time. However, this system is a two-processor system, so each process executes about 2/3 of the time. Looking across the <emphasis effect="italics">vmstat</emphasis> output, we can see paging activity (<emphasis effect="italics">pi</emphasis>,<emphasis effect="italics"> po</emphasis>), context switches (<emphasis effect="italics">cs</emphasis>), overall user time (<emphasis effect="italics">us</emphasis>), system time (<emphasis effect="italics">sy</emphasis>), and idle time (<emphasis effect="italics">id </emphasis>).</para>
+        <para id="id14139862">Each process can execute a completely different program. While most processes are completely independent, they can cooperate and share information using interprocess communication (pipes, sockets) or various operating system-supported shared-memory areas. We generally don’t use multiprocessing on these shared-memory systems as a technique to increase single-application performance. <!--We will explore techniques that use multiprocessing coupled with communication to improve performance on scalable parallel processing systems in Chapter 12, <emphasis effect="italics">Large- Scale Parallel Computing</emphasis>.--></para>
+      </section>
+      <section id="id14287552">
+        <title>Multiprocessing software</title>
+        <para id="id20608676">In this section, we explore how programs access multiprocessing features.<footnote id="id18044201">These examples are written in C using the POSIX 1003.1 application programming interface. This example runs on most UNIX systems and on other POSIX-compliant systems including OpenNT, Open- VMS, and many others.</footnote> In this example, the program creates a new process using the <code display="inline">fork( )</code> function. The new process (child) prints some messages and then changes its identity using <code display="inline">exec( )</code> by loading a new program. The original process (parent) prints some messages and then waits for the child process to complete:</para>
+        
+        <code id="id16438824" display="block"><newline/>
+int globvar;   /* A global variable */
+
+main () {
+
+ int pid,status,retval; 
+ int stackvar;   /* A stack variable */
+
+ globvar = 1;
+ stackvar = 1;
+ printf("Main - calling fork globvar=%d stackvar=%d\n",globvar,stackvar);
+ pid = fork();
+ printf("Main - fork returned pid=%d\n",pid);
+ if ( pid == 0 ) {
+   printf("Child - globvar=%d stackvar=%d\n",globvar,stackvar);
+   sleep(1);
+   printf("Child - woke up globvar=%d stackvar=%d\n",globvar,stackvar);
+   globvar = 100;
+   stackvar = 100;
+   printf("Child - modified globvar=%d stackvar=%d\n",globvar,stackvar);
+   retval = execl("/bin/date", (char *) 0 );
+   printf("Child - WHY ARE WE HERE retval=%d\n",retval);
+ } else { 
+   printf("Parent - globvar=%d stackvar=%d\n",globvar,stackvar);
+   globvar = 5;
+   stackvar = 5;
+   printf("Parent - sleeping globvar=%d stackvar=%d\n",globvar,stackvar);
+   sleep(2);
+   printf("Parent - woke up globvar=%d stackvar=%d\n",globvar,stackvar);
+   printf("Parent - waiting for pid=%d\n",pid);
+   retval = wait(&amp;status);
+   status = status &gt;&gt; 8; /* Return code in bits 15-8 */
+   printf("Parent - status=%d retval=%d\n",status,retval);
+ }
+}    </code>
+        
+        <para id="id14923474">The key to understanding this code is to understand how the <code display="inline">fork( )</code> function operates. The simple summary is that the <code display="inline">fork( )</code> function is called once in a process and returns twice, once in the original process and once in a newly created process. The newly created process is an identical copy of the original process. All the variables (local and global) have been duplicated. Both processes have access to all of the open files of the original process. <link target-id="id15023532"/> shows how the fork operation creates a new process.</para>
+        <para id="id18523146">The only difference between the processes is that the return value from the <code display="inline">fork( )</code> function call is 0 in the new (child) process and the process identifier (shown by the <code>ps</code> command) in the original (parent) process. This is the program output:</para>
+        <code id="id16055306" display="block"><newline/>    
+    recs % cc -o fork fork.c 
+    recs % fork
+    Main - calling fork globvar=1 stackvar=1
+    Main - fork returned pid=19336
+    Main - fork returned pid=0
+    Parent - globvar=1 stackvar=1
+    Parent - sleeping globvar=5 stackvar=5
+    Child - globvar=1 stackvar=1
+    Child - woke up globvar=1 stackvar=1
+    Child - modified globvar=100 stackvar=100
+    Thu Nov 6 22:40:33
+    Parent - woke up globvar=5 stackvar=5
+    Parent - waiting for pid=19336
+    Parent - status=0 retval=19336 
+    recs %
+    </code>
+        <para id="id14258686">Tracing this through, first the program sets the global and stack variable to one and then calls <code display="inline">fork( )</code>. During the <code display="inline">fork( )</code> call, the operating system suspends the process, makes an exact duplicate of the process, and then restarts both processes. You can see two messages from the statement immediately after the fork. The first line is coming from the original process, and the second line is coming from the new process. If you were to execute a <code display="inline">ps</code> command at this moment in time, you would see two processes running called “fork.” One would have a process identifier of 19336.</para>
+        <figure id="id15023532"><title>How a fork operates</title><media id="id15023532_media" alt="This figure consists of a number of groupings of boxes, which are aligned in a column and labeled from top to bottom, global data, code, and stack. The figure shows the boxes in light grey with the label, before fork, and an arrow pointing at code titled, executing. It then shows two groupings of the boxes together, labeled, during fork, parent is suspended and cloned. The grouping on the left is light grey, and large arrows point to the right from this grouping to the second, darker grey grouping. Below this is another grouping of light and dark grey boxes, labeled, after fork, processes execute independently. to the side of the light grey and dark grey boxes labeled, Code, an arrow labeled Executing points at the box.">
+            <image mime-type="image/png" src="../../media/Picture 1-1154.png" id="id15023532__onlineimage" height="453" width="600"/>
+          </media>
+          
+        <!--Figure 10-6--> </figure>
+        <para id="id18231730">As both processes start, they execute an IF-THEN-ELSE and begin to perform different actions in the parent and child. Notice that <emphasis effect="italics">globvar</emphasis> and <emphasis effect="italics">stackvar</emphasis> are set to 5 in the parent, and then the parent sleeps for two seconds. At this point, the child begins executing. The values for <emphasis effect="italics">globvar</emphasis> and <emphasis effect="italics">stackvar</emphasis> are unchanged in the child process. This is because these two processes are operating in completely independent memory spaces. The child process sleeps for one second and sets its copies of the variables to 100. Next, the child process calls the <code display="inline">execl( )</code> function to overwrite its memory space with the UNIX date program. Note that the <code display="inline">execl( )</code> never returns; the date program takes over all of the resources of the child process. If you were to do a <emphasis effect="italics">ps</emphasis> at this moment in time, you still see two processes on the system but process 19336 would be called “date.” The date command executes, and you can see its output.<footnote id="id15966604">It’s not uncommon for a human parent process to “fork” and create a human child process that initially seems to have the same identity as the parent. It’s also not uncommon for the child process to change its overall identity to be something very different from the parent at some later point. Usually human children wait 13 years or so before this change occurs, but in UNIX, this happens in a few microseconds. So, in some ways, in UNIX, there are many parent processes that are “disappointed” because their children did not turn out like them!</footnote></para>
+        <para id="id12998145">The parent wakes up after a brief two-second sleep and notices that its copies of global and local variables have not been changed by the action of the child process. The parent then calls the <code display="inline">wait( )</code> function to determine if any of its children exited. The <code display="inline">wait( ) </code>function returns which child has exited and the status code returned by that child process (in this case, process 19336).</para>
+      </section>
+      <section id="id16810672">
+        <title>User Space Multithreading</title>
+        <para id="id20633459">A <emphasis effect="italics">thread</emphasis> is different from a process. When you add threads, they are added to the existing process rather than starting in a new process. Processes start with a single thread of execution and can add or remove threads throughout the duration of the program. Unlike processes, which operate in different memory spaces, all threads in a process share the same memory space. <link target-id="id19816888"/> shows how the creation of a thread differs from the creation of a process. Not all of the memory space in a process is shared between all threads. In addition to the global area that is shared across all threads, each thread has a <emphasis effect="italics">thread private</emphasis> area for its own local variables. It’s important for programmers to know when they are working with shared variables and when they are working with local variables.</para>
+        <para id="id10639374">When attempting to speed up high performance computing applications, threads have the advantage over processes in that multiple threads can cooperate and work on a shared data structure to hasten the computation. By dividing the work into smaller portions and assigning each smaller portion to a separate thread, the total work can be completed more quickly.</para>
+        <para id="id18194151">Multiple threads are also used in high performance database and Internet servers to improve the overall <emphasis effect="italics">throughput</emphasis> of the server. With a single thread, the program can either be waiting for the next network request or reading the disk to satisfy the previous request. With multiple threads, one thread can be waiting for the next network transaction while several other threads are waiting for disk I/O to complete.</para>
+        <para id="id12348992">The following is an example of a simple multithreaded application.<footnote id="id15963640">This example uses the IEEE POSIX standard interface for a thread library. If your system supports POSIX threads, this example should work. If not, there should be similar routines on your system for each of the thread functions.</footnote> It begins with a single master thread that creates three additional threads. Each thread prints some messages, accesses some global and local variables, and then terminates:</para>
+        <code id="id18123608" display="block"><newline/>
+#define_REENTRANT                /* basic lines for threads */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define THREAD_COUNT 3
+void *TestFunc(void *);
+int globvar;                     /* A global variable */
+int index[THREAD_COUNT]          /* Local zero-based thread index */
+pthread_t thread_id[THREAD_COUNT];  /* POSIX Thread IDs */
+
+main() {
+  int i,retval;
+  pthread_t tid;
+    
+  globvar = 0;
+  printf("Main - globvar=%d\n",globvar);
+  for(i=0;i&lt;THREAD_COUNT;i++) {
+    index[i] = i;
+    retval = pthread_create(&amp;tid,NULL,TestFunc,(void *) index[i]); 
+    printf("Main - creating i=%d tid=%d retval=%d\n",i,tid,retval); 
+    thread_id[i] = tid;
+  }
+  printf("Main thread - threads started globvar=%d\n",globvar);
+  for(i=0;i&lt;THREAD_COUNT;i++) {
+    printf("Main - waiting for join %d\n",thread_id[i]); 
+    retval = pthread_join( thread_id[i], NULL ) ; 
+    printf("Main - back from join %d retval=%d\n",i,retval);
+    }
+    printf("Main thread - threads completed globvar=%d\n",globvar);
+  }
+  
+  void *TestFunc(void *parm) {
+    int me,self;
+    
+    me = (int) parm; /* My own assigned thread ordinal */
+    self = pthread_self(); /* The POSIX Thread library thread number */ 
+    printf("TestFunc me=%d - self=%d globvar=%d\n",me,self,globvar); 
+    globvar = me + 15;
+    printf("TestFunc me=%d - sleeping globvar=%d\n",me,globvar);
+    sleep(2);
+    printf("TestFunc me=%d - done param=%d globvar=%d\n",me,self,globvar);
+  }
+    </code>
+        <figure id="id19816888"><title>Creating a thread</title><media id="id19816888_media" alt="This figure shows a number of groupings of boxes, labeled global data, code, and stack. A couple discriptions and arrows labeled, executing, are arranged around the boxes.">
+            <image mime-type="image/png" src="../../media/Picture 2-ddbf.png" id="id19816888__onlineimage" height="462" width="600"/>
+          </media>
+        <!--Figure 10-7--></figure>
+        
+        
+        
+        <para id="id14733555">The global shared areas in this case are those variables declared in the static area outside the <code display="inline">main( )</code> code. The local variables are any variables declared within a routine. When threads are added, each thread gets its own function call stack. In C, the <emphasis effect="italics">automatic</emphasis> variables that are declared at the beginning of each routine are allocated on the stack. As each thread enters a function, these variables are separately allocated on that particular thread’s stack. So these are the <emphasis effect="italics">thread-local</emphasis> variables.</para>
+        <para id="id18613391">Unlike the <code display="inline">fork( )</code> function, the <code display="inline">pthread_create( )</code> function creates a new thread, and then control is returned to the calling thread. One of the parameters of the <code display="inline">pthread_create( )</code> is the name of a function.</para>
+        <para id="id19008527">New threads begin execution in the function <code display="inline">TestFunc( )</code> and the thread finishes when it returns from this function. When this program is executed, it produces the following output:</para>
+        <code id="id15792561" display="block"><newline/>
+    recs % cc -o create1 -lpthread -lposix4 create1.c 
+    recs % create1
+    Main - globvar=0
+    Main - creating i=0 tid=4 retval=0
+    Main - creating i=1 tid=5 retval=0
+    Main - creating i=2 tid=6 retval=0
+    Main thread - threads started globvar=0
+    Main - waiting for join 4
+    TestFunc me=0 - self=4 globvar=0
+    TestFunc me=0 - sleeping globvar=15
+    TestFunc me=1 - self=5 globvar=15
+    TestFunc me=1 - sleeping globvar=16
+    TestFunc me=2 - self=6 globvar=16
+    TestFunc me=2 - sleeping globvar=17
+    TestFunc me=2 - done param=6 globvar=17
+    TestFunc me=1 - done param=5 globvar=17
+    TestFunc me=0 - done param=4 globvar=17
+    Main - back from join 0 retval=0
+    Main - waiting for join 5
+    Main - back from join 1 retval=0
+    Main - waiting for join 6
+    Main - back from join 2 retval=0
+    Main thread – threads completed globvar=17 
+    recs %
+    </code>
+        <para id="id21024718">You can see the threads getting created in the loop. The master thread completes the <code display="inline">pthread_create( )</code> loop, executes the second loop, and calls the <code display="inline">pthread_join( )</code> function. This function suspends the master thread until the specified thread completes. The master thread is waiting for Thread 4 to complete. Once the master thread suspends, one of the new threads is started. Thread 4 starts executing. Initially the variable <code display="inline">globvar</code> is set to 0 from the main program. The <code display="inline">self, me</code><emphasis effect="italics">,</emphasis> and <code display="inline">param</code> variables are thread-local variables, so each thread has its own copy. Thread 4 sets <code display="inline">globvar</code> to 15 and goes to sleep. Then Thread 5 begins to execute and sees <code display="inline">globvar</code> set to 15 from Thread 4; Thread 5 sets <code display="inline">globvar</code> to 16, and goes to sleep. This activates Thread 6, which sees the current value for <code display="inline">globvar</code> and sets it to 17. Then Threads 6, 5, and 4 wake up from their sleep, all notice the latest value of 17 in <code display="inline">globvar</code>, and return from the <code display="inline">TestFunc( )</code> routine, ending the threads.</para>
+        <para id="id18617091">All this time, the master thread is in the middle of <code display="inline">a pthread_join( ) </code>waiting for Thread 4 to complete. As Thread 4 completes, the <code display="inline">pthread_join( ) </code>returns. The master thread then calls <code display="inline">pthread_join( )</code> repeatedly to ensure that all three threads have been completed. Finally, the master thread prints out the value for <code display="inline">globvar </code>that contains the latest value of 17.</para>
+        <para id="id6819145">To summarize, when an application is executing with more than one thread, there are shared global areas and thread private areas. Different threads execute at different times, and they can easily work together in shared areas.</para>
+      </section>
+      <section id="id18097564"><title>Limitations of user space multithreading</title><para id="id6770654">Multithreaded applications were around long before multiprocessors existed. It is quite practical to have multiple threads with a single CPU. As a matter of fact, the previous example would run on a system with any number of processors, including one. If you look closely at the code, it performs a sleep operation at each critical point in the code. One reason to add the sleep calls is to slow the program down enough that you can actually see what is going on. However, these sleep calls also have another effect. When one thread enters the sleep routine, it causes the thread library to search for other “runnable” threads. If a runnable thread is found, it begins executing immediately while the calling thread is “sleeping.” This is called a <emphasis effect="italics">user-space thread context </emphasis>switch. The process actually has one operating system thread shared among several logical user threads. When library routines (such as <emphasis effect="italics">sleep</emphasis>) are called, the thread library<footnote id="id11424554">The pthreads library supports both user-space threads and operating-system threads, as we shall soon see. Another popular early threads package was called <emphasis effect="italics">cthreads</emphasis>.</footnote> jumps in and reschedules threads.</para>
+        
+        <para id="id4426026">We can explore this effect by substituting the following <code display="inline">SpinFunc( )</code> function, replacing <code display="inline">TestFunc( )</code> function in the <code display="inline">pthread_create( ) </code>call in the previous example:</para>
+<code id="eip-id9576434" display="block"><newline/>
+void *SpinFunc(void *parm) {
+  int me;
+  me = (int) parm;
+  printf("SpinFunc me=%d - sleeping %d seconds ...\n", me, me+1);
+  sleep(me+1);
+  printf("SpinFunc me=%d – wake globvar=%d...\n", me, globvar);
+  globvar ++;
+  printf("SpinFunc me=%d - spinning globvar=%d...\n", me, globvar);
+  while(globvar &lt; THREAD_COUNT ) ;
+  printf("SpinFunc me=%d – done globvar=%d...\n", me, globvar);
+  sleep(THREAD_COUNT+1);
+}    </code>
+        
+        <para id="id18204640">If you look at the function, each thread entering this function prints a message and goes to sleep for 1, 2, and 3 seconds. Then the function increments <code display="inline">globvar </code>(initially set to 0 in main) and begins a while-loop, continuously checking the value of <code display="inline">globvar.</code> As time passes, the second and third threads should finish their <code>sleep( )</code>, increment the value for <code display="inline">globvar</code>, and begin the while-loop. When the last thread reaches the loop, the value for <code display="inline">globvar</code> is 3 and all the threads exit the loop. However, this isn’t what happens:</para>
+        
+        <code id="id16641613" display="block"><newline/>
+    recs % create2 &amp; 
+    [1] 23921
+    recs %
+    Main - globvar=0
+    Main - creating i=0 tid=4 retval=0
+    Main - creating i=1 tid=5 retval=0
+    Main - creating i=2 tid=6 retval=0
+    Main thread - threads started globvar=0
+    Main - waiting for join 4
+    SpinFunc me=0 - sleeping 1 seconds ... 
+    SpinFunc me=1 - sleeping 2 seconds ... 
+    SpinFunc me=2 - sleeping 3 seconds ... 
+    SpinFunc me=0 - wake globvar=0... 
+    SpinFunc me=0 - spinning globvar=1...
+    
+    recs % ps
+      PID TTY      TIME CMD
+     23921 pts/35  0:09 create2 
+    recs % ps
+      PID TTY      TIME CMD
+    23921 pts/35   1:16 create2 
+   recs % kill -9 23921
+   [1]    Killed                 create2 
+   recs %
+    </code>
+        <para id="id15975344">We run the program in the background<footnote id="id18984098">Because we know it will hang and ignore interrupts.</footnote> and everything seems to run fine. All the threads go to sleep for 1, 2, and 3 seconds. The first thread wakes up and starts the loop waiting for <code display="inline">globvar</code> to be incremented by the other threads. Unfortunately, with user space threads, there is no automatic time sharing. Because we are in a CPU loop that never makes a system call, the second and third threads never get scheduled so they can complete their <code display="inline">sleep( )</code> call. To fix this problem, we need to make the following change to the code:</para>
+        <code id="id15549878" display="block">while(globvar &lt; THREAD_COUNT ) sleep(1) ;
+    </code>
+        <para id="id18950024">With this sleep<footnote id="id8638989">Some thread libraries support a call to a routine sched_yield( ) that checks for runnable threads. If it finds a runnable thread, it runs the thread. If no thread is runnable, it returns immediately to the calling thread. This routine allows a thread that has the CPU to ensure that other threads make progress during CPU-intensive periods of its code.</footnote> call, Threads 2 and 3 get a chance to be “scheduled.” They then finish their sleep calls, increment the <code display="inline">globvar</code> variable, and the program terminates properly.</para>
+        <para id="id18261037">You might ask the question, “Then what is the point of user space threads?” Well, when there is a high performance database server or Internet server, the multiple logical threads can overlap network I/O with database I/O and other background computations. This technique is not so useful when the threads all want to perform simultaneous CPU-intensive computations. To do this, you need threads that are created, managed, and scheduled by the operating system rather than a user library.</para>
+      </section>
+      <section id="id20114104"><title>Operating System-Supported Multithreading</title><para id="id22407616">When the operating system supports multiple threads per process, you can begin to use these threads to do simultaneous computational activity. There is still no requirement that these applications be executed on a multiprocessor system. When an application that uses four operating system threads is executed on a single processor machine, the threads execute in a time-shared fashion. If there is no other load on the system, each thread gets 1/4 of the processor. While there are good reasons to have more threads than processors for noncompute applications, it’s not a good idea to have more active threads than processors for compute-intensive applications because of thread-switching overhead. (For more detail on the effect of too many threads, see Appendix D, <cite>How FORTRAN Manages Threads at Runtime.</cite></para>
+        <para id="id16734645">If you are using the POSIX threads library, it is a simple modification to request that your threads be created as operating-system rather rather than user threads, as the following code shows:</para>
+     
+        <code id="id11703113" display="block"><newline/>
+#define _REENTRANT      /* basic 3-lines for threads */
+#include &lt;stdio.h&gt;
+#include &lt;pthread.h&gt;
+
+#define THREAD_COUNT 2 
+void *SpinFunc(void *);
+int globvar;                        /* A global variable */
+int index[THREAD_COUNT];            /* Local zero-based thread index */ 
+pthread_t thread_id[THREAD_COUNT];      /* POSIX Thread IDs */ 
+pthread_attr_t attr;                /* Thread attributes NULL=use default */
+  
+main() {
+  int i,retval;
+  pthread_t tid;
+    
+  globvar = 0;
+  pthread_attr_init(&amp;attr);      /* Initialize attr with defaults */
+  pthread_attr_setscope(&amp;attr, PTHREAD_SCOPE_SYSTEM); 
+  printf("Main - globvar=%d\n",globvar);
+  for(i=0;i&lt;THREAD_COUNT;i++) {
+    index[i] = i;
+    retval = pthread_create(&amp;tid,&amp;attr,SpinFunc,(void *) index[i]);
+    printf("Main - creating i=%d tid=%d retval=%d\n",i,tid,retval);
+    thread_id[i] = tid;
+  }
+  printf("Main thread - threads started globvar=%d\n",globvar);
+  for(i=0;i&lt;THREAD_COUNT;i++) {
+    printf("Main - waiting for join %d\n",thread_id[i]); 
+    retval = pthread_join( thread_id[i], NULL ) ; 
+    printf("Main - back from join %d retval=%d\n",i,retval);
+  }
+  printf("Main thread - threads completed globvar=%d\n",globvar);
+}</code>
+        <para id="id12665326">The code executed by the master thread is modified slightly. We create an “attribute” data structure and set the <code display="inline">PTHREAD_SCOPE_SYSTEM</code> attribute to indicate that we would like our new threads to be created and scheduled by the operating system. We use the attribute information on the call to <code display="inline">pthread_create( )</code>. None of the other code has been changed. The following is the execution output of this new program:</para>
+        <code id="id12638164" display="block"><newline/>
+    recs % create3
+    Main - globvar=0
+    Main - creating i=0 tid=4 retval=0
+    SpinFunc me=0 - sleeping 1 seconds ... 
+    Main - creating i=1 tid=5 retval=0
+    Main thread - threads started globvar=0
+    Main - waiting for join 4
+    SpinFunc me=1 - sleeping 2 seconds ... 
+    SpinFunc me=0 - wake globvar=0... 
+    SpinFunc me=0 - spinning globvar=1... 
+    SpinFunc me=1 - wake globvar=1... 
+    SpinFunc me=1 - spinning globvar=2... 
+    SpinFunc me=1 - done globvar=2... 
+    SpinFunc me=0 - done globvar=2...
+    Main - back from join 0 retval=0
+    Main - waiting for join 5
+    Main - back from join 1 retval=0
+    Main thread - threads completed globvar=2 
+    recs %
+    </code>
+        <para id="id18469983">Now the program executes properly. When the first thread starts spinning, the operating system is context switching between all three threads. As the threads come out of their <code display="inline">sleep( )</code>, they increment their shared variable, and when the final thread increments the shared variable, the other two threads instantly notice the new value (because of the cache coherency protocol) and finish the loop. If there are fewer than three CPUs, a thread may have to wait for a time-sharing context switch to occur before it notices the updated global variable.</para>
+        <para id="id14399291">With operating-system threads and multiple processors, a program can realistically break up a large computation between several independent threads and compute the solution more quickly. Of course this presupposes that the computation could be done in parallel in the first place.</para>
+      </section>
+  </content>
+</document>

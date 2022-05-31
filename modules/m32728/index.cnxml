@@ -1,0 +1,70 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Virtual Memory</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32728</md:content-id>
+  <md:title>Virtual Memory</md:title>
+  <md:abstract/>
+  <md:uuid>a6e5f476-8201-4c67-bd9f-c1cf3fa8a536</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1164380444798">Virtual memory decouples the addresses used by the program (virtual addresses) from the actual addresses where the data is stored in memory (physical addresses). Your program sees its address space starting at 0 and working its way up to some large number, but the actual physical addresses assigned can be very different. It gives a degree of flexibility by allowing all processes to believe they have the entire memory system to themselves. Another trait of virtual memory systems is that they divide your program’s memory up into <emphasis effect="italics">pages</emphasis> — chunks. Page sizes vary from 512 bytes to 1 MB or larger, depending on the machine. Pages don’t have to be allocated contiguously, though your program sees them that way. By being separated into pages, programs are easier to arrange in memory, or move portions out to disk.</para>
+      <section id="id1164383932882">
+        <title>Page Tables</title>
+        <para id="id2932106">Say that your program asks for a variable stored at location 1000. In a virtual memory machine, there is no direct correspondence between your program’s idea of where location 1000 is and the physical memory systems’ idea. To find where your variable is actually stored, the location has to be translated from a virtual to a physical address. The map containing such translations is called a <emphasis effect="italics">page table</emphasis>. Each process has a several page tables associated with it, corresponding to different regions, such as program text and data segments.</para>
+        <para id="id1164380390566">To understand how address translation works, imagine the following scenario: at some point, your program asks for data from location 1000. <link target-id="id6779519"/> shows the steps required to complete the retrieval of this data. By choosing location 1000, you have identified which region the memory reference falls in, and this identifies which page table is involved. Location 1000 then helps the processor choose an entry within the table. For instance, if the page size is 512 bytes, 1000 falls within the second page (pages range from addresses 0–511, 512–1023, 1024–1535, etc.).</para>
+        <para id="id1164376745740">Therefore, the second table entry should hold the address of the page housing the value at location 1000.</para>
+        <para id="id1164380614096">
+          <figure id="id6779519"><title>Virtual-to-physical address mapping</title><media id="id6779519_media" alt="Figure one shows an object labeled, Pocess Region Table, and an arrow pointing to the right labeled Virtual Translation. The arrow points at another object labeled, Page Table. From the left side of the second object is a label, Virtual Address Location 1000, with an arrow pointing to the right at the second object. To the right of the second object is an arrow labeled Physical Address that points at the label Data.">
+              <image mime-type="image/png" src="../../media/graphics1-66d5.png" id="id6779519__onlineimage" height="328" width="600"/>
+            </media>
+            
+          </figure>
+        </para>
+        <para id="id1164380139836">The operating system stores the page-table addresses virtually, so it’s going to take a virtual-to-physical translation to locate the table in memory. One more virtual-to- physical translation, and we finally have the true address of location 1000. The memory reference can complete, and the processor can return to executing your program.</para>
+      </section>
+      <section id="id1164382117211">
+        <title>Translation Lookaside Buffer</title>
+        <para id="id1164382040898">As you can see, address translation through a page table is pretty complicated. It required two table lookups (maybe three) to locate our data. If every memory reference was that complicated, virtual memory computers would be horrible performers. Fortunately, locality of reference causes virtual address translations to group together; a program may repeat the same virtual page mapping millions of times a second. And where we have repeated use of the same data, we can apply a cache.</para>
+        <para id="id1164380082625">All modern virtual memory machines have a special cache called a <emphasis effect="italics">translation lookaside buffer</emphasis> (TLB) for virtual-to-physical-memory-address translation. The two inputs to the TLB are an integer that identifies the program making the memory request and the virtual page requested. From the output pops a pointer to the physical page number. Virtual address in; physical address out. TLB lookups occur in parallel with instruction execution, so if the address data is in the TLB, memory references proceed quickly.</para>
+        
+        <para id="id536168">Like other kinds of caches, the TLB is limited in size. It doesn’t contain enough entries to handle all the possible virtual-to-physical-address translations for all the programs that might run on your computer. Larger pools of address translations are kept out in memory, in the page tables. If your program asks for a virtual-to- physical-address translation, and the entry doesn’t exist in the TLB, you suffer a <emphasis effect="italics">TLB miss</emphasis>. The information needed may have to be generated (a new page may need to be created), or it may have to be retrieved from the page table.</para>
+        <para id="id1164377103847">The TLB is good for the same reason that other types of caches are good: it reduces the cost of memory references. But like other caches, there are pathological cases where the TLB can fail to deliver value. The easiest case to construct is one where every memory reference your program makes causes a TLB miss:</para>
+        <code id="id1164385505133" display="block"><newline/>
+      REAL X(10000000) 
+      COMMON X
+      DO I=0,9999
+        DO J=1,10000000,10000
+          SUM = SUM + X(J+I) 
+        END DO
+      END DO
+    </code>
+        <para id="id1164382172055">Assume that the TLB page size for your computer is less than 40 KB. Every time through the inner loop in the above example code, the program asks for data that is 4 bytes*10,000 = 40,000 bytes away from the last reference. That is, each reference falls on a different memory page. This causes 1000 TLB misses in the inner loop, taken 1001 times, for a total of at least one million TLB misses. To add insult to injury, each reference is guaranteed to cause a data cache miss as well. Admittedly, no one would start with a loop like the one above. But presuming that the loop was any good to you at all, the restructured version in the code below would cruise through memory like a warm knife through butter:</para>
+        <code id="id1164382888096" display="block"><newline/>
+      REAL X(10000000) 
+      COMMON X
+      DO I=1,10000000
+        SUM = SUM + X(I) 
+      END DO
+    </code>
+        <para id="id1164377528847">The revised loop has unit stride, and TLB misses occur only every so often. Usually it is not necessary to explicitly tune programs to make good use of the TLB. Once a program is tuned to be “cache-friendly,” it nearly always is tuned to be TLB friendly.</para>
+        <para id="id1591292">Because there is a performance benefit to keeping the TLB very small, the TLB entry often contains a length field. A single TLB entry can be over a megabyte in length and can be used to translate addresses stored in multiple virtual memory pages.</para>
+      </section>
+      <section id="id8137102">
+        <title>Page Faults</title>
+        <para id="id1164381787659">A page table entry also contains other information about the page it represents, including flags to tell whether the translation is valid, whether the associated page can be modified, and some information describing how new pages should be initialized. References to pages that aren’t marked valid are called <emphasis effect="italics">page faults</emphasis>.</para>
+        <para id="id1164380441346">Taking a worst-case scenario, say that your program asks for a variable from a particular memory location. The processor goes to look for it in the cache and finds it isn’t there (cache miss), which means it must be loaded from memory. Next it goes to the TLB to find the physical location of the data in memory and finds there is no TLB entry (a TLB miss). Then it tries consulting the page table (and refilling the TLB), but finds that either there is no entry for your particular page or that the memory page has been shipped to disk (both are page faults). Each step of the memory hierarchy has shrugged off your request. A new page will have to be created in memory and possibly, depending on the circumstances, refilled from disk.</para>
+        <para id="id8618252">Although they take a lot of time, page faults aren’t errors. Even under optimal conditions every program suffers some number of page faults. Writing a variable for the first time or calling a subroutine that has never been called can cause a page fault. This may be surprising if you have never thought about it before. The illusion is that your entire program is present in memory from the start, but some portions may never be loaded. There is no reason to make space for a page whose data is never referenced or whose instructions are never executed. Only those pages that are required to run the job get created or pulled in from the disk.<footnote id="id1164384308831">The term for this is demand paging.</footnote></para>
+        <para id="id1164380044953">The pool of physical memory pages is limited because physical memory is limited, so on a machine where many programs are lobbying for space, there will be a higher number of page faults. This is because physical memory pages are continually being recycled for other purposes. However, when you have the machine to yourself, and memory is less in demand, allocated pages tend to stick around for a while. In short, you can expect fewer page faults on a quiet machine. One trick to remember if you ever end up working for a computer vendor: always run short benchmarks twice. On some systems, the number of page faults will go down. This is because the second run finds pages left in memory by the first, and you won’t have to pay for page faults again.<footnote id="id1164385516759">Text pages are identified by the disk device and block number from which they came.</footnote></para>
+        <para id="id1164380118722">Paging space (swap space) on the disk is the last and slowest piece of the memory hierarchy for most machines. In the worst-case scenario we saw how a memory reference could be pushed down to slower and slower performance media before finally being satisfied. If you step back, you can view the disk paging space as having the same relationship to main memory as main memory has to cache. The same kinds of optimizations apply too, and locality of reference is important. You can run programs that are larger than the main memory system of your machine, but sometimes at greatly decreased performance. When we look at memory optimizations in <link document="m33728"/>, we will concentrate on keeping the activity in the fastest parts of the memory system and avoiding the slow parts.</para>
+      </section>
+  </content>
+</document>

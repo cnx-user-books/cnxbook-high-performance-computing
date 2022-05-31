@@ -1,0 +1,14 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Closing Notes</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33699</md:content-id>
+  <md:title>Closing Notes</md:title>
+  <md:abstract/>
+  <md:uuid>ff1558c6-21cf-45f6-a095-24df4ae518ea</md:uuid>
+</metadata>
+
+<content>
+      <para id="id8946729">This chapter has been a basic introduction into how an optimizing compiler operates. However, this is not the last we will talk about compilers. In order to perform the automatic vectorization, parallelization, and data decomposition, compilers must further analyze the source code. As we encounter these topics, we will discuss the compiler impacts and how programmers can best interact with compilers.</para>
+      <para id="id8012504">For single-processor modern RISC architectures, compilers usually generate better code than most assembly language programmers. Instead of compensating for a simplistic compiler by adding hand optimizations, we as programmers must keep our programs simple so as not to confuse the compiler. By understanding the patterns that compilers are quite capable of optimizing, we can focus on writing straightforward programs that are portable and understandable.</para>
+  </content>
+</document>

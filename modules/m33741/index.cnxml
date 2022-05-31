@@ -1,0 +1,22 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>When Interchange Won't Work</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33741</md:content-id>
+  <md:title>When Interchange Won't Work</md:title>
+  <md:abstract/>
+  <md:uuid>65a52c63-2e1f-479c-9963-865c569c7ec5</md:uuid>
+</metadata>
+
+<content>
+      <para id="id7166232">In the matrix multiplication code, we encountered a non-unit stride and were able to eliminate it with a quick interchange of the loops. Unfortunately, life is rarely this simple. Often you find some mix of variables with unit and non-unit strides, in which case interchanging the loops moves the damage around, but doesn’t make it go away.</para>
+      <para id="id7126823">The loop to perform a matrix transpose represents a simple example of this dilemma:</para>
+      <code id="id7005774" display="block"><newline/>
+      DO I=1,N                          DO 20 J=1,M
+        DO J=1,M                          DO 10 I=1,N
+          A(J,I) = B(I,J)                      A(J,I) = B(I,J) 
+        ENDDO                             ENDDO
+      ENDDO                             ENDDO
+    </code>
+      <para id="id7196278">Whichever way you interchange them, you will break the memory access pattern for either A or B. Even more interesting, you have to make a choice between strided loads vs. strided stores: which will it be?<footnote id="id10661512">I can’t tell you which is the better way to cast it; it depends on the brand of computer. Some perform better with the loops left as they are, sometimes by more than a factor of two. Others perform better with them interchanged. The difference is in the way the processor handles updates of main memory from cache.</footnote> We really need a general method for improving the memory access patterns for <emphasis effect="italics">both</emphasis><code display="inline">A</code> and <code display="inline">B</code>, not one or the other. We’ll show you such a method in <link document="m33756"/>.</para>
+  </content>
+</document>

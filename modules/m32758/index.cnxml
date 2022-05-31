@@ -1,0 +1,62 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Special Values</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32758</md:content-id>
+  <md:title>Special Values</md:title>
+  <md:abstract/>
+  <md:uuid>87691391-917e-4dd8-afd4-7f575bf16adb</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id12074759">In addition to specifying the results of operations on numeric data, the IEEE standard also specifies the precise behavior on undefined operations such as dividing by zero. These results are indicated using several special values. These values are bit patterns that are stored in variables that are checked before operations are performed. The IEEE operations are all defined on these special values in addition to the normal numeric values. <link target-id="id12472702"/> summarizes the special values for a 32-bit IEEE floating-point number.</para>
+      
+      <table id="id12472702" summary="Shows the exponent and signifand for numerous special values."><title>Special Values for an IEEE 32-Bit Number</title>
+<tgroup cols="3"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <colspec colnum="3" colname="c3"/>
+          <tbody>
+            <row>
+              <entry>Special Value</entry>
+              <entry>Exponent</entry>
+              <entry>Significand</entry>
+            </row>
+            <row>
+              <entry>+ or – 0</entry>
+              <entry>00000000</entry>
+              <entry>0</entry>
+            </row>
+            <row>
+              <entry>Denormalized number</entry>
+              <entry>00000000</entry>
+              <entry>nonzero</entry>
+            </row>
+            <row>
+              <entry>NaN (Not a Number)</entry>
+              <entry>11111111</entry>
+              <entry>nonzero</entry>
+            </row>
+            <row>
+              <entry>+ or – Infinity</entry>
+              <entry>11111111</entry>
+              <entry>0</entry>
+            </row>
+          </tbody>
+        
+
+
+</tgroup>
+</table>
+      <para id="id6199171">The value of the exponent and significand determines which type of special value this particular floating-point number represents. Zero is designed such that integer zero and floating-point zero are the same bit pattern.</para>
+      <para id="id10690776">Denormalized numbers can occur at some point as a number continues to get smaller, and the exponent has reached the minimum value. We could declare that minimum to be the smallest representable value. However, with denormalized values, we can continue by setting the exponent bits to zero and shifting the significand bits to the right, first adding the leading “1” that was dropped, then continuing to add leading zeros to indicate even smaller values. At some point the last nonzero digit is shifted off to the right, and the value becomes zero. This approach is called <emphasis effect="italics">gradual underflow</emphasis> where the value keeps approaching zero and then eventually becomes zero. Not all implementations support denormalized numbers in hardware; they might trap to a software routine to handle these numbers at a significant performance cost.</para>
+      <para id="id6372425">At the top end of the biased exponent value, an exponent of all 1s can represent the <emphasis effect="italics">Not a Number</emphasis> (NaN) value or infinity. Infinity occurs in computations roughly according to the principles of mathematics. If you continue to increase the magnitude of a number beyond the range of the floating-point format, once the range has been exceeded, the value becomes infinity. Once a value is infinity, further additions won’t increase it, and subtractions won’t decrease it. You can also produce the value infinity by dividing a nonzero value by zero. If you divide a nonzero value by infinity, you get zero as a result.</para>
+      <para id="id7464355">The NaN value indicates a number that is not mathematically defined. You can generate a NaN by dividing zero by zero, dividing infinity by infinity, or taking the square root of -1. The difference between infinity and NaN is that the NaN value has a nonzero significand. The NaN value is very sticky. Any operation that has a NaN as one of its inputs always produces a NaN result.</para>
+  </content>
+</document>

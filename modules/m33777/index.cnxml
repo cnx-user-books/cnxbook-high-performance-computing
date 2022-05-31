@@ -1,0 +1,87 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Exercises</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33777</md:content-id>
+  <md:title>Exercises</md:title>
+  <md:abstract/>
+  <md:uuid>9246728a-dc18-4d43-91aa-f0ac23993ad1</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id1164520037737">
+        <problem id="oo-id1164519401503">
+          <para id="id1164518880170">Why is an unrolling amount of three or four iterations generally sufficient for simple vector loops on a RISC processor? What relationship does the unrolling amount have to floating-point pipeline depths?</para>
+        </problem>
+      </exercise>
+      <exercise id="id1164518598008">
+        <problem id="oo-id1164518600524">
+          <para id="id1164519151745">On a processor that can execute one floating-point multiply, one floating-point addition/subtraction, and one memory reference per cycle, what’s the best performance you could expect from the following loop?</para>
+       
+      <code id="id1164518831737" display="block"><newline/>
+      DO I = 1,10000
+        A(I) = B(I) * C(I) - D(I) * E(I)
+      ENDDO
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id1164519240176">
+        <problem id="oo-id1164519184865">
+          <para id="id1164519389471">Try unrolling, interchanging, or blocking the loop in subroutine <code display="inline">BAZFAZ</code> to increase the performance. What method or combination of methods works best? Look at the assembly language created by the compiler to see what its approach is at the highest level of optimization. <note id="eip-id1165369165006"> Compile the main routine and <code display="inline">BAZFAZ</code> separately; adjust <code display="inline">NTIMES</code> so that the untuned run takes about one minute; and use the compiler’s default optimization level.</note></para>
+        
+      <code id="id1164518641250" display="block"><newline/>
+            PROGRAM MAIN
+            IMPLICIT NONE
+            INTEGER M,N,I,J
+            PARAMETER (N = 512, M = 640, NTIMES = 500)
+            DOUBLE PRECISION Q(N,M), R(M,N)
+      C
+            DO I=1,M
+              DO J=1,N
+                Q(J,I) = 1.0D0
+                R(I,J) = 1.0D0
+              ENDDO
+            ENDDO
+      C
+            DO I=1,NTIMES
+              CALL BAZFAZ (Q,R,N,M)
+            ENDDO
+            END
+    
+            SUBROUTINE BAZFAZ (Q,R,N,M)
+            IMPLICIT NONE
+            INTEGER M,N,I,J
+            DOUBLE PRECISION Q(N,M), R(N,M)
+      C
+            DO I=1,N
+              DO J=1,M
+                R(I,J) = Q(I,J) * R(J,I)
+              ENDDO
+            ENDDO
+      C
+            END
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id1164518965554">
+        <problem id="oo-id1164519233445">
+          <para id="id1164518946655">Code the matrix multiplication algorithm in the “straightforward” manner and compile it with various optimization levels. See if the compiler performs any type of loop interchange.</para>
+ 
+          <para id="id1164518644810">Try the same experiment with the following code:</para>
+     
+      <code id="id1164518647664" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          A(I,J) = A(I,J) + 1.3
+        ENDDO
+      ENDDO
+    </code>
+      <para id="id1164518625850">Do you see a difference in the compiler’s ability to optimize these two loops? If you see a difference, explain it.</para>
+</problem>
+      </exercise>
+      <exercise id="id1164519006366">
+        <problem id="oo-id1164518972499">
+          <para id="id1164518683370">Code the matrix multiplication algorithm both the ways shown in this chapter. Execute the program for a range of values for N. Graph the execution time divided by N3 for values of N ranging from 50×50 to 500×500. Explain the performance you see.</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

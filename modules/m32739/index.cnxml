@@ -1,0 +1,26 @@
+<document xmlns="http://cnx.rice.edu/cnxml" xmlns:m="http://www.w3.org/1998/Math/MathML">
+  <title>Introduction</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m32739</md:content-id>
+  <md:title>Introduction</md:title>
+  <md:abstract/>
+  <md:uuid>06135792-ce21-49f6-8586-789899b0dd6b</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1168141317091">Often when we want to make a point that nothing is sacred, we say, “one plus one does not equal two.” This is designed to shock us and attack our fundamental assumptions about the nature of the universe. Well, in this chapter on floating- point numbers, we will learn that “<m:math>
+<m:mn>0.1</m:mn>
+<m:mo>+</m:mo>
+<m:mn>0.1</m:mn>
+</m:math> does not always equal <m:math><m:mn>0.2</m:mn></m:math>” when we use floating-point numbers for computations.</para>
+      <para id="id1168140126033">In this chapter we explore the limitations of floating-point numbers and how you as a programmer can write code to minimize the effect of these limitations. This chapter is just a brief introduction to a significant field of mathematics called <emphasis effect="italics">numerical analysis</emphasis>.</para>
+  </content>
+</document>

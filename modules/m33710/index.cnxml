@@ -1,0 +1,90 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Basic Block Profilers</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m33710</md:content-id>
+  <md:title>Basic Block Profilers</md:title>
+  <md:abstract/>
+  <md:uuid>d29c016a-2960-4fc9-b431-9eda881a28f5</md:uuid>
+</metadata>
+
+<content>
+      <para id="id18735778">There are several good reasons to desire a finer level of detail than you can see with a subroutine profiler. For humans trying to understand how a subroutine or function is used, a profiler that tells which lines of source code were actually executed, and how often, is invaluable; a few clues about where to focus your tuning efforts can save you time. Also, such a profiler saves you from discovering that a particularly clever optimization makes no difference because you put it in a section of code that never gets executed.</para>
+      <para id="id18176467">As part of an overall strategy, a subroutine profile can direct you to a handful of routines that account for most of the runtime, but it takes a <emphasis effect="italics">basic block profiler</emphasis><emphasis effect="italics"><footnote id="id3732910">A basic block is a section of code with only one entrance and one exit. If you know how many times the block was entered, you know how many times each of the statements in the block was executed, which gives you a line-by-line profile. The concept of a basic block is explained in detail in <link document="m33690"/></footnote></emphasis> to get you to the associated source code lines.</para>
+      <para id="id8941662">Basic block profilers can also provide compilers with information they need to perform their own optimizations. Most compilers work in the dark. They can restructure and unroll loops, but they cannot tell when it will pay off. Worse yet, misplaced optimizations often have an adverse effect of slowing down the code! This can be the result of added instruction cache burden, wasted tests introduced by the compiler, or incorrect assumptions about which way a branch would go at runtime. If the compiler can automatically interpret the results of a basic block profile, or if you can supply the compiler with hints, it often means a reduced run- time with little effort on your part.</para>
+      <para id="id12565391">There are several basic block profilers in the world. The closest thing to a standard, <emphasis effect="italics">tcov</emphasis>, is shipped with Sun workstations; it’s standard because the installed base is so big. On MIPS-based workstations, such as those from Silicon Graphics and DEC, the profiler (packaged as an extension to <emphasis effect="italics">prof</emphasis>) is called <emphasis effect="italics">pixie</emphasis>. We explain briefly how to run each profiler using a reasonable set of switches. You can consult your manual pages for other options.</para>
+      <section id="id7089361">
+        <title>tcov</title>
+        <para id="id6507948"><emphasis effect="italics">tcov</emphasis>, available on Sun workstations and other SPARC machines that run SunOS, gives execution statistics that describe the number of times each source statement was executed. It is very easy to use. Assume for illustration that we have a source program called <emphasis effect="italics">foo.c</emphasis>. The following steps create a basic block profile:</para>
+        <code id="id3356717" display="block"><newline/>
+      % cc -a foo.c -o foo
+      % foo
+      % tcov foo.c
+    </code>
+        <para id="id5832299">The <code display="inline">-a</code> option tells the compiler to include the necessary support for <emphasis effect="italics">tcov</emphasis>.<footnote id="id8617908">On Sun Solaris systems, the <code display="inline">–xa</code> option is used.</footnote> Several files are created in the process. One called <emphasis effect="italics">foo.d</emphasis> accumulates a history of the exe- cution frequencies within the program <emphasis effect="italics">foo</emphasis>. That is, old data is updated with new data each time <emphasis effect="italics">foo</emphasis> is run, so you can get an overall picture of what happens inside <emphasis effect="italics">foo</emphasis>, given a variety of data sets. Just remember to clean out the old data if you want to start over. The profile itself goes into a file called <emphasis effect="italics">foo.tcov</emphasis>.</para>
+        <para id="id12399682">Let’s look at an illustration. Below is a short C program that performs a bubble sort of 10 integers:</para>
+        <code id="id9506555" display="block"><newline/>
+      int n[] = {23,12,43,2,98,78,2,51,77,8};
+      main ()
+        {
+          int i, j, ktemp;
+          for (i=10; i&gt;0; i--) {
+            for (j=0; j&lt;i; j++) {
+              if (n[j] &lt; n[j+1]) {
+                ktemp = n[j+1], n[j+1] = n[j], n[j] = ktemp;
+              }
+            }
+          }
+        }
+    </code>
+        <para id="id12932257"><emphasis effect="italics">tcov</emphasis> produces a basic block profile that contains execution counts for each source line, plus some summary statistics (not shown):</para>
+        <code id="id15755321" display="block"><newline/>
+          int n[] = {23,12,43,2,98,78,2,51,77,8};
+          main ()
+      1 -&gt;  {
+               int i, j, ktemp;
+     10 -&gt;     for (i=10; i&gt;0; i--) {
+     10,      55 -&gt;       for (j=0; j&lt;i; j++) {
+     55 -&gt;         if (n[j] &lt; n[j+1]) {
+     23 -&gt;           ktemp = n[j+1], n[j+1] = n[j], n[j] = ktemp;
+                   }
+                 }
+               }
+      1 -&gt;   }
+    </code>
+        <para id="id7784510">The numbers to the left tell you the number of times each block was entered. For instance, you can see that the routine was entered just once, and that the highest count occurs at the test <code display="inline">n[j] &lt; n[j+1]</code>. <emphasis effect="italics">tcov</emphasis> shows more than one count on a line in places where the compiler has created more than one block.</para>
+      </section>
+      <section id="id6897344">
+        <title>pixie</title>
+        <para id="id5929069"><emphasis effect="italics">pixie</emphasis> is a little different from <emphasis effect="italics">tcov</emphasis>. Rather than reporting the number of times each source line was executed, pixie reports the number of machine clock cycles devoted to executing each line. In theory, you could use this to calculate the amount of time spent per statement, although anomalies like cache misses are not represented.</para>
+        <para id="id10562565"><emphasis effect="italics">pixie</emphasis> works by “pixifying” an executable file that has been compiled and linked in the normal way. Below we run <emphasis effect="italics">pixie</emphasis> on <emphasis effect="italics">foo</emphasis> to create a new executable called <emphasis effect="italics">foo.pixie</emphasis>:</para>
+        <code id="id5815643" display="block"><newline/>
+      % cc foo.c -o foo
+      % pixie foo
+      % foo.pixie
+      % prof -pixie foo
+    </code>
+        <para id="id7759864">Also created was a file named <emphasis effect="italics">foo.Addrs</emphasis>, which contains addresses for the basic blocks within <emphasis effect="italics">foo</emphasis>. When the new program, <emphasis effect="italics">foo.pixie</emphasis> , is run, it creates a file called <emphasis effect="italics">foo.Counts</emphasis> , containing execution counts for the basic blocks whose addresses are stored in <emphasis effect="italics">foo.Addrs</emphasis>. <emphasis effect="italics">pixie</emphasis> data accumulates from run to run. The statistics are retrieved using <emphasis effect="italics">prof</emphasis> and a special <emphasis effect="bold">–pixie</emphasis> flag.</para>
+        <para id="id15060308"><emphasis effect="italics">pixie</emphasis>’s default output comes in three sections and shows:</para>
+        <list id="id18698406" list-type="bulleted">
+          <item>Cycles per routine</item>
+          <item>Procedure invocation counts</item>
+          <item>Cycles per basic line</item>
+        </list>
+        <para id="id18720287">Below, we have listed the output of the third section for the bubble sort:</para>
+        <code id="id8247911" display="block"><newline/>
+      procedure (file)           line  bytes      cycles      %  cum %
+    
+      main (foo.c)                  7     44         605  12.11  12.11
+      _cleanup (flsbuf.c)          59     20         500  10.01  22.13
+      fclose (flsbuf.c)            81     20         500  10.01  32.14
+      fclose (flsbuf.c)            94     20         500  10.01  42.15
+      _cleanup (flsbuf.c)          54     20         500  10.01  52.16
+      fclose (flsbuf.c)            76     16         400   8.01  60.17
+      main (foo.c)                 10     24         298   5.97  66.14
+      main (foo.c)                  8     36         207   4.14  70.28
+      ....                         ..     ..          ..    ...    ...
+    </code>
+        <para id="id18590595">Here you can see three entries for the main routine from <emphasis effect="italics">foo.c</emphasis>, plus a number of system library routines. The entries show the associated line number and the number of machine cycles dedicated to executing that line as the program ran. For instance, line 7 of <emphasis effect="italics">foo.c</emphasis> took 605 cycles (12% of the runtime).</para>
+      </section>
+  </content>
+</document>
