@@ -1,0 +1,89 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Perfiladores de Bloques Básicos</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38419</md:content-id>
+  <md:title>Cronometraje y Perfilado - Perfiladores de Bloques Básicos</md:title>
+  <md:abstract/>
+  <md:uuid>8da41151-9c76-4acb-bbf8-db9443718e7b</md:uuid>
+</metadata>
+
+<content>
+      <para id="id18735778">Existen varias buenas razones para desear un nivel de detalle más fine que el que puede obtener usando un perfilador a nivel de subrutina. Para los humanos que tratan de entender cómo se usa una subrutina o función, un perfilador que indique cuáles líneas de código fuente se están ejecutando realmente, y cuán a menudo, resulta invaluable; unas pocas pistas acerca de dónde enfocar sus esfuerzos de afinación pueden ahorrarle mucho tiempo. Además, tal tipo de perfilador le ahora el descubrimiento de que una optimización particularmente inteligente no resulta en diferencia alguna, porque la colocó en una sección cuyo código nunca se ejecuta.</para>
+      <para id="id18176467">Como parte de una estrategia global, un perfilador de subrutinas puede dirigirlo hacia un puñado de rutinas que contabilizan la mayor parte del tiempo de ejecución, pero se necesita de un <emphasis effect="italics">perfilador de bloques básicos</emphasis><emphasis effect="italics"><footnote id="id3732910">Un bloque básico es una sección de código con un único punto de entrada y un único punto de salida. Si sabe cuántas veces se entró al bloque, sabe cuántas veces se ejecutó cada sentencia en el bloque, lo cuál le está dando un perfil línea por línea. El concepto de bloque básico se explica con más detalle en <link document="m33690"/></footnote></emphasis> para que pueda usted obtener las líneas de código asociadas.</para>
+      <para id="id8941662">Los perfiladores de bloques básicos también proporcionan a los compiladores la información que necesitan para realizar sus propias optimizaciones. Muchos compiladores trabajan a ciegas: pueden reestructurar y desenrollar ciclos, pero no pueden decir cuándo merece la pena hacerlo. Y lo que es todavía peor, a veces las optimizaciones mal ubicadas ¡tienen el efecto adverso de volver más lento el código! Ello puede deberse al gravamen a que se ve sometida la cache de instrucciones, a las pruebas innecesarias introducidas por el compilador, o a hipótesis incorrectas acerca de qué camino tomará una bifurcación a tiempo de ejecución. Si el compilador puede interpretar automáticamente los resultados de un perfilador de bloques básicos, o si puede usted proporcionarle algunos indicios, a menudo significa un tiempo de ejecución reducido con poco esfuerzo de su parte.</para>
+      <para id="id12565391">Existen muchísimos perfiladores de bloques básicos en el Mundo. Lo más parecido a un estándar, <emphasis effect="italics">tcov</emphasis>, se distribuye con las estaciones de trabajo Sun. Es estándar porque la base instalada es muy grande. En las estaciones de trabajo basadas en MIPS, tales como las Silicon Graphics y las DEC, el perfilador (empaquetado como una extensión de <emphasis effect="italics">prof</emphasis>) se llama <emphasis effect="italics">pixie</emphasis>. Explicaremos brevemente cómo ejecutar cada perfilador, usando un conjunto razonable de opciones. Puede consultar sus respectivas páginas de manual en busca de otras opciones.</para>
+      <section id="id7089361">
+        <title>tcov</title>
+        <para id="id6507948"><emphasis effect="italics">tcov</emphasis>, disponible para estaciones de trabajo Sun y otras máquinas SPARC que ejecuten SunOS, proporciona estadísticas de ejecución que describen el número de veces que fue ejecutada cada sentencia del código fuente. Es muy fácil de usar. Para ilustrarlo, asumamos que tenemos un programa fuente llamado <emphasis effect="italics">foo.c</emphasis>. Los siguientes pasos crean un perfil de bloques básicos:</para>
+        <code id="id3356717" display="block"><newline/>
+      % cc -a foo.c -o foo
+      % foo
+      % tcov foo.c
+    </code>
+        <para id="id5832299">La opción <code display="inline">-a</code> le indica al compilador que incluya el soporte necesario para <emphasis effect="italics">tcov</emphasis>.<footnote id="id8617908">En los sistemas Solaris de Sun se usa a opción <code display="inline">–xa</code>.</footnote> Se crean varios archivos durante el proceso. Uno llamado <emphasis effect="italics">foo.d</emphasis> acumula una historia de las frecuencias de ejecución adentro del programa <emphasis effect="italics">foo</emphasis>. Esto es, los datos antiguos se actualizan con datos nuevos cada vez que se ejecuta <emphasis effect="italics">foo</emphasis>, así que puede usted obtener una imagen panorámica de qué sucede adentro de <emphasis effect="italics">foo</emphasis>, dada una variedad de conjuntos de datos. Sólo recuerde limpiar los datos antiguos se quiere comenzar desde cero. El perfil en sí se guarda en un archivo llamado <emphasis effect="italics">foo.tcov</emphasis>.</para>
+        <para id="id12399682">Veamos una ilustración. A continuación está un pequeño programa en C que realiza una ordenación de 10 enteros mediante el algoritmo de la burbuja:</para>
+        <code id="id9506555" display="block"><newline/>
+      int n[] = {23,12,43,2,98,78,2,51,77,8};
+      main ()
+        {
+          int i, j, ktemp;
+          for (i=10; i&gt;0; i--) {
+            for (j=0; j&lt;i; j++) {
+              if (n[j] &lt; n[j+1]) {
+                ktemp = n[j+1], n[j+1] = n[j], n[j] = ktemp;
+              }
+            }
+          }
+        }
+    </code>
+        <para id="id12932257"><emphasis effect="italics">tcov</emphasis> produce un perfil de bloques básicos que contiene el conteo de la ejecución de cada línea del código fuente, además de algunas estadísticas de resumen (que no se muestran):</para>
+        <code id="id15755321" display="block"><newline/>
+          int n[] = {23,12,43,2,98,78,2,51,77,8};
+          main ()
+      1 -&gt;  {
+               int i, j, ktemp;
+     10 -&gt;     for (i=10; i&gt;0; i--) {
+     10,      55 -&gt;       for (j=0; j&lt;i; j++) {
+     55 -&gt;         if (n[j] &lt; n[j+1]) {
+     23 -&gt;           ktemp = n[j+1], n[j+1] = n[j], n[j] = ktemp;
+                   }
+                 }
+               }
+      1 -&gt;   }
+    </code>
+        <para id="id7784510">Los números a la izquierda le indican el número de veces que se entró a cada bloque. Por ejemplo, puede ver que a la rutina sólo se entró una vez, y que el conteo más alto ocurre en la condición <code display="inline">n[j] &lt; n[j+1]</code>. <emphasis effect="italics">tcov</emphasis> muestra más de un conteo sobre una línea en lugares donde el compilador ha creado más de un bloque.</para>
+      </section>
+      <section id="id6897344">
+        <title>pixie</title>
+        <para id="id5929069"><emphasis effect="italics">pixie</emphasis> <footnote id="traductor001">duendecillo, si se traduce literalmente. N. del T.</footnote> es ligeramente diferente de <emphasis effect="italics">tcov</emphasis>. En vez de reportar el número de veces que se ejecuta cada línea de código, pixie reporta el número de ciclos de reloj de máquina dedicados a cada línea. En teoría, puede usted usarlos para calcular la cantidad de tiempo gastada por sentencia, aunque no se representan anomalías como las fallas de cache.</para>
+        <para id="id10562565"><emphasis effect="italics">pixie</emphasis> funciona “pixificando” un archivo ejecutable que fue compilado y enlazado normalmente. A continuación mostramos la ejecución de <emphasis effect="italics">pixie</emphasis> sobre el programa <emphasis effect="italics">foo</emphasis> para crear un nuevo ejecutable llamado <emphasis effect="italics">foo.pixie</emphasis>:</para>
+        <code id="id5815643" display="block"><newline/>
+      % cc foo.c -o foo
+      % pixie foo
+      % foo.pixie
+      % prof -pixie foo
+    </code>
+        <para id="id7759864">También se creó un archivo llamado <emphasis effect="italics">foo.Addrs</emphasis>, el cual contiene las direcciones de los bloques básicos dentro de <emphasis effect="italics">foo</emphasis>. Cuando se ejecuta el nuevo programa, <emphasis effect="italics">foo.pixie</emphasis>, crea un archivo llamado <emphasis effect="italics">foo.Counts</emphasis> , que contiene la contabilidad de la ejecución de los bloques básicos cuyas direcciones están almacenadas en <emphasis effect="italics">foo.Addrs</emphasis>. Los datos de <emphasis effect="italics">pixie</emphasis> se acumulan de ejecución en ejecución. Las estadísticas se recuperan usando <emphasis effect="italics">prof</emphasis> y la bandera especial <emphasis effect="bold">–pixie</emphasis>.</para>
+        <para id="id15060308">La salida por defecto de <emphasis effect="italics">pixie</emphasis> se divide en tres secciones, como sigue:</para>
+        <list id="id18698406" list-type="bulleted"><item>Ciclos por rutina</item>
+<item>Conteo de la invocación de procedimientos</item>
+<item>Ciclos por línea básica</item>
+        </list>
+        <para id="id18720287">A continuación mostramos el listado de salida de la tercera sección para el programa de ordenación por el método de la burbuja:</para>
+        <code id="id8247911" display="block"><newline/>
+      procedure (file)           line  bytes      cycles      %  cum %
+    
+      main (foo.c)                  7     44         605  12.11  12.11
+      _cleanup (flsbuf.c)          59     20         500  10.01  22.13
+      fclose (flsbuf.c)            81     20         500  10.01  32.14
+      fclose (flsbuf.c)            94     20         500  10.01  42.15
+      _cleanup (flsbuf.c)          54     20         500  10.01  52.16
+      fclose (flsbuf.c)            76     16         400   8.01  60.17
+      main (foo.c)                 10     24         298   5.97  66.14
+      main (foo.c)                  8     36         207   4.14  70.28
+      ....                         ..     ..          ..    ...    ...
+    </code>
+        <para id="id18590595">Aquí puede usted ver tres entradas para la rutina principal de <emphasis effect="italics">foo.c</emphasis>, además de un número de rutinas de bibliotecas del sistema. Las entradas muestran el número de línea asociado y el número de ciclos de máquina dedicados a ejecutar dicha línea, conforme se corrió el programa. Por ejemplo, la línea 7 de <emphasis effect="italics">foo.c</emphasis> tomó 605 ciclos (12% del tiempo de ejecución).</para>
+      </section>
+  </content>
+</document>

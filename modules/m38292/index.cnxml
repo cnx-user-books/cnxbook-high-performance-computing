@@ -1,0 +1,15 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Ambientes de Paso de Mensajes - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38292</md:content-id>
+  <md:title>Ambientes de Paso de Mensajes - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>bbe3fe80-a081-4dfc-88b7-000caac1059c</md:uuid>
+</metadata>
+
+<content>
+    <para id="id1171603653487">Una interfaz de paso de mensajes es un conjunto de funciones y llamados a subrutinas para C o FORTRAN, que le proporcionan una forma de dividir una aplicación para que pueda ejecutarse en paralelo. Los datos se dividen y pasan a otros procesadores en forma de mensajes. Los procesadores receptores los desempacan, realizan algún trabajo, y envían los resultados de vuelta, o bien los pasan a otros procesadores en la computadora paralela.</para>
+    <para id="id1171607549799">En cierta forma, el paso de mensajes es el "lenguaje ensamblador" del procesamiento paralelo. Carga sobre sus hombros la responsabilidad última, y si usted es talentoso (y el problema que trata de resolver coopera), le permite lograr el máximo rendimiento. Si tiene usted un problema fácilmente escalable y no está satisfecho con el rendimiento obtenido, muy probablemente sea su culpa, puesto que el compilador no sabe nada de los aspectos paralelos del programa.</para>
+    <para id="id1171606561758">Los dos ambientes de paso de mensajes más populares son <emphasis effect="italics">parallel virtual machine</emphasis> (PVM) y <emphasis effect="italics">message-passing interface</emphasis> (MPI). Muchas de las características importantes están disponibles en ambos ambientes. Una vez que se haya convertido en un experto en paso de mensajes, migrar de PVM a MPI no le dará problemas. Incluso podrá usted operar sobre un sistema que proporcione sólo una interfaz de paso de mensajes propietaria. Sin embargo, una vez que entienda los conceptos de paso de mensajes y haya descompuesto apropiadamente su aplicación, usualmente no le costará mucho más migrarlo de una biblioteca de paso de mensajes a otra.<footnote id="id1171602881510">Note que dije "no le costará mucho más.”</footnote></para>
+  </content>
+</document>

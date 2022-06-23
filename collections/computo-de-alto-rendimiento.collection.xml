@@ -1,0 +1,199 @@
+<col:collection xmlns="http://cnx.rice.edu/collxml" xmlns:md="http://cnx.rice.edu/mdml" xmlns:col="http://cnx.rice.edu/collxml" xml:lang="es-mx">
+  <metadata xmlns:md="http://cnx.rice.edu/mdml" mdml-version="0.5">
+    <md:content-id>col11356</md:content-id>
+    <md:title>Cómputo de Alto Rendimiento</md:title>
+    <md:language>es-mx</md:language>
+    <md:license url="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution License</md:license>
+    <md:uuid>69956e43-dbc8-40e6-9a9f-0ba2cf250b1a</md:uuid>
+<md:slug>computo-de-alto-rendimiento</md:slug>
+</metadata>
+  <col:content>
+    <col:module document="m38315"/>
+    <col:module document="m37223"/>
+    <col:subcollection>
+      <md:title>Arquitecturas de Cómputo Modernas</md:title>
+      <col:content>
+        <col:subcollection>
+          <md:title>Memoria</md:title>
+          <col:content>
+            <col:module document="m37222"/>
+            <col:module document="m37229"/>
+            <col:module document="m37228"/>
+            <col:module document="m37220"/>
+            <col:module document="m37227"/>
+            <col:module document="m37225"/>
+            <col:module document="m37224"/>
+            <col:module document="m37226"/>
+            <col:module document="m37221"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Números de Punto Flotante</md:title>
+          <col:content>
+            <col:module document="m32739"/>
+            <col:module document="m32741"/>
+            <col:module document="m32772"/>
+            <col:module document="m32755"/>
+            <col:module document="m32754"/>
+            <col:module document="m32744"/>
+            <col:module document="m32770"/>
+            <col:module document="m32756"/>
+            <col:module document="m32758"/>
+            <col:module document="m32760"/>
+            <col:module document="m32762"/>
+            <col:module document="m32768"/>
+            <col:module document="m32765"/>
+          </col:content>
+        </col:subcollection>
+      </col:content>
+    </col:subcollection>
+    <col:subcollection>
+      <md:title>Programando y Afinando Software</md:title>
+      <col:content>
+        <col:subcollection>
+          <md:title>Qué Hace un Compilador</md:title>
+          <col:content>
+            <col:module document="m38387"/>
+            <col:module document="m38391"/>
+            <col:module document="m38392"/>
+            <col:module document="m38394"/>
+            <col:module document="m38395"/>
+            <col:module document="m38400"/>
+            <col:module document="m38402"/>
+            <col:module document="m38401"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Cronometraje y Perfilado</md:title>
+          <col:content>
+            <col:module document="m38404"/>
+            <col:module document="m38409"/>
+            <col:module document="m38416"/>
+            <col:module document="m38419"/>
+            <col:module document="m38424"/>
+            <col:module document="m38425"/>
+            <col:module document="m38426"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Eliminando el Desorden</md:title>
+          <col:content>
+            <col:module document="m38428"/>
+            <col:module document="m38429"/>
+            <col:module document="m38430"/>
+            <col:module document="m38439"/>
+            <col:module document="m38441"/>
+            <col:module document="m38442"/>
+            <col:module document="m38443"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Optimización de Ciclos</md:title>
+          <col:content>
+            <col:module document="m38445"/>
+            <col:module document="m38446"/>
+            <col:module document="m38449"/>
+            <col:module document="m38486"/>
+            <col:module document="m33734"/>
+            <col:module document="m33736"/>
+            <col:module document="m33738"/>
+            <col:module document="m33741"/>
+            <col:module document="m33756"/>
+            <col:module document="m33770"/>
+            <col:module document="m33773"/>
+            <col:module document="m33777"/>
+          </col:content>
+        </col:subcollection>
+      </col:content>
+    </col:subcollection>
+    <col:subcollection>
+      <md:title>Procesadores Paralelos de Memoria Compartida</md:title>
+      <col:content>
+        <col:subcollection>
+          <md:title>Entendiendo el Paralelismo</md:title>
+          <col:content>
+            <col:module document="m37327"/>
+            <col:module document="m37401"/>
+            <col:module document="m32784"/>
+            <col:module document="m32782"/>
+            <col:module document="m32788"/>
+            <col:module document="m32789"/>
+            <col:module document="m32792"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Shared-Memory Multiprocessors</md:title>
+          <col:content>
+            <col:module document="m32797"/>
+            <col:module document="m32794"/>
+            <col:module document="m32800"/>
+            <col:module document="m32802"/>
+            <col:module document="m32804"/>
+            <col:module document="m32807"/>
+            <col:module document="m32810"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Programming Shared-Memory Multiprocessors</md:title>
+          <col:content>
+            <col:module document="m32812"/>
+            <col:module document="m32821"/>
+            <col:module document="m32814"/>
+            <col:module document="m32820"/>
+            <col:module document="m32819"/>
+          </col:content>
+        </col:subcollection>
+      </col:content>
+    </col:subcollection>
+    <col:subcollection>
+      <md:title>Procesamiento Paralelo Escalable</md:title>
+      <col:content>
+        <col:subcollection>
+          <md:title>Soporte del Lenguaje para Mejorar el Rendimiento</md:title>
+          <col:content>
+            <col:module document="m38316"/>
+            <col:module document="m38317"/>
+            <col:module document="m38318"/>
+            <col:module document="m38320"/>
+            <col:module document="m38329"/>
+            <col:module document="m38331"/>
+            <col:module document="m38337"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Ambientes de Paso de Mensajes</md:title>
+          <col:content>
+            <col:module document="m38292"/>
+            <col:module document="m38291"/>
+            <col:module document="m33783"/>
+            <col:module document="m33784"/>
+          </col:content>
+        </col:subcollection>
+      </col:content>
+    </col:subcollection>
+    <col:subcollection>
+      <md:title>Apéndices</md:title>
+      <col:content>
+        <col:subcollection>
+          <md:title>Appendix C: High Performance Microprocessors</md:title>
+          <col:content>
+            <col:module document="m33671"/>
+            <col:module document="m33672"/>
+            <col:module document="m33673"/>
+            <col:module document="m33675"/>
+            <col:module document="m33679"/>
+            <col:module document="m33677"/>
+            <col:module document="m33683"/>
+            <col:module document="m33682"/>
+          </col:content>
+        </col:subcollection>
+        <col:subcollection>
+          <md:title>Appendix B: Looking at Assembly Language</md:title>
+          <col:content>
+            <col:module document="m33787"/>
+          </col:content>
+        </col:subcollection>
+      </col:content>
+    </col:subcollection>
+  </col:content>
+</col:collection>

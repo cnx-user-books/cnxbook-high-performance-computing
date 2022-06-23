@@ -1,0 +1,21 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Soporte del Lenguaje para Mejorar el Rendimiento - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38316</md:content-id>
+  <md:title>Soporte del Lenguaje para Mejorar el Rendimiento - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>3c33e71b-bffe-458b-b114-9276a2523300</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1172478206187">Este capítulo discute los lenguajes de programación que se usan en los sistemas de procesamiento paralelo más grandes.  Usualmente, cuando se tope con la necesidad de portar y afinar su código para una nueva arquitectura escalable, tendrá que sentarse durante algún tiempo a replantear su aplicación. A veces requerirá de hacer cambios fundamentales a su algoritmo antes de que pueda comenzar a usar la nueva arquitectura. No se sorprenda si requiere reescribir todo o parte de la aplicación en uno de estos lenguajes.
+Las modificaciones sobre un sistema bien pueden no reportar beneficios de rendimiento sobre otro sistema distinto. Pero si la aplicación es lo suficientemente importante, no importará el esfuerzo con tal de mejorar el rendimiento.</para>
+      <para id="id1172486532062">En este capítulo cubriremos:</para>
+      <list id="id1172476102160" list-type="bulleted">
+        <item>FORTRAN 90</item>
+        <item>HPF: High Performance FORTRAN</item>
+      </list>
+      <para id="id1172484747224">Estos lenguajes fueron diseñados para usarse en sistemas de cómputo de alto rendimiento. Crearemos paso a paso un pequeño programa en cada uno de ellos, usando un sencillo cálculo de diferencias finitas que modela aproximadamente un flujo calórico. Se trata de un problema clásico que contiene una gran cantidad de paralelismo, y que puede resolverse fácilmente en una gran variedad de arquitecturas paralelas.</para>
+      <para id="id3736609">Introduciremos y discutiremos el concepto de SPMD (Simple Program, Multiple Data, Programa Único Múltiples Datos), mediante el cual tratamos a las computadoras MIMD como si fueran SIMD. Escribiremos nuestras aplicaciones tal como si estuviéramos usando un gran sistema SIMD para resolver el problema. Pero en vez de usar realmente tal sistema SIMD, la aplicación resultante se compilará para usarse en uno MIMD. La sincronización implícita de los sistemas SIMD será reemplazada en los sistemas MIMD por sincronización explícita a tiempo de ejecución.</para>
+  </content>
+</document>

@@ -1,0 +1,129 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Soporte del Lenguaje para Mejorar el Rendimiento - Problema de Datos en Paralelo: Flujo Calórico</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38317</md:content-id>
+  <md:title>Soporte del Lenguaje para Mejorar el Rendimiento - Problema de Datos en Paralelo: Flujo Calórico</md:title>
+  <md:abstract/>
+  <md:uuid>5e9f83b2-8aaa-4959-bee3-36e54c7efa31</md:uuid>
+</metadata>
+
+<content>
+      <para id="id16934357">Un problema clásico que explota el procesamiento paralelo escalable, es la simulación de un flujo calórico. La física tras este fenómeno descansa en una ecuación diferencial en derivadas parciales.</para>
+      <para id="id8096468">Comenzaremos con una placa de metal unidimensional (también conocida como una barra), y avanzaremos hacia una placa bidimensional en los ejemplos posteriores. Al arranque, la barra se encuentra a cero grados Celsius. Luego metemos uno de sus extremos en vapor a 100 grados, y el otro extremo en hielo a cero grados. Queremos simular cómo es el flujo calórico de un extremo al otro, y observar las temperaturas resultantes a lo largo de los distintos puntos de la barra de metal, hasta que dichas temperaturas se estabilicen.</para>
+      <para id="id9957412">Para lograrlo, dividiremos la barra en 10 segmentos, y seguiremos la pista a la temperatura de cada segmento a lo largo del tiempo. Podemos ver intuitivamente que, en cada ciclo de la simulación, la temperatura que adquirirá cada porción de la barra será el promedio de las temperaturas a su alrededor. Dado que hay temperaturas fijas en ciertos puntos de la barra, el
+resto eventualmente convergerán a un estado estable tras un número suficiente de ciclos. La <link target-id="id9765877"/> muestra el estado al inicio de la simulación.</para>
+      <figure id="id9765877"><title>Flujo Calórico en una Barra</title><media id="id9765877_media" alt="Esta figura es un diagrama de flujo que muestra cajas iniciando en la 100 y seguidas por una cadena de cajas etiquetadas 0. Las cajas también están numeradas del 1 al 10. Hay una flecha apuntando a la derecha, etiquetada flujo del calor, y bajo la cuarta, quinta y sexta cajas está la etiqueta promedio.">
+          <image mime-type="image/png" src="../../media/graphics1-e34e.png" id="id9765877__onlineimage" height="219" width="600"/>
+        </media>
+        
+      <!--figure 13-1--></figure>
+      <para id="id6138400">Una implementación simplista de tal simulación es como sigue:</para>
+      <code id="id11314690" display="block"><newline/>
+      PROGRAM HEATROD 
+      PARAMETER(MAXTIME=200) 
+      INTEGER TICKS,I,MAXTIME 
+      REAL*4 ROD(10)
+      ROD(1) = 100.0
+      DO I=2,9
+        ROD(I) = 0.0
+      ENDDO
+      ROD(10) = 0.0
+      DO TICKS=1,MAXTIME
+        IF ( MOD(TICKS,20) .EQ. 1 ) PRINT 100,TICKS,(ROD(I),I=1,10) 
+        DO I=2,9
+          ROD(I) = (ROD(I-1) + ROD(I+1) ) / 2
+        ENDDO 
+      ENDDO
+100   FORMAT(I4,10F7.2)
+      END
+    </code>
+      <para id="id9880318">La salida de este programa será la siguiente:</para>
+      <code id="id3045635" display="block"><newline/>
+% f77 heatrod.f 
+heatrod.f:
+ MAIN heatrod:
+% a.out
+   1 100.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00  0.00
+  21 100.00  87.04  74.52  62.54  51.15  40.30  29.91  19.83   9.92  0.00
+  41 100.00  88.74  77.51  66.32  55.19  44.10  33.05  22.02  11.01  0.00
+  61 100.00  88.88  77.76  66.64  55.53  44.42  33.31  22.21  11.10  0.00
+  81 100.00  88.89  77.78  66.66  55.55  44.44  33.33  22.22  11.11  0.00
+ 101 100.00  88.89  77.78  66.67  55.56  44.44  33.33  22.22  11.11  0.00
+ 121 100.00  88.89  77.78  66.67  55.56  44.44  33.33  22.22  11.11  0.00
+ 141 100.00  88.89  77.78  66.67  55.56  44.44  33.33  22.22  11.11  0.00
+ 161 100.00  88.89  77.78  66.67  55.56  44.44  33.33  22.22  11.11  0.00
+ 181 100.00  88.89  77.78  66.67  55.56  44.44  33.33  22.22  11.11  0.00
+%
+    </code>
+      <para id="id14183444">Claramente, para el ciclo de ejecución 101, la simulación converge con una precisión de dos decimales, conforme los números han dejado de cambiar. Debe tratarse de una aproximación a un estado de temperaturas estables al centro  de cada segmento de la barra.</para>
+      <para id="id9805531">Ahora bien, para este momento los lectores más astutos estarán diciéndose: "Ey, por si no te has dado cuenta, este ciclo tiene una dependencia de flujo." Puede usted alegar que ello impedirá paralelizarlo siquiera un poquito. ¡Es tan grave que ni siquiera puede usted deshacer el bucle para lograr algo de paralelismo a nivel de instrucciones!</para>
+      <para id="id14125917">Una persona familiarizada con la teoría del flujo calórico también pudiera
+señalar que el ciclo anterior no implementa <emphasis effect="italics">exactamente</emphasis> el modelo del flujo calórico. El problema es que los valores en el lado derecho de la asignación en el ciclo ROD, se supone que vienen del ciclo de ejecución anterior, y que el valor en el lado izquierdo es el que tendrá en el siguiente ciclo. Pero debido a la manera en que está escrito, el valor ROD(I-1) viene desde el siguiente ciclo, como se muestra en la <link target-id="id9834383"/>.</para>
+      <para id="id13891705">Este problema puede solucionarse usando una técnica conocida como
+<emphasis effect="italics">rojo-negro</emphasis>, en la cual alternamos entre dos arreglos.  La <link target-id="id14172064"/> muestra cómo opera (usando dos arreglos para eliminar una dependencia) la versión rojo-negro del cálculo. ¡Mata dos pájaros de una sola pedrada! Ahora
+las matemáticas son precisamente correctas, <emphasis effect="italics">y</emphasis> no hay recurrencia. Suena como una situación realmente de ganar-ganar.</para>
+      <para id="id9834383">
+        <figure id="id11121403"><title>Calculando el nuevo valor de una celda.</title><media id="id11121403_media" alt="TEsta figura es un diagrama de flujo mostrando cajas comenzando con 100 y seguida por una cadena de cajas etiquetadas 50, 25, 12.5, y luego seis cajas etiquetadas 0. Las cajas también están numeradas de la 1 a la 10. Bajo la cuarta, quinta y sexta cajas está la etiqueta promedio.">
+            <image mime-type="image/png" src="../../media/graphics2-9b3a.png" id="id11121403__onlineimage" height="151" width="600"/>
+          </media>
+          
+        <!--figure 13-2--></figure>
+      </para>
+      <figure id="id14172064"><title>Usando dos arreglos para eliminar una dependencia</title><media id="id14172064_media" alt="Esta figura es un diagrama de flujo mostrando cajas que comienzan con la 100 y van seguidas por una cadena de cajas etiquetadas 0. Las cajas también están numeradas de la antigua 1 a la antigua 10. Debajo de la cuarta, quinta y sexta cajas está la etiqueta promedio. Este promedio está acompañado por una gran flecha que apunta hacia abajo a otro diagrama de flujo mostrando cajas que comienzan con la 100 y 50, y van seguidas por una cadena de cajas etiquetadas 0. Las cajas también están numeradas de fija1 a fija 10.">
+          <image mime-type="image/png" src="../../media/graphics3-b411.png" id="id14172064__onlineimage" height="292" width="599"/>
+        </media>
+        
+      <!-- figure 13-3--></figure>
+      <para id="id14167005">La única desventaja de este enfoque, es que toma el doble de almacenamiento en memoria, y el doble de ancho de banda de memoria. <footnote id="id8233623">Hay otro enfoque rojo-negro que calcula primero los elementos pares y después los elementos nones de la barra, en dos pasadas.  Este enfoque no presenta dependencias de datos entre ambas pasadas.  El arreglo ROD nunca tiene todos los valores en el mismo ciclo de ejecución.  O bien los valores pares o bien los nones están un ciclo de tiempo adelante de los otros.  Se requiere de saltar los elementos de dos en dos y se duplica el ancho de banda necesario, pero no la memoria requerida para resolver el problema.</footnote> El código código modificado es como sigue:</para>
+      <code id="id17037696" display="block"><newline/>
+      PROGRAM HEATRED 
+      PARAMETER(MAXTIME=200) 
+      INTEGER TICKS,I,MAXTIME 
+      REAL*4 RED(10),BLACK(10)
+    
+      RED(1) = 100.0
+      BLACK(1) = 100.0
+      DO I=2,9
+        RED(I) = 0.0
+      ENDDO
+      RED(10) = 0.0
+      BLACK(10) = 0.0
+    
+      DO TICKS=1,MAXTIME,2
+        IF ( MOD(TICKS,20) .EQ. 1 ) PRINT 100,TICKS,(RED(I),I=1,10) 
+        DO I=2,9
+          BLACK(I) = (RED(I-1) + RED(I+1) ) / 2
+        ENDDO
+        DO I=2,9
+          RED(I) = (BLACK(I-1) + BLACK(I+1) ) / 2
+        ENDDO 
+      ENDDO
+100   FORMAT(I4,10F7.2) 
+      END
+    </code>
+      <para id="id15731769">La salida del programa modificado es como sigue:</para>
+      <code id="id10808923" display="block"><newline/>
+% f77 heatred.f 
+heatred.f:
+ MAIN heatred:
+% a.out
+   1 100.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00   0.00  0.00
+  21 100.00  82.38  66.34  50.30  38.18  26.06  18.20  10.35   5.18  0.00
+  41 100.00  87.04  74.52  61.99  50.56  39.13  28.94  18.75   9.38  0.00
+  61 100.00  88.36  76.84  65.32  54.12  42.91  32.07  21.22  10.61  0.00
+  81 100.00  88.74  77.51  66.28  55.14  44.00  32.97  21.93  10.97  0.00
+ 101 100.00  88.84  77.70  66.55  55.44  44.32  33.23  22.14  11.07  0.00
+ 121 100.00  88.88  77.76  66.63  55.52  44.41  33.30  22.20  11.10  0.00
+ 141 100.00  88.89  77.77  66.66  55.55  44.43  33.32  22.22  11.11  0.00
+ 161 100.00  88.89  77.78  66.66  55.55  44.44  33.33  22.22  11.11  0.00
+ 181 100.00  88.89  77.78  66.67  55.55  44.44  33.33  22.22  11.11  0.00
+%
+    </code>
+      <para id="id9233276">Resulta interesante notar que el programa modificado requiere de más tiempo de convergencia que la primera versión.  Converge hasta la iteración 181, en vez de en la 101. Si observa usted la primera versión, notará que debido a la recurrencia, el calor terminaba fluyendo más rápido de izquierda a derecha, dado que el elemento izquierdo de cada promedio era el valor del siguiente ciclo de ejecución.  Puede parecer ágil, pero está mal. <footnote id="id12892923">Existen otros enfoques algorítmicos para resolver las ecuaciones diferenciales en derivadas parciales, tales como el "método rápido multipolo" que acelera la convergencia "legalmente". No asuma que el
+enfoque de fuerza bruta usado aquí es el único método para resolver este problema en particular. Los programadores siempre deben buscar el mejor algoritmo disponible (sea o no paralelo) antes de intentar escalar el algoritmo "equivocado". Para aquellos cuates que no son científicos en  
+computación, el tiempo para la solución es más importante que el incremento lineal de velocidad.</footnote> Generalmente, en este problema, cualquier enfoque converge a los mismos valores eventuales dentro de los límites de la representación de punto flotante.</para>
+      <para id="id6563124">El problema de flujo calórico es extremadamente simple, y en su forma rojo-negro, resulta inherentemente muy paralelizable con interacciones muy simples de datos. Resulta un buen modelo para una amplia variedad de problemas en los cuales discretizamos espacios bidimensionales y tridimensionales, y realizamos alguna simulación sencilla en tales espacios.</para>
+      <para id="id9115481">Este problema usualmente puede escalarse creando una malla más fina. A menudo, el beneficio de usar procesadores escalables viene de permitir crear dichas mallas más finas, y no de obtener soluciones en tiempos más cortos. Por ejemplo, puede que usted sea capaz de realizar una simulación climática a nivel mundial, usando una malla con una separación de 200 millas, con un  
+solo procesador en cuatro horas. Usando 100 procesadores, puede que sea capaz de ejecutar la misma simulación usando un tamaño de malla de 20 millas, también en cuatro horas, pero con resultados mucho más precisos. O, utilizando 400 procesadores, puede hacer una simulación de malla aún más fina en una hora.</para>
+  </content>
+</document>

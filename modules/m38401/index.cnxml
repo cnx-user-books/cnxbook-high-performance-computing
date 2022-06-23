@@ -1,0 +1,56 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Qué Hace un Compilador - Ejercicios</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38401</md:content-id>
+  <md:title>Qué Hace un Compilador - Ejercicios</md:title>
+  <md:abstract/>
+  <md:uuid>7cbbc75c-24f6-406d-b83e-63f103df73d1</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id8535242"><problem id="oo-id9045736">
+          <para id="id9645539">¿Su compilador reconoce el código muerto en el siguiente programa? ¿Cómo puede estar seguro? ¿Le envía el compilador algún aviso?</para>
+        
+      <code id="id7119604" display="block"><newline/>
+      main()
+      {
+          int k=1;
+          if (k == 0)
+              printf ("Esta sentencia nunca se ejecuta.\n");
+      }
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id5242024">
+        <problem id="oo-id9047804">
+          <para id="id7504898">Compile el siguiente código, y ejecútelo bajo distintos niveles de optimización.</para>
+          <para id="id9836748">Trate de adivinar los distintos tipos de optimizaciones que se están realizando para mejorar el rendimiento, conforme se incrementa el nivel de optimización.</para>
+      <code id="id8780189" display="block"><newline/>
+      REAL*8 A(1000000) 
+      DO I=1,1000000
+         A(I) = 3.1415927
+      ENDDO
+      DO I=1,1000000
+        A(I) = A(I) * SIN(A(I)) + COS(A(I)) ENDDO
+      PRINT *,"Terminado"
+    </code>
+</problem>
+      </exercise>
+      <exercise id="id3096241">
+        <problem id="oo-id9054447">
+          <para id="id9646432">Tome el siguiente segmento de código y compílelo a varios niveles de optimización. Observe el código ensamblador generado (en algunos compiladores esto se hace con la opción -S) y encuentre los efectos de cada nivel de optimización sobre el lenguaje máquina. Mida el tiempo de ejecución del programa para ver el rendimiento a diferentes niveles de optimización. Si tiene acceso a múltiples arquitecturas, observe el código generado usando los mismos niveles de optimización sobre diferentes arquitecturas.</para>
+      <code id="id9670496" display="block"><newline/>
+      REAL*8 A(1000000) 
+      COMMON/BLK/A
+       .... Llamada para medir el tiempo
+      DO I=1,1000000
+        A(I) = A(I) + 1.234
+      ENDDO
+       .... Llamada para medir el tiempo
+      END
+    </code>
+<para id="id9834345">¿Por qué es necesario poner el arreglo adentro de un bloque común?</para>
+ </problem>
+      </exercise>
+  </content>
+</document>

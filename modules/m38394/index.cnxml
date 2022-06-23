@@ -1,0 +1,92 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Qué Hace un Compilador - Visita Guiada al Optimizador de Código</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38394</md:content-id>
+  <md:title>Qué Hace un Compilador - Visita Guiada al Optimizador de Código</md:title>
+  <md:abstract/>
+  <md:uuid>aafa66bf-1177-468a-8569-f4c6c7b6fd02</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1168793180042">Comenzaremos dando un paseo por el optimizador de código de un compilador, para verlo en acción. Creemos que es interesante, y si puede usted volverse empático con el compilador se convertirá en un mejor programador; verá lo que el compilador espera de usted, así como lo que puede hacer por sí mismo.</para>
+      <section id="id1168792117152"><title>El Proceso de Compilación</title><figure id="id8620750"><title>Procesos básicos de un compilador</title><media id="id8620750_media" alt="Esta figura es un diagrama de flujo que muestra el movimiento de líneas de código numeradas a cajas numeradas. En la parte superior hay un grupo de código, la primera línea mostrando A=B*C+5, y la segunda D=B*C. En la parte inferior de este grupo está una línea apuntado a una caja etiquetada Análisis Lexicográfico. Bajo ella está una línea apuntado a una línea de código, A=B*C+5. La A está etiquetada como Variable, el * como Operador y el 5 como Constante. Bajo esta línea de código está una flecha apuntando hacia abajo a una caja rotulada Análisis Sintáctico. Bajo esta caja está un grupo de código. La primera línea dice T1:=B*C, la segunda A:=T1+5, y la tercera D:=B*C. Apuntando hacia la parte superior derecha está una flecha que señala a una caja etiquetada Optimización. ">
+            <image mime-type="image/png" src="../../media/Picture 1-61f8.png" id="id8620750__onlineimage" height="422" width="700"/>
+          </media>
+        </figure>
+        
+<para id="id1168792618299">Típicamente, el proceso de compilación se divide en un número de pasos identificables, como se muestra en la <link target-id="id8620750"/>. Aunque no todos los compiladores estén implementados exactamente de esta manera, ayuda a comprender las diferentes funciones que éstos deben realizar:</para>
+        
+        <list id="id1168792364781" list-type="enumerated" number-style="arabic"><item>Una fase de precompilación o preprocesamiento, donde se realiza cierta manipulación textual sencilla del código fuente. El paso de preprocesamiento puede procesar o incluir archivos, así como realizar substituciones sencillas de cadenas de texto a lo largo del código.</item>
+          <item>La fase de análisis lexicográfico es la que descompone las sentencias de código fuente entrantes en tokens tales como variables, constantes, comentarios o elementos del lenguaje.</item>
+          <item>La fase de análisis sintáctico es la encargada de comprobar la sintaxis de la entrada, y el copilador traduce el programa entrante a un lenguaje intermedio que está listo para su optimización.</item>
+          <item>Se le realizan una o más pasadas de optimización al lenguaje intermedio.</item>
+          <item>Un generador de código objeto traduce el lenguaje intermedio a código ensamblador, tomando en consideración los detalles arquitectónicos particulares del procesador en cuestión.</item>
+        </list>
+        <para id="id1168792111577">Conforme los compiladores se vuelven más y más sofisticados para poder dar hasta el último bit de rendimiento del procesador, algunos de estos pasos (especialmente los de optimización y generación de código) se vuelven más y más confusos. En este capítulo nos enfocaremos en el optimizador de código tradicional de un compilador, y en los capítulos subsecuentes revisaremos más de cerca cómo hacen optimizaciones más sofisticadas los compiladores modernos.</para>
+      </section>
+      <section id="id1168790074727">
+        <title>Representación en Lenguaje Intermedio</title>
+        <para id="id1168789898631">Como estamos más interesados en la optimización de nuestro programa, comenzaremos nuestra discusión a partir de la salida de la fase de análisis sintáctico del compilador. Dicha salida está en la forma de un <emphasis effect="italics">lenguaje intermedio</emphasis> (LI), algo entre un lenguaje de alto nivel y un lenguaje ensamblador. El lenguaje intermedio expresa los mismos cálculos que en el programa original, en una forma que el compilador pueda manipular más fácilmente. Es más, ciertas instrucciones que no están presentes en el fuente, tales como expresiones de direccionamiento para referencias a arreglos, se hacen visibles junto con el resto del programa, haciéndolo también de este modo sujeto de optimización.</para>
+        <para id="id8938507">¿Cómo luce un lenguaje intermedio? En términos de complejidad, es similar a un código ensamblador, pero no tan simple como para que se pierdan las definiciones<footnote id="id4782011">Por "definiciones" nos referimos a la asignación de valores, no a las declaraciones.</footnote> y usos de las variables. Necesitaremos la información acerca de definición y uso para analizar el flujo de datos a través del programa. Típicamente los cálculos se expresan como u flujo de <emphasis effect="italics">cuádruplas</emphasis> — sentencias con exactamente un operador, (hasta) dos operandos, y un resultado.<footnote id="id1168790028574">De manera más general, el código puede representarse como <emphasis effect="italics">n</emphasis>-tuplas. Depende del nivel del lenguaje intermedio.</footnote> Presuponiendo que cualquier cosa en el programa fuente original pueda cambiar su representación en términos de cuádruplas, tenemos un lenguaje intermedio utilizable. Para darnos una idea de cómo trabaja, reescribiremos la sentencia siguiente como una serie de cuatro cuádruplas:</para>
+        <code id="id1168790341451" display="block">A = -B + C * D / E 
+    </code>
+        <para id="id2288794">Tomando todo como una unidad, la sentencia tiene cuatro operadores y cuatro operandos: <code>/</code>, <code>*</code>, <code>+</code> y <code>-</code> (negación), y <code>B</code>, <code>C</code>, <code>D</code>, y <code>E</code>. Claramente es demasiado para que quepa en una cuádrupla. Necesitamos una forma con exactamente un operador y, cuando mucho, dos operandos por sentencia. La versión que sigue lo lleva a cabo, empleando variables temporales para almacenar los resultados intermedios:</para>
+        <code id="id1168792935516" display="block"><newline/>
+      T1 = D / E 
+      T2 = C * T1
+      T3 = -B
+      A  = T3 + T2
+    </code>
+        <para id="id4598870">Por supuesto, un lenguaje intermedio utilizable requiere de algunas otras características, como apuntadores. Estamos por sugerir la creación de nuestro propio lenguaje intermedio para investigar cómo trabajan las optimizaciones. Para comenzar, necesitamos establecer unas pocas reglas:</para>
+        <list id="id1168793411908" list-type="bulleted"><item>Las instrucciones están formadas por un código de operación, dos operandos y un resultado. Dependiendo de la instrucción, los operandos pueden quedar vacíos.</item>
+          <item>Las asignaciones adoptan la forma <code display="inline">X := Y op Z</code>, que significa <code display="inline">X</code> optiene el resultado de <code display="inline">op</code> aplicado a <code display="inline">Y</code> y <code display="inline">Z</code>.</item>
+          <item>Todas las referencias a memoria son cargas explícitas desde, o bien almacenamiento a, variables "temporales" <code display="inline">t</code><emphasis effect="italics">n</emphasis>.</item>
+          <item>Los valores lógicos usados en las bifurcaciones se calculan separadamente del salto actual.</item>
+          <item>Los saltos van a direcciones absolutas.</item>
+        </list>
+        <para id="id7033353">Si estamos construyendo un compilador, deberemos ser un poco más específicos. Para nuestros propósitos con esto basta. Considere el siguiente fragmento de código en C:</para>
+        <code id="id7324447" display="block"><newline/>
+      while (j &lt; n) {
+          k = k + j * 2;
+          m = j * 2;
+          j++;
+      }
+    </code>
+        <para id="id1168788589528">Este ciclo se traduce en la representación en lenguaje intermedio que se muestra a continuación:</para>
+        <code id="id1168790498696" display="block"><newline/>
+      A:: t1  := j 
+          t2  := n
+          t3  := t1 &lt; t2 
+          jmp (B) t3
+          jmp (C) TRUE
+    
+      B:: t4  := k 
+          t5  := j
+          t6  := t5 * 2 
+          t7  := t4 + t6 
+          k   := t7
+          t8  := j
+          t9  := t8 * 2 
+          m   := t9
+          t10 := j
+          t11 := t10 + 1 
+          j   := t11
+          jmp (A) TRUE
+      C::
+    </code>
+        <para id="id1168788634658">Cada línea de código fuente en C se representa mediante varias sentencias en LI. En muchos procesadores RISC, nuestro código LI es tan parecido al lenguaje máquina que podemos traducirlo directamente a código objeto.<footnote id="id2607920">Véase <link document="m33787"/> para algunos ejemplos de código máquina obtenido directamente a partir de lenguaje intermedio.</footnote> A menudo el nivel más bajo de optimización consiste en una traducción literal del lenguaje intermedio a código máquina. Cuando esto sucede, el código generalmente es muy largo y su rendimiento es pobre. Al revisarlo, puede usted encontrar lugares donde ahorrar unas pocas instrucciones. Por ejemplo, <code>j</code> se carga en variables temporales en cuatro lugares; seguramente podemos reducirlo. Tenemos que realizar algo de análisis y algunas optimizaciones.</para>
+      </section>
+      <section id="id5220954">
+        <title>Bloques Básicos</title>
+        <para id="id4460620">Tras generar nuestro lenguaje intermedio, queremos cortarlo en <emphasis effect="italics">bloques básicos</emphasis>. Se trata de secuencias de código que comienzan con una instrucción que o bien sigue una bifurcación o es en sí misma el destino de un salto. Dicho de otra forma, cada bloque básico tiene una entrada (en la parte superior) y una salida (en la parte inferior). <link target-id="id1168788709423"/> representa nuestro código LI como un grupo de tres bloques básicos. Estos bloques hacen el código más fácil de analizar. Al restringir el flujo de control al interior de un bloque básico de arriba hacia abajo y eliminar todas las bifurcaciones, podemos asegurarnos que si se ejecuta la primera sentencia, también lo hará la segunda, y así sucesivamente. Por supuesto, las bifurcaciones no han desaparecido, pero las hemos forzado afuera de los bloques en la forma de flechas de conexión - el <emphasis effect="italics">grafo de flujo</emphasis>.</para>
+        <para id="id1168792615856">
+          <figure id="id1168788709423"><title>Lenguaje intermedio dividido en bloques básicos</title><media id="id1168788709423_media" alt="Esta figura está compuesta por tres bloques conteniendo líneas de código. La primera tiene como título A : :, y en la primera columna dice t1, t2, t3, jmp. La segunda columna dice := j, := n, := t1 less than t2, (B) t3. El segundo bloque contiene dos elementos que ocupan las mismas columnas que el primer bloque. En la primera columna dice jmp, y en la segunda, (C) TRUE. En el tercer bloque hay las mismas columnas, en este caso el encabezado dice B : :. The first column reads, t4, t5, t6, t7, k, t8, t9, m, t10, t11, j, jmp. La segunda columna dice := k, := j, := t5 * 2, := t4 +t6, := t7, := j, := t8 * 2, := t9, := j, := t10 + 1, := t11, (A) TRUE. Hay una flecha apuntando del primer bloque al segundo, y otra flecha apuntando del primero al tercero. Y otra más apuntando del final del tercer bloque al inicio del primero, asì como una flecha a trazos, apuntando hacia afuera de la derecha del segundo bloque alejándose de los bloques.">
+              <image mime-type="image/png" src="../../media/Picture 2-ba86.png" id="id1168788709423__onlineimage" height="486" width="700"/>
+            </media>
+          </figure>
+        </para>
+        
+        <para id="id2902157">Ahora somos libres de extraer información de los bloques mismos. Por ejemplo, podemos decir con certeza cuáles variables usa cierto bloque, y cuáles define (les asigna valor), cosa que no hubiéramos podido ser capaces de hacer si el bloque contuviera una bifurcación. También podemos reunir la misma clase de información sobre los cálculos que realizan. Tras haber analizado los bloques, de forma tal que sepamos qué entra y qué sale de ellos, podemos modificarlos para mejorar el rendimiento, sin preocuparnos acerca de la interacción entre bloques.</para>
+      </section>
+  </content>
+</document>

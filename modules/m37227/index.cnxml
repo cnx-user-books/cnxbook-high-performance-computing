@@ -1,0 +1,75 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Organización de la Cache</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37227</md:content-id>
+  <md:title>Organización de la Cache</md:title>
+  <md:abstract/>
+  <md:uuid>40658da0-3bf2-42c8-a9ba-68252a32ed1e</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id8380266">El proceso de aparear las localidades de memoria con las líneas de cache se llama <emphasis effect="italics">mapeo</emphasis>. Por supuesto, dado que la cache es menor que la memoria principal, tendrá usted que compartir las mismas líneas de cache entre distintas localidades de memoria. En las caches, cada línea mantiene un registro de las direcciones de memoria (conocido como la <emphasis effect="italics">etiqueta</emphasis>) a las que representa, y tal vez de cuándo se usaron por última vez. La etiqueta se usa para seguir la pista a cuál área de memoria está almacenada en una línea particular de cache.</para>
+      <para id="id7910529">La forma en que las localidades de memoria (etiquetas) se mapean a líneas de cache puede tener un efecto benéfico en la forma en que se ejecuta su programa, porque si dos localidades de memoria utilizadas intensamente se mapean a la misma línea de cache, la tasa de fallos será mayor de lo que usted quisiera. Las caches pueden organizarse de varias maneras: mapeadas directamente, completamente asociativas y asociativas en conjunto.</para>
+      <section id="id2032005">
+        <title>Caches Mapeadas Directamente</title>
+        <para id="id7081166">El mapeo directo, tal como se muestra en <link target-id="id7024638"/>, es el algoritmo más sencillo para decidir cómo mapear la memoria en la cache. Digamos, por ejemplo, que su computadora tiene 4 KB de cache. En un esquema de mapeo directo, la localidad de memoria 0 se mapea en la localidad 0 de cache, así como las localidades 4K, 8K, 12K, etc. En otras palabras,la memoria se mapea en bloques del mismo tamaño que la cache. Otra forma de verlo es imaginar un resorte de metal con una línea de gis marcada a toda su longitud. Cada vuelta alrededor del resorte, se encuentra la línea de gis en el mismo lugar, módulo la longitud de circunferencia del resorte. Si éste es muy largo, la línea de gis cruza muchas vueltas de la bobina, análogo a como sucede con una memoria grande con muchas localidades mapeándose a la misma línea de cache.</para>
+        <para id="id3184276">Los problemas devienen cuando a tiempo de ejecución se alternan referencias a memoria en un punto de la cache mapeada directamente, a la misma línea de cache. Cada referencia causa un fallo de caché y reemplaza la entrada que recién se había reemplazado, causando mucha sobrecarga. El término coloquial para este fenómeno es <emphasis effect="italics">thrashing</emphasis>. Cuando ocurre con demasiada frecuencia, una cache puede ser más una carga que una ayuda, porque cada falla de la caché requiere que una línea completa se llene nuevamente -una operación que mueve más datos que lo que supondría meramente satisfacer directamente la referencia desde la memoria principal. Es fácil construir un caso patológico que cause thrashing en una cache de 4 KB mapeada directamente:</para>
+        <para id="id2155434">
+          <figure id="id7024638"><title>Muchas direcciones de memoria mapeadas a la misma línea de cache.</title><media id="id7024638_media" alt="Esta figura contiene dos gráficas. La primera es una línea gris horizontal, con manchas distribuidas uniformemente a lo largo de la línea y rotuladas 0K, 4K, 8K, 12K y 16K. Después de 16K, la línea horizontal se espacia y se vuelve punteada. La segunda gráfica es una espiral vertical, y cada bucle de la espiral está rotulado desde arriba hasta abajo, 0K, 4K, 8K, 16K, 20K, 24K y 32K. En el centro de la espiral hay un segmento sombreado que recorre todos los bucles, rotulado como línea de cache.">
+              <image mime-type="image/png" src="../../media/graphics1-0924.png" id="id7024638__onlineimage" height="341" width="599"/>
+            </media>
+            
+          </figure>
+        </para>
+        <code id="id6983140" display="block"><newline/>
+      REAL*4 A(1024), B(1024) 
+      COMMON /STUFF/ A,B
+      DO I=1,1024
+        A(I) = A(I) * B(I) 
+      END DO
+      END
+    </code>
+        <para id="id8280022">Ambos arreglos, A y B, tiene exactamente 4 KB de almacenamiento, y su inclusión juntos en
+<code display="inline">COMMON</code> garantiza que los arreglos inician exactamente con 4 KB de distancia en memoria. En una cache de 4KB con mapeo directo, la misma línea que se usa para A(1) se emplea también para B(1), y lo mismo sucede con A(2) y B(2), etc., de tal suerte que las referencias alternadas causan repetidas fallas de cache. Para solucionarlo, debe bien sea ajustar el tamaño del arreglo A, o poner algunas otras variables adentro de <code display="inline">COMMON</code>, en medio de ambas. Por esta razón uno debe generalmente evitar tamaños de arreglo cercanos a potencias de dos.</para>
+      </section>
+      <section id="id7218641">
+        <title>Cache Completamente Asociativa</title>
+        <para id="id8763860">En el extremo opuesto de una cache directamente mapeada se encuentra una <emphasis effect="italics">cache completamente asociativa</emphasis>, donde cualquier localidad de memoria puede mapearse en cualquier línea de cache, independientemente de la dirección de memoria. Las caches completamente asociativas obtienen su nombre del tipo de memoria usada para construirlas -memoria asociativa- que es como la memoria regular, excepto por el hecho de que cada celda sabe algo acerca de los datos que contiene.</para>
+        <para id="id1451240">Cuando el procesador busca un dato, pregunta simultáeamente a todas las líneas de cache si alguna de ellas lo tiene. La línea que contiene dicho dato alza su mano y dice "Lo tengo"; si ninguna contesta, ocurre una falla de caché. Entonces viene la cuestión de cuál línea de cache debe reemplazarse con los nuevos datos. En vez de mapear las localidades de memoria a las líneas de cache mediante un algoritmo, como sucede en el cache directamente mapeado, el sistema de memoria puede pedir a las líneas de cache completamente asociativo que elijan entre ellas cuáles localidades de memoria representarán. Usualmente la línea que menos se ha usado recientemente es la que se sobreescribe con los nuevos datos. La presunción es que si los datos no han sido empleados durante un tiempo, es menos posible que se requieran en el futuro.</para>
+        <para id="id7221367">Las caches completamente asociativas presentan una utilización superior, cuando se comparan con caches directamente mapeadas. Es difícil encontrar ejemplos de programas del mundo real que causen thrashing en un cache completamente asociativo. El precio de las caches completamente asociativas es muy alto, en términos de tamaño, precio y velocidad. Las caches asociativas que realmente existen tienden a ser pequeñas.</para>
+      </section>
+      <section id="id6615886">
+        <title>Cache Asociativa en Conjunto</title>
+        <para id="id6721045">Ahora imagine que tiene dos caches directamente mapeadas, sentadas una junto a otra en una sola unidad de cache, como se muestra en <link target-id="id4804514"/>. Cada localidad de memoria corresponde a una línea particular de cache en cada una de las dos caches directamente mapeadas. Aquella que elija reemplazar durante una falla de cache queda sujeta a decisión dependiendo de cuál línea fue usada hace más tiempo -en la misma forma en que se decide en una cache completamente asociativa, excepto que ahora sólo hay dos opciones. A esto se le llama una <emphasis effect="italics">cache asociativa en conjunto</emphasis>, y generalmente  vienen en dos y cuatro bancos de cache separados. Se les llama caches asociativas de conjuntos de <emphasis effect="italics">dos vías</emphasis> y <emphasis effect="italics">cuatro vías</emphasis>, respectivamente.
+Por supuesto, cada tipo tiene sus ventajas e inconvenientes. Una cache asociativa en conjunto es más inmune al thrashing que una cache directamente mapeada del mismo tamaño, porque para cada mapeo de una dirección de memoria en una línea de cache, hay dos o más opciones de destino. Sin embargo, la belleza de una cache directamente mapeada es que resulta fácil de implementar y, si se hace lo suficientemente grande, rinde prácticamente igual de bien que un diseño asociativo en conjunto. Su máquina puede contener múltiples caches para varios propósitos distintos. He aqui un pequeño programa que causa thrashing en una cache asociativa en conjunto de dos vías y 4 KB:</para>
+        <code id="id7098473" display="block"><newline/>
+      REAL*4 A(1024), B(1024), C(1024) 
+      COMMON /STUFF/ A,B,C
+      DO I=1,1024
+        A(I) = A(I) * B(I) + C(I) 
+      END DO
+      END
+    </code>
+        <para id="id3363381">Al igual que el programa anterior, éste obliga a repetir los accesos a las mismas líneas de caché, excepto que ahora hay tres variables contendientes a ser elegidas para la asignación del mismo conjunto, en lugar de dos. De nuevo, la forma de solucionarlo consiste en cambiar el tamaño de los arreglos, o insertar algo entre ellos en <code display="inline">COMMON</code>. Por cierto, si accidentalmente construye usted un programa como este, le resultará difícil detectarlo -más allá de sentir que el programa se ejecuta algo lento. Pocos proveedores proporcionan herramientas para medir las fallas de cache.</para>
+        <figure id="id4804514"><title>Cache asociativa en conjunto de dos vías.</title><media id="id4804514_media" alt="Esta figura contiene dos espirales similares a la figura 1. Encima de las espirales está la etiqueta, elige conjunto, y debajo está una flecha que se divide para apuntar a ada espiral. Hay secciones sombreadas bajo las flechas hasta el medio de las espirales. Y a lo largo de las partes que están sombreadas, hay una etiqueta en el medio desde arriba hasta abajo sobre los puntos, 0K, 4K, 8K, 12K, 16K, 20K, 24K y 32K.">
+            <image mime-type="image/png" src="../../media/graphics2-ef64.png" id="id4804514__onlineimage" height="344" width="600"/>
+          </media>
+          
+        </figure>
+      </section>
+      <section id="id7385895">
+        <title>Cache de Instrucciones</title>
+        <para id="id3416345">Hasta el momento hemos pasado por alto los dos tipos de información que se espera encontrar en una cache ubicada entre la memoria y la CPU: instrucciones y datos. Pero si piensa en ello, la demanda de datos se encuentra separada de la de instrucciones. En los procesadores superescalares, por ejemplo, es posible ejecutar una instrucción que causa una falla en la cache de datos junto con otras instrucciones que no requieren datos de la cache en absoluto, es decir, que operan sobre los registros. No parece justo que una falla de cache en una referencia a datos en una instrucción deba evitarle recuperar otras instrucciones por que la cache está atada. Además, una cache depende localmente de la referencia entre bits de datos y otros bits de datos o instrucciones y otras instrucciones, pero ¿qué clase de interdependencia existe entre instrucciones y datos? Parece imposible que las instrucciones extraigan datos perfectamente útiles de la cache, o viceversa, con completa independencia de la localidad de la referencia.</para>
+        <para id="id2997554">Muchos diseños desde la década de 1980 usan una sola cache tanto para instrucciones como para datos. Pero los diseños más nuevos están empleando lo que se conoce como la <emphasis effect="italics">Arquitectura de Memoria Harvard</emphasis>, donde la demanda de datos se separa de la demanda de instrucciones.</para>
+        <para id="id3722631">La memoria todavía sigue siendo un único repositorio grande, pero estos procesadores tienen caches separadas de datos e instrucciones, posiblemente con diseños diferentes. Al proporcionar dos fuentes independientes para datos e instrucciones, la tasa de información agregada proveniente de la memoria se incrementa, y la interferencia entre los dos tipos de referencias a memoria se minimiza. Además, las instrucciones generalmente tienen un nivel de localidad de referencia extremadamente alto, debido a la naturaleza secuencial de la mayoría de los programas. Como las caches de instrucciones no tienen que ser particularmente grandes para ser efectivas, una arquitectura típica consiste en tener dos caches L1 separadas para datos e instrucciones, y tener una cache L2 combinada. Por ejemplo, el PowerPC 604e de IBM/Motorola tiene caches L1 separadas de 32K de cuatro vías para instrucciones y datos, y una cache L2 combinada.</para>
+      </section>
+  </content>
+</document>

@@ -1,0 +1,45 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Ejercicios</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38443</md:content-id>
+  <md:title>Eliminando el Desorden - Ejercicios</md:title>
+  <md:abstract/>
+  <md:uuid>58ae7044-9790-4e9d-b158-aecc8803fbb1</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id17919996">
+        <problem id="oo-id14267519">
+          <para id="id17919999">¿Cómo simplificaría usted el siguiente ciclo condicional?
+      <code id="id18116816" display="block"><newline/>
+      DO I=1,N
+        A(I) = A(I) * B
+        IF (I .EQ. N/2) A(I) = 0. 
+      ENDDO
+    </code>
+</para>
+        </problem>
+      </exercise>
+
+      <exercise id="id18209204">
+        <problem id="oo-id17425310">
+          <para id="id18001302">Cronometre el siguiente ciclo en su computadora, con y sin la condición. Ejecútelo con tres conjuntos de datos: uno con todos los valores <code>A(I)</code> menores que <code>SMALL</code>, uno con todos los valores <code>A(I)</code> mayores que <code>SMALL</code>, y un tercero dividido en partes iguales. ¿Cuándo es mejor dejar la prueba en el ciclo, si es el caso?
+      <code id="id18207360" display="block"><newline/>
+      PARAMETER (SMALL = 1.E-20) 
+      DO I=1,N
+        IF (ABS(A(I)) .GE. SMALL) THEN 
+          B(I) = B(I) + A(I) * C
+        ENDIF 
+      ENDDO
+    </code>
+</para>
+        </problem>
+      </exercise>
+
+      <exercise id="id18180836">
+        <problem id="oo-id17525624">
+          <para id="id18358346">Escriba un programa sencillo que invoque a una subrutina sencilla en su ciclo interno. Cronometre la ejecución del programa. Luego dígale al compilador que compile la rutina en línea, y cronometre nuevamente. Finalmente, modifique el código para realizar las operaciones en el cuerpo del ciclo, y cronometre el código. ¿Cuál opción se ejecutó más rápido? Puede que deba revisar el código máquina generado para imaginar el porqué.</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

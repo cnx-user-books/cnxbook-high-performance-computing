@@ -1,0 +1,107 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Caches</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37220</md:content-id>
+  <md:title>Caches</md:title>
+  <md:abstract/>
+  <md:uuid>47b389c1-c5b5-4a17-9df1-10e0dc5f018d</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1164760792665">Si, partiendo de los registros, descendemos en la jerarquía de memoria, encontramos las caches. Se trata de pequeñas cantidades de SRAM que almacenan un subconjunto de lo contenidos de la memoria. La esperanza es que la cache tenga el subconjunto adecuado de memoria principal en el momento adecuado.</para>
+      <para id="id1164755341328">La arquitectura de la caché tuvo que cambiar conforme la duración del ciclo de los procesadores ha mejorado. Los procesadores son tan rápidos que ni siquiera los chips de SRAM son lo suficientemente rápidos. Ello ha conducido a un enfoque de cache multinivel con uno, o incluso dos, niveles de la misma implementadas como parte del procesador.<link target-id="id1164755338569"/> muestra la velocidad aproximada para acceder a la jerarquía de memoria de una DEC Alpha 21164 a 500 MHz.</para>
+      
+      
+      <table id="id1164755338569" summary="Tabla describiendo los tiempos requeridos para cada elemento específico.">
+<tgroup cols="2"><colspec colnum="1" colname="c1"/>
+          <colspec colnum="2" colname="c2"/>
+          <tbody>
+            <row>
+              <entry>Registros</entry>
+              <entry>2 ns</entry>
+            </row>
+            <row>
+              <entry>Nivel 1 en el chip</entry>
+              <entry>4 ns</entry>
+            </row>
+            <row>
+              <entry>Nivel 2 en el chip</entry>
+              <entry>5 ns</entry>
+            </row>
+            <row>
+              <entry>Nivel 3 fuera del chip</entry>
+              <entry>30 ns</entry>
+            </row>
+            <row>
+              <entry>Memoria</entry>
+              <entry>220 ns</entry>
+            </row>
+          </tbody>
+</tgroup><caption>Velocidades de acceso a la memoria en una DEC Alpha 21164.</caption>
+</table>
+      
+      <para id="id1164755344307">Cuando puede encontrarse en una cache cada uno de los datos referenciados, se dice que se tiene una tasa de acierto del 100%. Generalmente, se considera que una tasa de acierto del 90% o superior es buena para una cache de Nivel 1 (L1). En la cache de Nivel 2 (L2), se considera aceptable una tasa de acierto superior al 50%. De ahí hacia abajo, el rendimiento de la aplicación puede caer de forma vertiginosa.</para>
+      <para id="id1164755642194">Se puede caracterizar el rendimiento promedio de lectura de la jerarquía de memoria al examinar la probabilidad de que una carga particular se satisfaga en un nivel particular de la jerarquía. Por ejemplo, asumamos una arquitectura de memoria con una velocidad de cache L1 de 10 ns, una velocidad en L2 de 30 ns y una velocidad de memoria de 300 ns. Si una referencia a memoria dada se satisface mediante la cache L1 el 75% de las veces, 20% de ellas en la L2, y 5% del tiempo en la memoria principal, el rendimiento promedio de la memoria será:</para>
+      
+      <code id="id1164761900426" display="block">(0.75 * 10 ) + ( 0.20 * 30 ) + ( 0.05 * 300 ) = 28.5 ns
+    </code>
+      <para id="id1164755590078">Puede usted notar fácilmente por qué es tan importante tener una tasa de éxito de 90% o más en la cache L1.</para>
+      <para id="id116475548443234232342432">Dado que una memoria cache almacena sólo un subconjunto de la memoria principal en un momento dado, es importante mantener un índice de cuáles áreas de la memoria principal están almacenadas actualmente en la cache. Para reducir la cantidad de espacio que debe dedicarse a seguir la pista de las áreas de memoria en cache, ésta se divide en un número de ranuras de igual tamaño, conocidas como <emphasis effect="italics">líneas</emphasis>. Cada línea contiene cierto número de localidades secuenciales de memoria, generalmente de cuatro a dieciseis números enteros o reales. Mientras que los datos adentro de una línea vienen todos de la misma porción de memoria, otras líneas pueden contener datos de partes alejadas de su programa, o tal vez datos provenientes de los programas de alguien más, como en <link target-id="id1164760711103"/>. Cuando usted solicita algo de la memoria, la computadora comprueba si tales datos están disponibles en alguna de esas líneas de cache. Si es el caso, los datos se regresan con un retraso mínimo. Si no, puede que su programa se retrase un poco, mientras se carga una nueva línea de la memoria principal. Por supuesto, si se trajo nuevo contenido para una línea, el contenido de ésta debió primero desalojarse. Si tiene suerte, no será aquella que contenga los datos que necesitará justamente después.</para>
+      <figure id="id1164760711103"><title>Las líneas de cache pueden venir de diferentes partes de la memoria.</title><media id="id1164760711103_media" alt="Esta figura muestra un enrejado etiquetado, la Memoria Principal, y partiendo de un par de celdas en el enrejado hay flechas apuntando a la izquierda, a las líneas de cache en una caja. Las líneas se despliegan en una lista, etiquetadas de la 0 a la 3, etcétera.">
+          <image mime-type="image/png" src="../../media/graphics1-31b3.png" id="id1164760711103__onlineimage" height="226" width="599"/>
+        </media>
+        
+      </figure>
+      
+      
+      <para id="id116475567897658738647">En los multiprocesadores (computadoras con varias CPUs), los datos escritos deben regresarse a la memoria principal, de forma que el resto de los procesadores puedan verlos, o se debe tener a todos los demás procesadores al tanto de la actividad de la cache local. Tal vez se requiera decirles que invaliden las líneas antiguas que contienen valores previos de la variable escrita, para evitar que accidentalmente usen datos viejos. a esto se le denomina mantener la <emphasis effect="italics">coherencia</emphasis> entre caches diferentes. El problema se puede volver muy complejo en un sistema multiprocesador.<footnote id="id4677285598798823"><link document="m32797"/> describe la coherencia entre caches con mayor detalle.</footnote></para>
+      <para id="eip-757">Las caches son efectivas porque los programas a menudo exhiben características que ayudan a mantener alta la tasa de aciertos. Estas características se llaman localidad de referencia<emphasis effect="italics">espacial</emphasis> y <emphasis effect="italics">temporal</emphasis>; los programas frecuentemente hacen uso de datos e instrucciones que están cerca de otros datos e instrucciones, tanto en el espacio como en el tiempo. Cuando se carga una línea de cache de la memoria principal, no sólo contiene la información que causó el fallo de la cache, sino también algo de su información circundante. Hay buenas posibilidades de que la próxima vez que su programa necesite datos, éstos se encuentren en la línea de cache recién cargada o en alguna otra reciente.</para><para id="id1164755342047">Las caches trabajan mejor cuando un programa lee secuencialmente a través de la memoria. Asumamos que un programa está leyendo enteros de 32 bits con un tamaño de línea de cache de 256 bits. Cuando el programa hace referencia a la primera palabra en la línea de cache, debe esperar mientras dicha línea se carga desde la memoria principal. Las siete referencias a la memoria subsecuentes se satisfacerán rápidamente desde la cache. Esto se llama <emphasis effect="italics">paso unitario</emphasis> porque la dirección de cada elemento de datos sucesivo se incrementa en uno, y se usan todos la datos cargados en la cache. El siguiente ciclo funciona con un paso unitario:</para>
+      <code id="id2890135" display="block"><newline/>
+      DO I=1,1000000
+        SUM = SUM + A(I) 
+      END DO
+    </code>
+      <para id="id1164755410032">Cuando un programa accede a una estructura de datos grande usando "pasos no unitarios", el rendimiento sufre porque se cargan datos en cache que no se usan. Por ejemplo:</para>
+      <code id="id1164758091560" display="block"><newline/>
+      DO I=1,1000000, 8
+        SUM = SUM + A(I) 
+      END DO
+    </code>
+      <para id="id1164762875732">Este código carga la misma cantidad de datos y experimenta el mismo número de fallas en cache que el ciclo previo. Sin embargo, el programa necesita sólo una de las ocho palabras de 32 bits cargadas en la cache. Incluso aunque este programa realiza 1/8 de las sumas que el ciclo anterior, el tiempo que dilata en ejecutarse es aproximadamente el mismo que el otro, porque las operaciones de memoria dominan el rendimiento.</para>
+      <para id="id1164760935959">Aunque este ejemplo puede parecer un poco artificial, hay muchas situaciones en las cuales ocurren frecuentemente pasos no unitarios. Primero, cuando se carga en FORTRAN un arreglo bidimensional en memoria, los elementos sucesivos en la primera columna se almacenan secuencialmente, seguidos por los elementos de la segunda columna. Si el arreglo se procesa colocando la iteración de los renglones en el ciclo más interno, produce un patrón de referencias de pasos unitarios como el siguiente:</para>
+      <code id="id1164755750089" display="block"><newline/>
+      REAL*4 A(200,200) 
+      DO J = 1,200
+        DO I = 1,200
+          SUM = SUM + A(I,J) 
+        END DO
+      END DO
+    </code>
+      <para id="id1164755347150">Resulta interesante señalar que muy probablemente un programador en FORTRAN escribirá el ciclo (en orden alfabético) como sigue, produciendo un incremento no unitario de 800 bytes entre operaciones de carga sucesiva:</para>
+      <code id="id1164755754107" display="block"><newline/>
+      REAL*4 A(200,200) 
+      DO I = 1,200
+        DO J = 1,200
+          SUM = SUM + A(I,J) 
+        END DO
+      END DO
+    </code>
+      
+      <para id="id1164760264010">Por esta razón, algunos compiladores pueden detectar este orden de ciclos subóptimo e invertirán el orden de los ciclos para lograr un mejor uso del sistema de memoria. Sin embargo, como veremos en <link document="m32739"/>, esta transformación de código puede producir resultados diferentes, y así usted deberá darle "permiso" al compilador para intercambiar esos ciclos en este ejemplo particular (o, tras haber leído este libro, simplemente haberlo codificado apropiadamente desde el comienzo).</para>
+      <code id="id1164763897306" display="block">while ( ptr != NULL ) ptr = ptr-&gt;next;
+    </code>
+      <para id="id8484808">El siguiente elemento que se recuerda se basa en el contenido del elemento actual. Este tipo de ciclo salta por toda la memoria sin un patrón particular. Se le conoce como <emphasis effect="italics">caza de apuntadores</emphasis>, y no existe una forma acertada de mejorar el rendimiento de este código.</para>
+      <para id="id1164755671681">Un tercer patrón que se encuentra a menudo en cierto tipo de códigos se conoce como acopio (o dispersión), y ocurre en ciclos como:</para>
+      
+      
+      <code id="eip-671" display="block">SUM = SUM + ARR ( IND(I) )</code><para id="id8726250">donde el arreglo IND contiene desplazamientos dentro del arreglo ARR. De nuevo, tal como sucedió en la lista ligada, el patrón exacto de referencias a memoria sólo se conoce a tiempo de ejecución, cuando también se conocen los valores almacenados en el arreglo IND. Algunos sistemas de propósito especial tienen soporte de hardware especializado para acelerar esta operación en particular.</para>
+  </content>
+</document>

@@ -1,0 +1,22 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Soporte del Lenguaje para Mejorar el Rendimiento - Lenguajes Explícitamente Paralelos</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38318</md:content-id>
+  <md:title>Soporte del Lenguaje para Mejorar el Rendimiento - Lenguajes Explícitamente Paralelos</md:title>
+  <md:abstract/>
+  <md:uuid>e9627931-e393-497a-9203-a035e4bb5745</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1168671491532">Tal como hemos visto a lo largo de este libro, uno de los mayores retos de afinación consiste en que el compilador reconozca aquellos segmentos de código particulares que pueden paralelizarse. Esto resulta especialmente cierto para códigos numéricos, donde el retorno de inversión es potencialmente mayor. Piense en esto: si usted sabe que algo es paralelo, ¿por qué debiera haber alguna dificultad en hacer que el compilador lo reconozca? ¿Por qué no puede usted simplemente escribirlo, y hacer que el compilador diga "Sí, esto se hará en paralelo"?</para>
+      <para id="id1168668903689">El problema es que los lenguajes de programación más comúnmente usados no ofrecen ningún constructo para expresar cálculos en paralelo. Usted se ve forzado a expresarse en términos primitivos, como si fuera un cavernícola con grandes ideas, pero sin vocabulario para explicarlas. Esto es particularmente cierto en FORTRAN y en C, que no soportan la noción de cómputos en paralelo, lo cuál significa que los programadores deben reducir los cálculos a pasos secuenciales. Suena incómodo, pero la mayoría de los programadores lo hacen de forma tan natural que ni siquiera se percatan de cuán buenos son para ello.</para>
+      <para id="id1168676370835">Por ejemplo, digamos que queremos sumar dos vectores, A y B. ¿Cómo debemos hacerlo? Probablemente escribamos un pequeño ciclo sin siquiera detenernos un instante a pensarlo:</para>
+      <code id="id1168675598027" display="block"><newline/>
+      DO I=1,N
+        C(I) = A(I) + B(I)
+      END DO
+    </code>
+      <para id="id1168668394184">Parece razonable, pero veamos qué pasa. ¡Le hemos impuesto un orden a los cálculos! ¿No hubiera bastado con decir "C es el resultado de A más B"? Ello permitiría al compilador sumar los vectores usando cualesquiera hardware a su disposición, usando el método que mejor le parezca. De eso se tratan los lenguajes paralelos, de proporcionar primitivas capaces de expresar cómputos paralelos.</para>
+      <para id="id8608312">No se están proponiendo nuevos lenguajes paralelos tan rápidamente como se hizo a mediados de la década de 1980.  Los desarrolladores se han dado cuenta que pueden crear un esquema maravilloso, pero si no es compatible con FORTRAN o C, le va a interesar a poca gente.  La razón es simple: hay miles de millones de líneas de código C y FORTRAN, pero sólo unas pocas en <emphasis effect="italics">Fizgibbet</emphasis> o como sea que le llame usted a su nuevo lenguaje paralelo. Por causa de la preminencia de C y FORTRAN, las actividades más significativas referentes a lenguajes paralelos que se desarrollan actualmente se enfocan a extender estos lenguajes, protegiendo así 20 o 30 años de inversión en programas ya escritos. <footnote id="id9011300">Uno de los esfuerzos más significativos en el campo de los lenguajes completamente nuevos es SISAL (Streams and Iteration in a Single Assignment Language). Es un lenguaje de flujo de datos que se puede integrar fácilmente en módulos de FORTRAN y C. Los aspectos más interesantes de SISAL son la cantidad de código que se ha portado a SISAL, y el hecho de que los desarrolladores de SISAL generalmente comparan su rendimiento con el de aplicaciones iguales en FORTRAN y C.</footnote> Resulta muy tentador para los desarrolladores de un nuevo lenguaje probarlo mediante el problema de las ocho reinas y el juego de la vida, obtener buenos resultados, y luego declarar que está listo para su debut y esperar que hordas de programadores lo conviertan en su lenguaje de cabecera.</para>
+  </content>
+</document>

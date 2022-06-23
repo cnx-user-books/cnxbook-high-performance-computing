@@ -1,0 +1,76 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimización de Ciclos - Calificando a los Candidatos para el Desenrollado de Ciclos</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38486</md:content-id>
+  <md:title>Optimización de Ciclos - Calificando a los Candidatos para el Desenrollado de Ciclos</md:title>
+  <md:abstract/>
+  <md:uuid>ca4bee9f-be89-43a6-96d4-a3827122adad</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1168146483364">Asumiendo un valor grande de N, el ciclo previo era un candidato ideal para desenrollarse. Las iteraciones pueden ejecutarse en cualquier orden, y las entrañas del ciclo eran pequeñas. Pero como tal vez sospeche, éste no siempre es el caso; ciertas clases de ciclos no pueden desenrollarse tan fácilmente. Adicionalmente, la forma en que se usa un ciclo cuando el programa se ejecuta puede descalificarlo para desenrollado de ciclos, incluso aunque parezca prometedor.</para>
+      <para id="id1168146698186">En esta sección vamos a discutir unas pocas categorías de ciclos que no son generalmente buenos candidatos para el desenrollado, y le daremos algunas ideas de qué puede usted hacer al respecto. Ya hablamos acerca de varias de ellas en el capítulo previo, pero nuevamente resultan relevantes.</para>
+      <section id="id1168146805884">
+        <title>Ciclos con Bajo Conteo de Repeticiones</title>
+        <para id="id1168146680959">Para resultar efectivo, el desenrollado de ciclos requiere que el original tenga un número bastante grande de iteracionesl. Para comprender por qué, visualicemos qué sucede si el conteo total de iteraciones es bajo, tal vez menor a 10, o incluso menor que 4. Con un conteo de repeticiones tan bajo, el ciclo precondicionante está llevando a cabo una cantidad proporcionalmente alta de trabajo. Y no se supone que deba ser así, pues éste debe hacerse cargo de las pocas iteraciones sobrantes olvidadas por el ciclo principal desenrollado. Sin embargo, cuando el conteo de repeticiones es bajo, puede que esté usted haciendo una o dos pasadas por el ciclo desenrollado, mas una o dos pasadas a través del ciclo precondicionante. En otras palabras, tiene usted entre manos un mayor desorden; simplemente, el ciclo no debió haberse desenrollado.</para>
+        <para id="id7107052">Probablemente, la única ocasión en que tiene sentido desenrollar un ciclo con un conteo de repeticiones bajo, es cuando el número de iteraciones es constante y se conoce a tiempo de compilación. Por ejemplo, suponga que tiene el siguiente ciclo:</para>
+        <code id="id1168146340393" display="block"><newline/>
+      PARAMETER (NITER = 3) 
+      DO I=1,NITER
+        A(I) = B(I) * C 
+      ENDDO
+    </code>
+        <para id="id1168146577733">Dado que <code display="inline">NITER</code> vale constantemente 3, puede usted desenrollar de forma segura hasta una profundidad de 3 sin preocuparse por el ciclo precondicionante. De hecho, puede desechar completamente la estructura del ciclo y quedarse sólo con el ciclo desenrollado en el interior:</para>
+        <code id="id1168146339054" display="block"><newline/>
+      PARAMETER (NITER = 3) 
+      A(1) = B(1) * C
+      A(2) = B(2) * C 
+      A(3) = A(3) * C
+    </code>
+        <para id="id9023015">Por supuesto, si el contador del número de repeticiones es bajo, probablemente no contribuya significativamente al tiempo de ejecución global, a menos que se trate de un ciclo en el centro de otro más grande. Entonces probablemente quiera usted desenrollarlo completamente, o dejarlo solo.</para>
+      </section>
+      <section id="id7715597">
+        <title>Ciclos Gruesos</title>
+        <para id="id1168146582108">El desenrollado de ciclos ayuda al rendimiento porque engruesa cada uno con más cálculos por iteración. Por la misma razón, si un ciclo particular ya es grueso, desenrollarlo no será de mucha ayuda, pues su sobrecarga ya está distribuida sobre un número grande de instrucciones. De hecho, desenrollar un ciclo grueso puede incluso volver más lento su programa, porque incrementará el tamaño del segmento de texto, colocando una carga adicional sobre el sistema de memoria (lo explicaremos con más detalle un poco más adelante). Una buena regla empírica consiste en ir en busca de rendimiento en cualquier otra parte cuando el ciclo interno excede tres o cuatro sentencias.</para>
+      </section>
+      <section id="id1168146233598">
+        <title>Ciclos que Contienen Llamados a Procedimientos</title>
+        <para id="id1168149879272">Tal como sucede con los ciclos gruesos, aquellos que contienen llamados a subrutinas o funciones generalmente no son buenos candidatos para el desenrollado, debido a varias razones. Primero, a menudo ya contienen un buen número de instrucciones. Y si la subrutina que se está invocando es gruesa, también engruesa al ciclo que la invoca. El tamaño del ciclo puede no parecerlo cuando usted lo revisa, pero la invocación a la función puede ocultar muchas más instrucciones.</para>
+        <para id="id1168153514903">Segundo, cuando la rutina invocadora y la subrutina se compilan por separado, es imposible que el compilador entremezcle las instrucciones. Un ciclo que se desenrolla en una serie de llamados a funciones se comporta de forma muy parecida a como lo hacía el ciclo original antes de desenrollarse.</para>
+        <para id="id1168146358541">Por último, la sobrecarga por invocar la función es cara: deben salvarse los valores de los registros; debe prepararse la lista de argumentos. El tiempo gastado en invocar a y retornar de una subrutina puede ser mucho mayor que el provocado por el del ciclo. Desenrollar el ciclo para amortizar su costo entre varias invocaciones no resulta lo suficiente como para justificar el esfuerzo.</para>
+        <para id="id1168146502950">La regla general cuando intervienen procedimientos, es primero tratar de eliminarlos durante la fase de "remoción de desorden", y cuando dicha fase ha concluido, comprobar si el desenrollado proporciona una mejora de rendimiento adicional.</para>
+      </section>
+      <section id="id6083815">
+        <title>Ciclos con Bifurcaciones en su Interior</title>
+        <para id="id1168146571825"><link document="m33720"/> mostramos cómo eliminar ciertos tipos de bifurcaciones, pero por supuesto no podemos deshacernos de todas. En el caso de aquéllas independientes de la iteración, podemos obtener cierto beneficio de desenrollar el ciclo. La condición de la sentencia IF se vuelve parte de las operaciones que deben contarse para determinar el valor del desenrollado del ciclo. Abajo presentamos un ciclo doblemente anidado. El interno prueba el valor de <code display="inline">B(J,I)</code>:</para>
+        <code id="id1168146352881" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (B(J,I) .GT. 1.0) A(J,I) = A(J,I) + B(J,I) * C 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1168150251898">Cada iteración es independiente de cualesquiera otra, así que desenrollarlo no representa un problema. Sólo debemos mantener el ciclo externo inalterado:</para>
+        <code id="id1168148933292" display="block"><newline/>
+      II = IMOD (N,4) 
+      DO I=1,N
+        DO J=1,II
+          IF (B(J,I) .GT. 1.0)
+      +     A(J,I) = A(J,I) + B(J,I) * C 
+          ENDDO
+          DO J=II+1,N,4
+            IF (B(J,I) .GT. 1.0)
+      +       A(J,I) = A(J,I) + B(J,I) * C 
+            IF (B(J+1,I) .GT. 1.0)
+      +       A(J+1,I) = A(J+1,I) + B(J+1,I) * C 
+            IF (B(J+2,I) .GT. 1.0)
+      +       A(J+2,I) = A(J+2,I) + B(J+2,I) * C 
+            IF (B(J+3,I) .GT. 1.0)
+      +       A(J+3,I) = A(J+3,I) + B(J+3,I) * C 
+          ENDDO
+        ENDDO
+    </code>
+        <para id="id1168146354243">Este enfoque funciona particularmente bien si el procesador que está usted usando soporta ejecución condicional. Como se describió con anterioridad, la ejecución condicional puede reemplazar una bifurcación y una operación, por una única sentencia  ejecutada condicionalmente. En procesadores superescalares con ejecución condicional, tales ciclos desenrollados se ejecutan muy bien.</para>
+      </section>
+  </content>
+</document>

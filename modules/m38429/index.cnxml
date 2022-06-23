@@ -1,0 +1,117 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Llamado a Subrutinas</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38429</md:content-id>
+  <md:title>Eliminando el Desorden - Llamado a Subrutinas</md:title>
+  <md:abstract/>
+  <md:uuid>a48a5e90-276a-44c6-978a-384ef3487e34</md:uuid>
+</metadata>
+
+<content>
+      <para id="id12982044">Una empresa típica está llena de aterrorizantes ejemplos de sobrecarga. Digamos que un departamento ha preparado una pila de papelería, que debe completar otro departamento. ¿Qué debe usted de hacer para transferir tal trabajo? Primero, debe asegurarse que la parte que le tocó hacer esté completa; no puede pedirles que lo acepten si los materiales que requieren no están listos. Después, necesitará empaquetar los materiales - datos, formas, números de cuenta, etc. Y finalmente viene la transferencia oficial. Una vez que recibió lo que usted les envió, el otro departamento debe desempacarlo, hacer su trabajo, reempaquetarlo y enviarlo de vuelta.</para>
+      <para id="id5650762">Se malgasta una gran cantidad de tiempo moviendo trabajos entre departamentos. Por supuesto, si la sobrecarga es mínima comparada con la cantidad de trabajo útil que se hace, no hay gran problema. Pero pudiera ser más eficiente llevar a cabo los trabajos pequeños adentro del mismo departamento. Lo mismo puede afirmarse de la invocación de subrutinas y funciones. Si sólo entra y sale de los módulos muy de vez en cuando, la sobrecarga de guardar los valores en los registros y preparar la lista de argumentos no resultará significativa. Sin embargo, si está invocando repetidamente unas pocas subrutinas pequeñas, la sobrecarga puede mantenerlas siempre encabezando la lista del perfil. Puede que fuera mejor si el trabajo permaneciera donde está, en la subrutina emisora de la llamada.</para>
+      <para id="id12924210">Adicionalmente, los llamados a subrutinas inhiben la flexibilidad del compilador. Si se presenta la oportunidad, usted quiere que su compilador tenga la flexibilidad suficiente para entremezclar instrucciones que no son dependientes las unas de las otras. Y tales instrucciones se encuentran en ambas caras de un llamado a subrutina, en el invocador y en el invocado. Pero la oportunidad se pierde cuando el compilador no puede emparejarlas dentro de subrutinas y funciones. Y así, instrucciones que perfectamente pudieran solaparse, permanecen en sus respectivos lados de la barrera artificial.</para>
+      <para id="id12364362">Puede ser de ayuda que ilustremos el reto que representan las fronteras de las subrutinas mediante un ejemplo exagerado. Los siguientes bucles se ejecutan muy bien en una amplia variedad de procesadores:</para>
+      <code id="id12902220" display="block"><newline/>
+      DO I=1,N
+        A(I) = A(I) + B(I) * C 
+      ENDDO
+    </code>
+      <para id="id11907450">El código de abajo realiza los mismos cálculos, pero observe qué hemos hecho:</para>
+      <code id="id12884807" display="block"><newline/>
+      DO I=1,N
+        CALL MADD (A(I), B(I), C) 
+      ENDDO
+      SUBROUTINE MADD (A,B,C)
+      A = A + B * C 
+      RETURN
+      END
+    </code>
+      <para id="id11956025">Cada iteración invoca a una subrutina para realizar una pequeña cantidad de trabajo, que antes estaba ubicado adentro del ciclo. Este es un ejemplo particularmente doloroso, porque involucra cálculos de punto flotante. La pérdida de paralelismo resultante, junto con la sobrecarga debida al llamado al procedimiento, puede producir código que se ejecuta 100 veces más lento. Recuerde, tales operaciones se colocan en líneas de espera, y toma cierta cantidad de tiempo "de recuperación" antes de que el rendimiento alcance siquiera una operación por ciclo de reloj. Si son pocas las operaciones de punto flotante que se realizan entre llamados a subrutinas, el tiempo gastado en llenar y vaciar las líneas de espera se volverá muy importante.</para>
+      <para id="id12565081">La invocación de subrutinas y funciones complica la habilidad que tiene el compilador de manejar eficientemente variables <code display="inline">COMMON</code> y <code display="inline">external</code>, retrasando su almacenamiento en memoria hasta el último momento posible. El compilador usa registros para almacenar los valores "vivos" de muchas variables. Cuando realiza una llamada, el compilador no puede saber cuáles de las variables cambiarán en la subrutina que está declarada como <code display="inline">external</code> o <code display="inline">COMMON</code>, y por ello se ve forzado a almacenar en memoria cualquier variable <code display="inline">external</code> o <code display="inline">COMMON</code> que haya sido modificada, de modo que la subrutina invocada pueda encontrarla. De igual modo, tras el retorno de la llamada, las mismas variables tienen que cargarse nuevamente en los registros, porque el compilador no puede confiar en las copias antiguas que residen en los registros. La penalización de guardar y recuperar variables puede ser substancial, especialmente si son muchas. También puede resultar riesgoso si las variables que debieran ser locales fueron especificadas como <code display="inline">external</code> o <code display="inline">COMMON</code>, como sucede en el siguiente código:</para>
+      <code id="id5907583" display="block"><newline/> 
+      COMMON /USELESS/ K 
+      DO K=1,1000
+        IF (K .EQ. 1) CALL AUX 
+      ENDDO
+    </code>
+      <para id="id11944432">En este ejemplo, K se ha declarado como una variable <code display="inline">COMMON</code>. Sólo se usa como contador del ciclo do-loop, así que realmente no hay razón para que sea otra cosa que local. Sin embargo, dado que está en un bloque <code display="inline">COMMON</code>, la llamada a <code display="inline">AUX</code> obliga al compilador a almacenar y recargar <code display="inline">K</code> cada iteración. Ello se debe a que se desconocen los efectos laterales que la llamada puede producir.</para>
+      <para id="id6206755">Hasta aquí, pareciera como si estuviéramos abonando el camino para ¡programas principales enormes, sin subrutinas o funciones! En absoluto. La modularidad es importante para mantener compacto y comprensible el código fuente. Y francamente, la necesidad de modularidad y facilidad de mantenimiento siempre es más importante que la necesidad de <emphasis effect="italics">pequeñas</emphasis> mejoras de rendimiento. Sin embargo, hay un par de enfoques que permiten racionalizar los llamados a subrutinas, y que no requieren que usted abandone las técnicas de codificación modular: se trata de las macros y los procedimientos en línea.</para>
+      <para id="id12926424">Recuerde, si la función o subrutina hace una cantidad razonable de trabajo, no importará demasiado la sobrecarga debida a la invocación del procedimiento. Sin embargo, si una rutina pequeña aparece como un nodo hijo en una de las secciones más atareadas del grafo de llamados, puede que deba pensar en insertarla en los lugares apropiados del programa.</para>
+      <section id="id6055529">
+        <title>Macros</title>
+        <para id="id11945485">Las <emphasis effect="italics">Macros</emphasis> (o macroinstrucciones) son pequeños procedimientos que se substituyen en línea a tiempo de compilación. Al contrario que las subrutinas o funciones, que se incluyen una vez durante el proceso de enlazado, las macros se replican en cada lugar que se usan. Cuando el compilador lleva a cabo su primera pasada a lo largo de su programa, busca patrones que coincidan con las definiciones previas de macros, y las expande en línea. De hecho, en etapas posteriores, el compilador ve una macro expandida como si fuera código fuente creado por usted.</para>
+        <para id="id5983799">Las macros forman parte tanto de C como de FORTRAN (aunque la noción equivalente a una macro en FORTRAN, la <emphasis effect="italics">función sentencia</emphasis>, ha sido vilipendiada por la comunidad FORTRAN y no sobrevivirá mucho tiempo más).<footnote id="id5894199">La función sentencia se ha eliminado de FORTRAN 90.</footnote> En los programas en lenguaje C, las macros se crean mediante una directiva <code display="inline">#define</code>, como se demuestra aquí:</para>
+        <code id="id11932271" display="block"><newline/>
+      #define promedio(x,y) ((x+y)/2)
+      main ()
+      {
+         float q = 100, p = 50;
+         float a;
+         a = promedio(p,q);
+         printf ("%f\n",a);
+      }
+    </code>
+        <para id="id12503863">El primer paso de compilación de un programa en C consiste en pasar por el preprocesador de C, <emphasis effect="italics">cpp</emphasis>. Ello ocurre automáticamente cuando usted invoca al compilador. <emphasis effect="italics">cpp</emphasis> expande las sentencias <code display="inline">#define</code> en línea, reemplazando el patrón coincidente por la definición de la macro. En el programa de arriba, la sentencia:</para>
+        <code id="id12924527" display="block"><newline/>
+      a = promedio(p,q);
+    </code>
+        <para id="id12969626">es reemplazada por:</para>
+        <code id="id12566898" display="block"><newline/>
+      a = ((p+q)/2);
+    </code>
+        <para id="id12925058">Debe usted ser cuidadoso al definir la macro, porque literalmente reemplaza al patrón que <emphasis effect="italics">cpp</emphasis> encuentra. Por ejemplo, si la definición de la macro decía:</para>
+        <code id="id12913334" display="block"><newline/>
+      #define multiplicar(a,b) (a*b)
+    </code>
+        <para id="id12913338">y usted lo invocó como:</para>
+        <code id="id12982754" display="block"><newline/>
+      c = multiplicar(x+t,y+v);
+    </code>
+        <para id="id6047098">la expansión resultante será <code display="inline">x+t*y+v</code> — que probablemente no es lo que usted pretendía.</para>
+        <para id="id12893613">Si es usted un programador en C, puede que esté usando macros sin siquiera percatarse. Muchos archivos de cabecera en C (<emphasis effect="italics">.h</emphasis>) contienen definiciones de macros. De hecho, algunas funciones "estándar" de biblioteca en C en realidad son macros contenidas en tales archivos. Por ejemplo, la función <emphasis effect="italics">getchar</emphasis> puede enlazarse cuando construye su programa. Si tiene una sentencia:</para>
+        <code id="id12885544" display="block"><newline/>
+      #include &lt;stdio.h&gt;
+    </code>
+        <para id="id12927823">en su archivo, <emphasis effect="italics">getchar</emphasis> se reemplazará con una definición de macro a tiempo de compilación, reemplazando la función de biblioteca de C.</para>
+        <para id="id4986708">También puede usted hacer que las macros de <emphasis effect="italics">cpp</emphasis> trabajen para los programas en FORTRAN.<footnote id="id12523689">Algunos programadores prefieren usar para FORTRAN el preprocesador estándar de UNIX, <emphasis effect="italics">m4</emphasis> .</footnote> Por ejemplo, una versión FORTRAN del programa en C anterior pudiera verse así:</para>
+        <code id="id12469133" display="block"><newline/>
+      #define PROMEDIO(X,Y) ((X+Y)/2) 
+      C
+            PROGRAM MAIN 
+            REAL A,P,Q
+            DATA P,Q /50.,100./ 
+            A = PROMEDIO(P,Q) 
+            WRITE (*,*) A
+            END
+    </code>
+        <para id="id12926673">Sin algo de preparación, la sentencia <code display="inline">#define</code> será rechazada por el compilador de FORTRAN. El programa debe preprocesarse previamente mediante <emphasis effect="italics">cpp</emphasis> para reemplazar el uso de <code display="inline">PROMEDIO</code> con su definición de macro. Ello convierte a la compilación en un procedimiento de dos pasos, pero que no debe ser una carga mayor, especialmente si está construyendo sus programas bajo el control del programa de utilidad <emphasis effect="italics">make</emphasis>. También le sugerimos almacenar los programas en FORTRAN que contienen directivas para <emphasis effect="italics">cpp</emphasis> mediante la nomenclatura <emphasis effect="italics">filename.F</emphasis> para distinguirlos de los programas FORTRAN sin adornos. Sólo asegúrese de hacer los cambios sólo a los archivos <emphasis effect="italics">.F</emphasis>, y no a la salida de <emphasis effect="italics">cpp</emphasis>. Así es como debe preprocesar los archivos <emphasis effect="italics">.F</emphasis> de FORTRAN a mano:</para>
+        <code id="id12414161" display="block"><newline/>
+      % /lib/cpp -P &lt; promedio.F &gt; promedio.f
+      % f77 promedio.f -c
+    </code>
+        <para id="id11948469">El compilador de FORTRAN nunca ve el código original. En vez de ello, la definición de la macro se sustituye en línea, tal y como si la hubiera tecleado usted mismo:</para>
+        <code id="id12428982" display="block"><newline/>
+      C
+            PROGRAM MAIN 
+            REAL A,P,Q
+            DATA P,Q /50.,100./ A = ((P+Q)/2)
+            WRITE (*,*) A 
+            END
+    </code>
+        <para id="id11935615">Por cierto, algunos compiladores de FORTRAN también reconocen la extensión <emphasis effect="italics">.F</emphasis>, haciendo innecesario el proceso en dos pasos. Si el compilador ve la extensión <emphasis effect="italics">.F</emphasis> invoca automáticamente a <emphasis effect="italics">cpp</emphasis>, y desecha el archivo <emphasis effect="italics">.f</emphasis> intermedio. Trate de compilar un archivo <emphasis effect="italics">.F</emphasis> en su computadora para ver si funciona.</para>
+        <para id="id11911847">También, tome conciencia de que la expansión de macros puede provocar que las líneas de código fuente excedan la columna 72, lo cuál hará que su compilador de FORTRAN reclame (o peor, que le pase desapercibido). Algunos compiladores soportan líneas de entrada más largas de 72 caracteres. En los compiladores de Sun la opción <emphasis effect="bold">–e</emphasis> permite extender las líneas de entrada hasta 132 caracteres de longitud.</para>
+      </section>
+      <section id="id12557857">
+        <title>Procedimientos En Línea</title>
+        <para id="id12233350">Las definiciones de macros tienden a ser muy cortas, usualmente de sólo una sentencia de longitud. A veces tiene usted porciones de código ligeramente más largas (pero no demasiado largas), que también pueden obtener beneficio si se copian en línea, en vez de invocarse como subrutina o función. Nuevamente, la razón de hacerlo es eliminar la sobrecarga debida a la invocación de procedimientos, y exponer el paralelismo. Si su compilador es capaz de definir subrutinas y funciones <emphasis effect="italics">inline</emphasis> (en línea) al interior de los módulos que las invocan, entonces dispone de una forma muy natural y portátil de escribir código modular sin sufrir del costo debido a la invocación de la subrutina.</para>
+        <para id="id12923625">Dependiendo del vendedor, puede preguntarle al compilador si soporta la declaración de procedimientos en línea mediante:</para>
+        <list id="id8056168" list-type="bulleted"><item>Especificar desde la línea de comandos aquellas rutinas que deben insertarse en línea</item>
+<item>Poner directivas para la declaración en línea dentro del código fuente</item>
+<item>Permitir que el compilador decida automáticamente qué poner en línea</item>
+        </list>
+        <para id="id12425094">Las directivas y las opciones de la línea de comandos del compilador no están estandarizadas, así que deberá revisar la documentación de su compilador. Desafortunadamente, puede que nuevamente descubra que no hay tal característica (“nuevamente,” siempre nuevamente), o que es una característica extra que por la que deberá pagar. La tercera forma de declaración en línea de la lista, la automática, sólo la tienen disponible unos pocos vendedores. La declaración en línea automática depende de que el compilador sea sofisticado y pueda ver las definiciones de varios módulos a la vez.</para>
+        <para id="id11945503">Unas últimas palabras de precaución respecto a la colocación de procedimientos en línea. Es fácil exagerar en su uso. Si todo termina enquistado en el cuerpo o en sus padres, el ejecutable resultante puede ser tan grande que repetidamente desborde la cache de instrucciones y se convierta en una pérdida de rendimiento neto. Nuestro consejo es que use la información de invocador/invocado que le proporcionan los perfiladores para tomar decisiones inteligentes acerca de la ubicación en línea, en vez de tratar de aplicarlo a cada subrutina que genere. De nuevo, los mejores candidatos generalmente son aquellas rutinas pequeñas que se invocan muy a menudo.</para>
+      </section>
+   </content>
+</document>

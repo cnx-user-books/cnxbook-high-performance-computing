@@ -1,0 +1,160 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Soporte del Lenguaje para Mejorar el Rendimiento - FORTRAN de Alto Rendimiento (HPF)</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38331</md:content-id>
+  <md:title>Soporte del Lenguaje para Mejorar el Rendimiento - FORTRAN de Alto Rendimiento (HPF)</md:title>
+  <md:abstract/>
+  <md:uuid>fba22356-0b6d-4fdf-af2b-ef0f754ac2da</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1164834826087">En marzo de 1992, el Foro de Fortran de Alto Rendimiento (HPFF por sus siglas en inglés) comenzó a reunirse para discutir y definir un conjunto de agregados a FORTRAN 90 para hacer más práctico su uso en ambientes de cómputo escalable. El plan era desarrollar una especificación durante ese año, de forma que los vendedores rápidamente comenzaran a implementar el estándar. El alcance de este esfuerzo incluía lo siguiente:</para>
+      <list id="id1164830261521" list-type="bulleted"><item>Identificar escalares y arreglos que puedan distribuirse a lo largo de la máquina paralela.</item>
+        <item>Indicar cómo se distribuirán. ¿Serán tiras, bloques o de alguna otra forma?</item>
+        <item>Especificar cómo se alinearán dichas variables las unas con respecto a las otras.</item>
+        <item>Redistribuir y realinear estructuras de datos a tiempo de ejecución.</item>
+        <item>Añadir una estructura de control <code>FORALL</code> para las asignaciones paralelas que sean difíciles o imposibles de construirse usando la sintaxis de arreglos de FORTRAN.</item>
+        <item>Hacerle mejoras a la estructura de control <code>WHERE</code> de FORTRAN 90.</item>
+        <item>Añadir funciones intrínsecas para las operaciones en paralelo más comunes.</item>
+      </list>
+      <para id="id6012358">Existían varias fuentes de inspiración para el esfuerzo HPF. Las directivas de disposición ya eran parte del ambiente de programación de FORTRAN 90 en algunas computadoras SIMD (i.e., la CM-2). También se había liberado el año anterior PVM, el primer ambiente de paso de mensajes transportable, y los usuarios tenían un año de experiencia tratando de descomponer programas a mano. Habían desarrollado algunas técnicas básicas utilizables para la descomposición de datos que funcionaban muy bien, pero requerían de mucha más contabilidad.<footnote id="id1164828591962">Como pronto veremos.</footnote></para>
+      <para id="id1164830450196">El esfuerzo HPF agrupó un conjunto diverso de intereses de todos los principales vendedores de cómputo de alto rendimiento. Estaban representadas las principales compañías. Como resultado, HPF se diseñó para implementarse en casi todo tipo de arquitecturas.</para>
+      <para id="id1164831408870">Hay un esfuerzo en marcha para producir el siguiente estándar de FORTRAN, FORTRAN 95, que se espera adopte algunas pero no todas las modificaciones de HPF.</para>
+      <section id="id1164837457970">
+        <title>Programando en HPF</title>
+        <para id="id1164833731599">HPF usa FORTRAN 90 como su núcleo. Si un programa en FORTRAN 90 se pasa por un compilador HPF, debe producir los mismos resultados que si se hubiera compilado con FORTRAN 90. Asumiendo que un programa HPF sólo use los constructos de FORTRAN 90 y las directivas HPF, un compilador FORTRAN 90 puede ignorar las directivas y debe producir los mismos resultados que un compilador HPF.</para>
+        <para id="id1164829716842">Conforme el usuario agrega directivas al programa, la semántica de éste no cambia. Si el usuario no entiende en absoluto la aplicación e inserta directivas extremadamente mal pensadas, el programa produce resultados correctos aunque muy lentamente. Un compilador HPF no trata de "mejorar" las directivas del usuario. Asume que el programador es omniscente.<footnote id="id1164834575318">Lo cual siempre es bueno de asumirse.</footnote></para>
+        <para id="id1164836162368">Una vez que el usuario ha determinado cómo distribuir los datos entre los procesadores, el compilador de HPF trata de usar el mínimo de comunicaciones necesario y traslapa la comunicación con los cálculos siempre que sea posible. HPF generalmente usa la regla de "el propietario calcula" para la ubicación de los cálculos. Un elemento particular en un arreglo se calcula mediante el procesador que almacena dicho elemento del arreglo.</para>
+        <para id="id1164829092072">Si es necesario, se recogen de procesadores remotos todos los datos necesarios para realizar el cálculo. Si el programador hace una descomposición y alineación inteligentes, muchos de los datos requeridos estarán en la memoria local, en vez de en una memoria remota. El compilador HPF también es responsable de asignar cualquier estructura de datos temporal necesaria para soportar las comunicaciones a tiempo de ejecución.</para>
+        <para id="id1164839057470">En general, el compilador HPF no es mágico -simplemente hace un muy buen trabajo con los detalles de comunicación cuando el programador es capaz de diseñar una buena descomposición de datos. Al mismo tiempo, retiene la transportabilidad con máquinas de una sola CPU y sistemas de memoria uniforme compartida usando FORTRAN 90.</para>
+      </section>
+      <section id="id4211635">
+        <title>Directivas HPF de Disposición de Datos</title>
+        <para id="id1164835752713">Tal vez las contribuciones más importantes de HPF sean las directivas de disposición de datos. Usándolas, el programador puede controlar cómo se acomodan los datos, basándose en su conocimiento acerca de las interacciones entre datos. Una directiva de ejemplo es la que sigue:</para>
+        <code id="id1164828551836" display="block"><newline/>
+            REAL*4 ROD(10)
+      !HPF$ DISTRIBUTE ROD(BLOCK)
+    </code>
+        
+        <para id="id1164829731642">El prefijo <code display="inline">!HPF$</code> es visto como un comentario por cualquier compilador que no sea HPF, de forma que un compilador FORTRAN 90 común pueda ignorarla de forma segura. La directiva <code display="inline">DISTRIBUTE</code> indica que el arreglo <code display="inline">ROD</code> debe distribuirse entre múltiples procesadores. Si no se usase dicha directiva, el arreglo <code display="inline">ROD</code> se ubicaría en un procesador y se le comunicaría a los otros procesos conforme se necesitara. Existen varios esquemas de distribución que pueden hacerse en cada dimensión:</para>
+        <code id="id1164828300404" display="block"><newline/>
+             REAL*4 BOB(100,100,100),RICH(100,100,100)
+      !HPF$ DISTRIBUTE BOB(BLOCK,CYCLIC,*)
+      !HPF$ DISTRIBUTE RICH(CYCLIC(10))
+    </code>
+        <para id="id1164830374936">Estas distribuciones operan como sigue:</para>
+        <list id="id1164828108163" list-type="labeled-item"><item><code display="inline">BLOCK</code> El arreglo se distribuye a lo largo de los procesadores usando bloques contiguos del valor del índice. Los bloques se hacen tan grandes como sea posible.</item>
+          <item><code display="inline">CYCLIC</code> El arreglo se distribuye a lo largo de los procesadores, mapeando cada elemento sucesivo al "siguiente" procesador, y cuando se llega al último procesador, la ubicación comienza nuevamente en el primero.</item>
+          <item><code display="inline">CYCLIC(n)</code> El arreglo se distribuye del mismo modo que en <code>CYCLIC</code> excepto que se colocan <code>n</code> elementos sucesivos en cada procesador antes de pasarse al siguiente.</item>
+        </list>
+        <note id="id1164828991306" type="Note">Todos los elementos en esta dimensión se colocan en el mismo procesador. Esto es mayormente útil para arreglos multidimensionales.</note>
+        <para id="id1164830243583">
+          <figure id="id1164835082651"><title>Distribuyendo los elementos del arreglo entre procesadores</title><media id="id1164835082651_media" alt="Esta figura muestra tres retículas de cajas numeradas, con tres línes de código sobre cada una.">
+              <image mime-type="image/png" src="../../media/graphics1-b194.png" id="id1164835082651__onlineimage" height="301" width="600"/>
+            </media>
+            
+          <!--Figure 13:5--></figure>
+        </para>
+        <para id="id1164836411572">La <link target-id="id1164835082651"/> muestra cómo se mapean los elementos de un arreglo sencillo entre tres procesadores con diferentes directivas.</para>
+        <para id="id1164838002243">Deben ubicarse cuatro elementos en los Procesadores 1 y 2 porque no hay un Procesador 4 disponible para el elemento más a la izquierda si se ubican tres elementos en los Procesadores 1 y 2. En <link target-id="id1164835082651"/>, los elementos se ubican en procesadores sucesivos, regresando al Procesador 1 tras el último procesador. En <link target-id="id1164835082651"/>, usar un tamaño de bocado de <code display="inline">CYCLIC</code> es un compromiso entre <code display="inline">BLOCK</code> puro y <code display="inline">CYCLIC</code> puro.</para>
+        <para id="id1164829475340">Para explorar el uso de <code display="inline">*</code>, debemos observar un simple arreglo bidimensional mapeado entre cuatro procesadores. En <link target-id="id1164842650911"/>, mostramos la distribución del arreglo y cada celda indica cuál procesador almacenará el dato para dicha celda en un arreglo bidimensional. En <link target-id="id1164842650911"/>, la directiva lo descompone en ambas dimensiones simultáneamente. Este enfoque resulta en unos parches aproximadamente cuadrados en el arreglo. Sin embargo, puede que no sea el mejor enfoque. En el siguiente ejemplo, usamos el <code display="inline">*</code> para indicar que queremos que todos los elementos de una columna particular sean ubicados sobre le mismo procesador. Así, los valores de columna distribuyen equitativamente las columnas entre los procesadores. Entonces, todos los renglones en cada columna siguen donde ha sido colocada la columna. Ello permite un salto unitario para las porciones ubicadas adentro de los procesadores, y resulta benéfico en algunas aplicaciones. La sintaxis de <code display="inline">*</code> también se conoce como distribución <code display="inline">sobre el procesador</code>.</para>
+        <para id="id1164828999244">
+          <figure id="id1164842650911"><title>Distribuciones bidimensionales</title><media id="id1164842650911_media" alt="Esta figura muestra dos retículas de cajas numeradas. Ambas están tituladas con dos líneas de código. La retícula a la izquierda, con el código (Bloque,Bloque) tiene dieciseis cajas, con bloques de cuatro de ellas numerados 1, 2, 3 y 4, y los números organizados en cuadrantes. La retícula a la derecha, con el código (*, bloque) tiene dieciseis cajas, bloques de cuatro de ellas numerados 1, 2, 3 y 4, y los números organizados en columnas.">
+              <image mime-type="image/png" src="../../media/graphics2-96dd.png" id="id1164842650911__onlineimage" height="266" width="599"/>
+            </media>
+            
+          <!--figure 13-6--></figure>
+        </para>
+        <para id="id1164829058985">Cuando lidie con más de una estructura de datos para realizar un cálculo, puede bien sea distribuirlas separadamente , o bien usar la directiva <code>ALIGN</code> para asegurarse de que los elementos correspondientes de ambas estructuras estén alojados juntos. En el siguiente ejemplo, tenemos un arreglo de placa y un factor de escala que debemos aplicar a cada columna de la placa durante el cálculo:</para>
+        <code id="id1164835322129" display="block"><newline/>
+            DIMENSION PLATE(200,200),SCALE(200)
+      !HPF$ DISTRIBUTE PLATE(*,BLOCK)
+      !HPF$ ALIGN SCALE(I) WITH PLATE(J,I)
+    </code>
+        <para id="id1164829560388">O bien:</para>
+        <code id="id1164833092584" display="block"><newline/>
+            DIMENSION PLATE(200,200),SCALE(200)
+      !HPF$ DISTRIBUTE PLATE(*,BLOCK)
+      !HPF$ ALIGN SCALE(:) WITH PLATE(*,:)
+    </code>
+        <para id="id1164836125505">En ambos ejemplos, las variables <code display="inline">PLATE</code> y <code display="inline">SCALE</code> están ubicadas en los mismos procesadores que las columnas correspondientes de <code display="inline">PLATE</code>. La sintaxis <code display="inline">*</code> y <code display="inline">:</code> comunican la misma información. Cuando se usa <code display="inline">*</code>, esa dimensión se colapsa y no participa en la distribución. Cuando se usa <code display="inline">:</code>, significa que la esa dimensión sigue a la dimensión correspondiente en la variable que ya ha sido distribuida.</para>
+        <para id="id1164828247321">También puede usted especificar el acomodo de la variable <code display="inline">SCALE</code> y hacer que la variable <code display="inline">PLATE</code> "siga" la distribución de la variable <code display="inline">SCALE</code>:</para>
+        <code id="id1164833634303" display="block"><newline/>
+            DIMENSION PLATE(200,200),SCALE(200)
+      !HPF$ DISTRIBUTE SCALE(BLOCK)
+      !HPF$ ALIGN PLATE(J,I) WITH SCALE(I)
+    </code>
+        <para id="id1164828265392">Puede agregar expresiones aritméticas simples en la directiva <code display="inline">ALIGN</code>, sujetas a ciertas limitaciones. Las otras directivas incluyen:</para>
+        <list id="id1164838117358" list-type="labeled-item"><item><code>PROCESSORS</code> Le permite crear una forma de configuración de los procesos que pueda usarse para alinear otras estructuras de datos.</item>
+          <item><code>REDISTRIBUTE y REALIGN</code> Le permite cambiar dinámicamente la forma de las estructuras de datos a tiempo de ejecución, conforme cambian los patrones de comunicación durante el curso de la misma.</item>
+          <item><code>TEMPLATE</code> Le permite crear un arreglo que no usa espacio. En vez de distribuir una estructura de datos y alinear todas las demás, algunos usuarios crearán y distribuirán una plantilla y luego alinearán todas las estructuras de datos reales de acuerdo a esa plantilla.</item>
+        </list>
+        <para id="id1164835159301">El uso de directivas puede fluctuar desde lo muy simple a lo muy complejo. En algunas situaciones, usted distribuirá la única estructura grande compartida, alineando unas pocas estructuras relacionadas y habrá terminado. En otras, los programadores intentan optimizar las comunicaciones basándose en la topología de la red de interconexión (hypercubo, red de interconexión multietapa, malla o toroide) usando directivas muy detalladas. También pueden redistribuir cuidadosamente los datos durante las varias fases del cómputo.</para>
+        <para id="id1164828929336">Con suerte, su aplicación logrará un buen rendimiento sin demasiado esfuerzo.</para>
+      </section>
+      <section id="id1164828096858">
+        <title>Estructuras de control en HPF</title>
+        <para id="id1164829629319">Mientras los diseñadores de HPF estaban enmedio de definir un nuevo lenguaje, se dieron a la tarea de mejorar aquello que habían visto como una limitación de FORTRAN 90. Es interesante que tales modificaciones son las que se están considerando como parte del nuevo estándar de FORTRAN 95.</para>
+        <para id="id1164828602969">La sentencia <code display="inline">FORALL</code> permite al usuario expresar operaciones iterativas sencillas que se aplican al arreglo completo, sin descansar en un ciclo do-loop (recuerde, los ciclos do-loop fuerzan un orden). Por ejemplo:</para>
+        <code id="id1164830281879" display="block"><newline/>
+      FORALL (I=1:100, J=1:100) A(I,J) = I + J
+    </code>
+        <para id="id1164839855069">Ello puede expresarse en FORTRAN 90 nativo, pero es mucho más feo, contraintuitivo y propenso a errores.</para>
+        <para id="id1164830205681">Otra estructura de control proporciona la habilidad de declarar una función como "PURE." Una función PURE no tiene efectos secundarios mas que a través de sus parámetros. El programador garantiza que una función PURE puede ejecutarse simultáneamente en muchos procesadores sin efectos indeseables. Esto le permite a HPF asumir que dicha función sólo operará sobre datos locales y que no requiere de ninguna comunicación de datos durante el tiempo que dure su ejecución completa. El programador también puede declarar cuáles parámetros de la función son de entrada, cuáles de salida y cuáles de ambos.</para>
+      </section>
+      <section id="id1164828556012">
+        <title>Intrínsecos de HPF</title>
+        <para id="id1164830191541">Las compañías que venden computadoras SIMD requieren entregarlas con herramientas que permitan la ejecución de operaciones colectivas eficientes sobre todos los procesadores. Un ejemplo perfecto de esto es la operación SUM. Para <code display="inline">SUM</code> el valor de un arreglo a lo largo de N procesadores, el enfoque más simplista toma N pasos. Sin embargo, es posible lograrlo en log(N) pasos usando una técnica denominada <emphasis effect="italics">suma prefija en paralelo</emphasis>. Al momento en que se estaba desarrollando HPF se habían identificado e implementado varias de tales operaciones. HPF dio la oportunidad de definir una sintaxis estandarizada para ellas.</para>
+        <para id="id1164828569370">Una muestra de tales operaciones incluye:</para>
+        <list id="id1164829526981" list-type="labeled-item"><item><code display="inline">SUM_PREFIX </code>Realiza varios tipos de sumas prefijas en paralelo.</item>
+          <item><code display="inline">ALL_SCATTER</code> Distribuye un único valor a un conjunto de procesadores.</item>
+          <item><code display="inline">GRADE_DOWN</code> Ordena en orden decreciente.</item>
+          <item><code display="inline">IANY</code> Calcula el OR lógico de un conjunto de valores.</item>
+        </list>
+        <para id="id1164838870644">Aun cuando existe un gran número de tales funciones intrínsecas, la mayoría de las aplicaciones sólo usa unas pocas de tales operaciones.</para>
+      </section>
+      <section id="id1164829345417">
+        <title>Extrínsecos de HPF</title>
+        <para id="id1164829591592">Con el objeto de permitir a los vendedores de arquitecturas diversas, proporcionar sus ventajas particulares, HPF incluyó la capacidad de enlazarse con funciones "extrínsecas". Tales funciones no requieren de reescribirse en FORTRAN 90/HPF, y realizan varias capacidades sólo soportadas por los vendedores. Esta capacidad permite a los usuarios realizar tales tareas, como la creación de aplicaciones híbridas, con algo de HPF y algo de paso de mensajes.</para>
+        <para id="id1518379">Los programadores de cómputo de alto rendimiento siempre gustan de tener la habilidad de hacer cosas a su propio modo, con el objetivo de exprimir hasta la última gota de rendimiento.</para>
+      </section>
+      <section id="id1164839517159">
+        <title>Flujo Calórico en HPF</title>
+        <para id="id1164837151368">Para transportar nuestra aplicación de flujo calórico a HPF, realmente sólo requerimos de agregar una línea de código. En el ejemplo siguiente, lo hemos cambiado a un arreglo bidimensional más grande:</para>
+        <code id="id1164830326703" display="block"><newline/>
+              INTEGER PLATESIZ,MAXTIME 
+              PARAMETER(PLATESIZ=2000,MAXTIME=200)
+      !HPF$   DISTRIBUTE PLATE(*,BLOCK)
+              REAL*4 PLATE(PLATESIZ,PLATESIZ) 
+              INTEGER TICK
+              PLATE = 0.0
+    
+      * Sumar las fronteras
+              PLATE(1,:) = 100.0
+              PLATE(PLATESIZ,:) = -40.0
+              PLATE(:,PLATESIZ) = 35.23
+              PLATE(:,1) = 4.5
+    
+              DO TICK = 1,MAXTIME
+                PLATE(2:PLATESIZ-1,2:PLATESIZ-1) = (
+          +       PLATE(1:PLATESIZ-2,2:PLATESIZ-1) +
+          +       PLATE(3:PLATESIZ-0,2:PLATESIZ-1) +
+          +       PLATE(2:PLATESIZ-1,1:PLATESIZ-2) +
+          +       PLATE(2:PLATESIZ-1,3:PLATESIZ-0) ) / 4.0
+                PRINT 1000,TICK, PLATE(2,2)
+      1000      FORMAT('TICK = ',I5, F13.8) 
+              ENDDO
+      *
+              END
+    </code>
+        <para id="id1164828977967">Notará que la directiva HPF distribuye las columnas del arreglo usando el enfoque <code display="inline">BLOCK</code>, manteniendo todos los elementos de una columna sobre un mismo procesador. A primera vista, pudiera parecer que (<code display="inline">BLOCK</code>,<code display="inline">BLOCK</code>) es la mejor distribución. Sin embargo, hay dos ventajas de una distribución (<code display="inline">*</code>,<code display="inline">BLOCK</code>). Primero, recorrer hacia abajo una columna es una operación de paso único, y de este modo puede usted procesar una columna completa. El aspecto más significativo de la distribución es que una distribución (<code display="inline">BLOCK</code>,<code display="inline">BLOCK</code>) fuerza a cada procesador a comunicarse con hasta ocho procesadores más para obtener los valores de sus vecinos. Usando la distribución (*,<code display="inline">BLOCK</code>), cada procesador tendrá que intercambiar datos con cuando mucho dos procesadores en cada ciclo.</para>
+        <para id="id1164829584398">Cuando veamos PVM, veremos el mismo programa implementado al estilo de paso de mensajes SPMD. En este ejemplo, verá usted algunos de los detalles que HFP debe manejar para ejecutar apropiadamente este código. Tras revisarlo ¡probablemente usted elija implementar todas sus aplicaciones futuras de flujo calórico en HPF!</para>
+      </section>
+      <section id="id1164828192713">
+        <title>Resumen de HPF</title>
+        <para id="id1164828979135">En ciertas cosas HPF ha sido mejor que FORTRAN 90. Compañías como IBM con su SP-1 requieren de proporcionar algún lenguaje de alto nivel para el que sus usuarios no quieren escribir código de paso de mensajes. Por tal motivo, IBM ha invertido una gran cantidad de esfuerzo en implementar un HPF optimizado. Resulta interesante que mucho de su esfuerzo beneficiará directamente la habilidad de desarrollar compiladores de FORTRAN 90 más sofisticados. El extensivo análisis de flujo de datos requerido para minimizar las comunicaciones y administrar las estructuras de datos dinámicos recaerá en los compiladores de FORTRAN 90 incluso sin usar las directivas de HPF.</para>
+        <para id="id1164833969105">El tiempo dirá si ya no serán necesarias las directivas de distribución de datos de HPF, y si los compiladores serán capaces de realizar suficiente análisis sobre el código plano de FORTRAN 90 para optimizar la ubicación y movimiento de los datos.</para>
+        <para id="id1164831628856">En su forma actual, HPF es un vehículo excelente para expresar las aplicaciones altamente paralelas a nivel de datos, y basadas en retículas. Sus debilidades son las comunicaciones irregulares y el balance de cargas dinámicas. Un nuevo esfuerzo para desarrollar la siguiente versión de HPF está en camino, para manejar algunos de estos temas. Desafortunadamente, es más difícil resolver estos problemas a tiempo de ejecución a la vez que se mantiene un buen rendimiento a través de una amplia variedad de arquitecturas.</para>
+      </section>
+  </content>
+</document>

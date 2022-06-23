@@ -1,0 +1,62 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Ejercicios</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37221</md:content-id>
+  <md:title>Ejercicios</md:title>
+  <md:abstract/>
+  <md:uuid>ccca9413-c306-4c46-9f00-76105bbdc226</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+<exercise id="id8999425">
+        <problem id="oo-id9383613">
+          <para id="id7887861">El siguiente segmento de código recorre una cadena de apuntadores:
+<code id="eip-id1170142702690" display="block">while ((p = (char *) *p) != NULL);</code>
+¿Cómo interactuará este código con la cache si todas las referencias caen en una pequeña porción de memoria? ¿Cómo interactuará con la cache si las referencias se prolongan a través de varios megabytes?</para>
+        </problem>
+      </exercise>
+      <exercise id="id6813355">
+        <problem id="oo-id9355012">
+          <para id="id9292314">¿Cómo se comportará el código en <link target-id="id8999425"/> en un sistema de memoria multibanco que no tenga cache?</para>
+        </problem>
+      </exercise>
+      <exercise id="id9311439">
+        <problem id="oo-id9278593">
+          <para id="id8788256">Hace mucho tiempo, la gente escribía regularmente código automodificable -programas que escriben en la memoria de instrucciones y cambian su propio comportamiento. ¿Cuáles son las implicaciones de código automodificable en una máquina con una arquitectura de memoria Harvard?</para>
+        </problem>
+      </exercise>
+      <exercise id="id9389116">
+        <problem id="oo-id9186563">
+          <para id="id9389119">Asuma una arquitectura de memoria con una velocidad de cache L1 de 10 ns, una velocidad L2 de 30 ns, y una velocidad de memoria de 200 ns. Compare el rendimiento promedio del sistema de memoria con: 1) L1 80%, L2 10% y memoria 10%; y 2) L1 85% y memoria 15%.</para>
+        </problem>
+      </exercise>
+      <exercise id="id8671097">
+        <problem id="oo-id8636059">
+          <para id="id8671100">En un sistema de cómputo, ejecute ciclos que procesen arreglos de longitudes variables de 16 a 16 millones:
+<code id="eip-id1166732593462" display="block">ARRAY(I) = ARRAY(I) + 3</code>
+¿Cómo cambia el número de sumas por segundo conforme la longitud del arreglo cambia? Experimente con <code>REAL*4</code>, <code>REAL*8</code>, <code>INTEGER*4</code>, e <code>INTEGER*8</code>.
+</para>
+<para id="eip-id1166731192986">¿Qué tiene un impacto más significativo en el rendimiento, elementos de arreglo más grandes o números enteros versus números de punto flotante? Realice pruebas en una variedad de computadoras diferentes.</para>
+        </problem>
+      </exercise>
+      
+      <exercise id="id9331114">
+        <problem id="oo-id9355494">
+          <para id="id9331117">Elabore un arreglo bidimensional de 1024x1024. Recorra el array, con los renglones como ciclo interno y después con las columnas como ciclo interno. Realice alguna operación simple en cada elemento. ¿Se comportan distinto los ciclos? ¿Por qué? Experimente con diferentes dimensiones de arreglos y vea el impacto en el rendimiento.</para>
+        </problem>
+      </exercise>
+      <exercise id="id8814543">
+        <problem id="oo-id8314603">
+          <para id="id8814545">Escriba un programa que ejecute repetidamente ciclos temporizados de diferentes tamaños, para determinar el tamaño de cache de su sistema.</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

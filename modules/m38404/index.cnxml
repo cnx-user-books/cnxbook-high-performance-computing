@@ -1,0 +1,20 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38404</md:content-id>
+  <md:title>Cronometraje y Perfilado - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>9012fb26-cc81-4ef9-87b0-85ef34c12dd1</md:uuid>
+</metadata>
+
+<content>
+    <para id="id1163941746450">Tal vez con hacer que su código produzca las respuestas correctas sea suficiente. Después de todo, si sólo planea usar el programa de vez en cuando, o si sólo toma unos minutos en ejecutarse, el tiempo de ejecución no es un asunto que le importe demasiado. Pero puede que no siempre ese sea el caso. Típicamente, la gente se preocupa por el tiempo de ejecución de sus programas por una de dos razones:</para>
+    <list id="id1163935865497" list-type="bulleted"><item>La carga de trabajo ha crecido.</item>
+<item>Están considerando una nueva máquina.</item>
+    </list>
+    <para id="id1163934953437">Resulta claro por qué debe usted preocuparse acerca del rendimiento de su programa si la carga de trabajo crece. Tratar de atiborrar 25 horas de tiempo de cómputo en un día de 24 horas es una pesadilla administrativa. Pero, ¿por qué debiera preocuparse la gente que está considerando una nueva máquina, acerca del tiempo de ejecución? Después de todo, la nueva máquina presumiblemente será más rápida que la antigua, así que todo debiera tomar menos tiempo. La razón es que cuando la gente está evaluando nuevas máquinas, requieren una base de comparación -un banco de pruebas. La gente a menudo usa programas que le resultan familiares como banco de pruebas. Tiene sentido: usted quiere un banco de prueba que sea representativo de la clase de trabajos que realiza, y nada es más representativo del trabajo que usted hace... ¡que el trabajo que usted hace!</para>
+    <para id="id1163935113567">Llevar a cabo bancos de pruebas suena fácil, suponiendo que tenga usted herramientas de cronometraje. <footnote id="id1163935952102">El tiempo es dinero.</footnote> Usted sólo quiere asegurarse que lo que tales herramientas estén reportando sea lo mismo que usted piensa que está obteniendo; especialmente si nunca las ha utilizado con anterioridad. Para ilustrar el punto, imagine si alguien tomase su reloj y lo reemplazara con otro que expresa el tiempo en un sistema de unidades exótico, o con tres conjuntos de manecillas sobrepuestas. Resultaría muy confuso; tendría problemas leyéndolo. Estaría justificablemente nervioso de tener que conducir sus asuntos mediante un reloj que no comprende.</para>
+    <para id="id1163936083860">Las herramientas de cronometraje de UNIX son como el reloj de seis agujas, reportando tres tipos diferentes de medidas. No proporcionan información incongruente, sólo presentan más información de la que puede usted expresar mediante un único valor numérico. Nuevamente, el truco consiste en aprender a leer este reloj. Y eso es lo que hace la primera parte de este capítulo. Investigaremos los diferentes tipos de medidas que determinan el desempeño de un programa.</para>
+    <para id="id1163935515933">Si está usted planeando afinar un programa, requiere más que sólo información de cronometraje. ¿En dónde se está gastando el tiempo, en un solo bucle, en una sobrecarga de llamado a subrutinas, o con problemas de memoria? Para los afinadores, las últimas secciones de este capítulo discutirán cómo perfilar el código a nivel procedimental y de sentencia. También discutiremos qué significan los perfiladores, y cómo predicen el enfoque que debe usted tomar si decide meterle mano al código en busca de mayor rendimiento, y qué posibilidades tendrá de obtener éxito.</para>
+  </content>
+</document>

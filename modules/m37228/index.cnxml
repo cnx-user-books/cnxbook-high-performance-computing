@@ -1,0 +1,25 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Registros</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37228</md:content-id>
+  <md:title>Registros</md:title>
+  <md:abstract/>
+  <md:uuid>0b0527d2-14df-4609-8e87-04366324dcbc</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id19461438">Cuando menos el estrato superior de la jerarquía de memoria, los registros de la CPU, operan tan rápido como el resto del procesador. El objetivo es mantener los operandos en los registros tanto como sea posible. Ello resulta especialmente importante para los valores intermedios usados durante cálculos largos, tales como:</para>
+      <code id="id9038219" display="block">X = G * 2.41 + A / W - W * M
+    </code>
+      <para id="id9418720">Mientras calculamos el cociente de A entre W, debemos mantener almacenado el resultado de multiplicar G por 2.41. Sería una lástima tener que almacenar este resultado intermedio en memoria, para luego recargarlo unas pocas instrucciones más tarde. En cualquier procesador moderno con una optimización moderada, el resultado inmediato se almacena en un registro. Y como además el valor W se usa en dos cálculos, puede cargarse una vez y usarse dos, para eliminar el "desperdicio" que significaría otra operación de carga.</para>
+      <para id="id6873185">A partir de la década de 1970, los compiladores se han vuelto muy buenos en detectar este tipo de optimizaciones, y hacer un uso eficiente de los registros disponibles. Agregar más registros al procesador acarrea algún beneficio en el rendimiento, pero no es práctico agregar tantos como para almacenar los datos del problema completo. Así que debemos recurrir a una tecnología de memoria más lenta.</para>
+  </content>
+</document>

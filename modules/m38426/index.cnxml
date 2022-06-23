@@ -1,0 +1,52 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Ejercicios</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38426</md:content-id>
+  <md:title>Cronometraje y Perfilado - Ejercicios</md:title>
+  <md:abstract/>
+  <md:uuid>df3f1c73-2845-48f2-813a-5da386d9ca67</md:uuid>
+</metadata>
+
+<content>
+      <exercise id="id1171484599374"><problem id="oo-id1171484641622">
+          <para id="id1171482558985">Perfile el siguiente programa usando gprof. ¿Hay alguna forma de decir cuánto del tiempo gastado en la rutina c se debe a llamadas recursivas?</para>
+<code id="eip-id1171859161647" display="block">
+<newline/>
+      main()
+      {
+          int i, n=10;
+          for (i=0; i&lt;1000; i++) {
+              c(n);
+              a(n);
+          }
+      }
+      c(n)
+      int n;
+      {
+          if (n &gt; 0) { 
+              a(n-1); 
+              c(n-1);
+          }
+      }
+      a(n)
+      int n;
+      {
+          c(n);
+      }
+    </code>
+
+        </problem>
+      </exercise>
+      
+      <exercise id="id1171483450729">
+        <problem id="oo-id1171483444664">
+          <para id="id1171483450732">Perfile un código ingenieril (que haga uso intensivo de números de punto flotante) con la optimización completa activa y no activa. ¿Cómo cambia el perfil? ¿Puede explicar por qué?</para>
+        </problem>
+      </exercise>
+      <exercise id="id1171484596002">
+        <problem id="oo-id1171482283351">
+          <para id="id1171484644109">Escriba un programa para determinar la sobrecarga que representa invocar a getrusage y etime. Aparte del tiempo de procesador que consumen, ¿cómo altera el rendimiento de la aplicación, el hecho de invocar demasiado a menudo una llamada al sistema para cronometraje?</para>
+        </problem>
+      </exercise>
+  </content>
+</document>

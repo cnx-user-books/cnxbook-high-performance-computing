@@ -1,0 +1,23 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Notas de Cierre</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37226</md:content-id>
+  <md:title>Notas de Cierre</md:title>
+  <md:abstract/>
+  <md:uuid>d6b1ba04-4ea9-45da-8fa2-4d1542ba8a78</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id8473159">Se dice que la computadora del futuro será un buen sistema de memoria, que simplemente traiga conectada una CPU. Para que los sistemas de microprocesadores de alto rendimiento tomen el relevo como <emphasis effect="italics">los</emphasis> motores de cómputo de alto rendimiento, el problema de un sistema de memoria basado en cache que usa DRAM para su memoria principal debe solucionarse. Hay muchos esfuerzos en desarrollo de arquitecturas y tecnologías, para transformar las memorias de las estaciones de trabajo y computadoras personales, y darles capacidades como las memorias de las supercomputadoras.</para>
+      <para id="id1171192092303">Conforme la velocidad de la CPU se incremente más rápido que la de la memoria, usted necesitará de las técnicas de este libro. Además, conforme se mueva hacia los procesadores múltiples, los problemas no mejorarán; usualmente se volverán peores. Con muchos procesadores constantemente hambrientos por más datos, un subsistema de memoria puede volverse extremadamente tenso.</para>
+      <para id="id1171192458353">Con sólo un poco de habilidad, a menudo podemos reestructurar los accesos a memoria, de forma tal que aprovechen las fortalezas de su sistema de memoria, en vez de sus debilidades.</para>
+  </content>
+</document>

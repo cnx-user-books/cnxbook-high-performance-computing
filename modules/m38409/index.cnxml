@@ -1,0 +1,148 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Cronometraje</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38409</md:content-id>
+  <md:title>Cronometraje y Perfilado - Cronometraje</md:title>
+  <md:abstract/>
+  <md:uuid>05643526-b616-4496-8630-0910f3245793</md:uuid>
+</metadata>
+
+<content>
+      <para id="id6913110">Vamos a asumir que su programa se ejecuta correctamente. Resulta algo ridículo cronometrar un programa que no se está ejecutando bien, lo cual no quiere decir que no suceda. Dependiendo de lo que esté usted haciendo, puede estar interesado en saber cuánto tiempo gasta globalmente, o interesado sólo en una porción del programa. Le mostraremos cómo cronometrar primero el programa completo, y luego hablaremos acerca de cronometrar bucles o subrutinas individuales.</para>
+      <section id="id9907809">
+        <title>Cronometrando un Programa Completo</title>
+        <para id="id12397003">En UNIX, puede usted cronometrar la ejecución de un programa poniendo el comando <emphasis effect="italics">time</emphasis> antes que cualquier otro que normalmente teclee en la línea de comandos. Cuando el programa termina, se produce un sumario de cronometraje. Por ejemplo, si su programa se llama <emphasis effect="italics">foo</emphasis>, puede cronometrar su ejecución tecleando <code display="inline">time foo</code>. Si está usted usando el shell C o el shell Korn, <emphasis effect="italics">time</emphasis> es uno de los comandos internos del shell. Con el shell Bourne, <emphasis effect="italics">time</emphasis> es un comando separado, ejecutado desde <emphasis effect="italics">/bin</emphasis>. En cualquier caso, aparece la siguiente información al final de la ejecución:</para>
+        <list id="id12471476" list-type="bulleted"><item>Tiempo en modo usuario</item>
+<item>Tiempo en modo sistema</item>
+<item>Tiempo transcurrido</item></list>
+        <para id="id7118427">Estas figuras de cronometraje resultan más fáciles de entender con algo de conocimiento previo. Conforme su programa se ejecuta, conmuta de ida y vuelta entre dos modos fundamentalmente diferentes: el <emphasis effect="italics">modo de usuario</emphasis> y el <emphasis effect="italics">modo de kernel</emphasis>. El estado de operación normal es el modo de usuario, en el cual se ejecutan las instrucciones que el compilador generó por usted, además de cualquier llamada a una subrutina de biblioteca enlazada con su programa. <footnote id="id10499040">El tiempo de falla de caché también se consume aquí.</footnote> Pudiera ser suficiente con la ejecución en modo de usuario siempre, excepto que los programas generalmente requieren otros servicios, tales como entrada/salida (I/O), y ello requiere la intervención del sistema operativo -el núcleo o kernel. Una solicitud de servicio del kernel hecha por su programa, o tal vez un evento externo al programa, causa la conmutación del modo de usuario al modo de kernel.</para>
+        <para id="id11018023">El tiempo empleado en la ejecución de cada uno de los dos modos se contabiliza por separado. La métrica del <emphasis effect="italics">tiempo de usuario</emphasis> describe el tiempo gastado en el modo de usuario. Similarmente, la métrica de <emphasis effect="italics">tiempo de sistema</emphasis> indica el tiempo gastado en modo de kernel. Conforme avanza el tiempo de usuario, cada programa en la máquina se contabiliza por separado. Esto es, no le contabilizarán a usted la actividad realizada por las aplicaciones de alguien más. El registro del tiempo de sistema funciona casi de la misma forma; sin embargo, bajo ciertas circunstancias, puede ser que le contabilicen a usted algunos servicios de sistema realizados a nombre de otras personas, además del suyo propio. Esta contabilidad incorrecta ocurre porque el programa de usted puede estar en ejecución al momento que alguna actividad externa causa una interrupción. No parece justo, pero consuélese con el hecho de que esto funciona así en ambos sentidos: puede que a los otros usuarios también les contabilicen la actividad de sistema de usted, por la misma razón.</para>
+        <para id="id9214819">Juntos, los tiempos de usuario y de sistema se conocen como <emphasis effect="italics">tiempo de CPU</emphasis>. Generalmente, el tiempo de usuario es por mucho mayor que el tiempo de sistema. Esto es algo que cabe esperar, porque la mayoría de las aplicaciones sólo piden los servicios del sistema ocasionalmente. De hecho, un tiempo de sistema desproporcionadamente grande probablemente indique algún problema. Por ejemplo, aquellos programas que generan condiciones de excepción repetidamente, tales como fallos de página, referencias a memoria desalineadas, o excepciones de punto flotante, usan una cantidad de tiempo de sistema poco usual. El tiempo gastado en hacer cosas tales como buscar en disco, rebobinar una cinta, o esperar por caracteres provenientes de la terminal no se contabilizan en el tiempo de CPU. Ello se debe a que tales actividades no requieren de la CPU, que está disponible para suspenderlo y ejecutar otros programas.</para>
+        <para id="id12187361">La tercera pieza de información (correspondiente al tercer conjunto de manecillas del reloj) el <emphasis effect="italics">tiempo transcurrido</emphasis>, es una medida del tiempo actual (tiempo de reloj de pared) que ha pasado desde que el programa inició. Para aquellos programas que gastan la mayoría de su tiempo calculando, el tiempo transcurrido debe ser muy parecido al tiempo de CPU. Las razones por las cuales el tiempo transcurrido puede ser mayor son:</para>
+        <list id="id15083992" list-type="bulleted"><item>Está usted compartiendo el tiempo de máquina con otros programas.<footnote id="id11410981">El comando <emphasis effect="italics">uptime</emphasis> le proporciona una indicación aproximada del resto de la actividad en su máquina. Los últimos tres campos le indican el número promedio de procesos listos para ejecutarse durante los últimos 1, 5 y 15 minutos respectivamente</footnote></item>
+<item>Su aplicación lleva a cabo mucha I/O </item>
+<item>Su aplicación requiere más ancho de banda de memoria que la que está disponible en la máquina.</item>
+<item>Su programa está llevando a cabo paginación o intercambio.</item>
+        </list>
+        <para id="id10260290">La gente a menudo registra el tiempo de CPU y lo usa como un estimado del tiempo transcurrido. Usar el tiempo de CPU está bien cuando se trata de máquinas de una sola CPU, suponiendo que ha visto usted ejecutarse el programa cuando la máquina estaba tranquila y observó que ambos números eran muy parecidos. Pero para los multiprocesadores, el tiempo total de CPU puede ser muy diferente del tiempo transcurrido. Cada vez que haya dudas, espere hasta que tenga la máquina sólo para usted, y entonces cronometre su programa, usando el tiempo transcurrido. Es muy importante producir resultados de cronometría que puedan verificarse usando otra corrida, cuando se estén usando los resultados para tomar decisiones de compra importantes.</para>
+        <para id="id9182975">Si está ejecutando un UNIX derivado de Berkeley, el comando de cronómetro interno del shell C puede reportar otras estadísticas útiles. La forma por defecto de la salida que arroja se muestra en <link target-id="id10922558"/>. Revise la página del manual de su <emphasis effect="italics">csh</emphasis> para ver más posibilidades.</para>
+        <para id="id15096264">Además de los datos de tiempos de CPU y utilizado, el comando <emphasis effect="italics">time</emphasis> de <emphasis effect="italics">csh</emphasis> produce información acerca del uso de la CPU, fallos de página, intercambios, operaciones de E/S bloqueadas (usualmente actividad de disco) y algunas medidas sobre cuánta memoria ocupaba nuestro programa cuando estaba en ejecución. Las describiremos una a la vez.</para>
+        <section id="id10436887">
+          <title>Porcentaje de Uso</title>
+          <para id="id11416387">El <emphasis effect="italics">porcentaje de uso</emphasis> corresponde a la tasa de tiempo usado respecto al tiempo de CPU. Como mencionamos con anterioridad, existen varias razones por las que el uso de la CPU no sea del 100% o siquiera cercano. A menudo puede usted obtener un indicio, a partir de los otros campos, de cuál es el problema con su programa o si éste estaba compartiendo la máquina cuando lo ejecutaba.</para>
+        </section>
+        <section id="id7830202">
+          <title>Uso Promedio de Memoria Real</title>
+          <para id="id10922579">Las dos medidas de <emphasis effect="italics">uso promedio de la memoria</emphasis> mostradas en <link target-id="id10922558"/> caracterizan los requerimientos de recursos del programa conforme se ejecuta.</para>
+          <para id="id10183554">La primera medida, el <emphasis effect="italics">espacio de memoria compartida</emphasis>, contabiliza la cantidad promedio de memoria real que ocupa el segmento de texto de su programa - la porción que almacena las instrucciones de máquina. Se le lama "compartida" porque pueden compartirlo varias copias del programa que estén actualmente en ejecución (para ahorrar memoria). Años atrás, era posible que el segmento de texto consumiera una parte significativa del sistema de memoria, pero en estos días, con tamaños de memoria a partir de los 32 MB, tiene usted que compilar un programa fuente realmente enorme y usar cada bit de él para que la cantidad que figure en el uso de memoria compartida sea suficientemente grande como para causar preocupación. El requerimiento de espacio de memoria compartida es usualmente muy bajo, en comparación a la cantidad de memoria disponible en su máquina.</para>
+          <figure id="id10922558"><title>La función interna time de csh</title><media id="id10922558_media" alt="Esta figura contiene el título, % time foo, en la parte superior, seguida por una cadena de texto en una línea horizontal, con etiquetas bajo cada elemento de ella. De izquierda a derecha, el primer elemento en la cadena dice 14.9u, y está etiquetado como, segundos de tiempo de usuario dedicados al proceso. El segundo elemento dice 1.4s, y está etiquetado como segundos de tiempo de sistema dedicados al proceso. El tercer elemento dice 0:19, y está etiquetado, tiempo transcurrido. El cuarto elemento dice 83%, y está etiquetado, porcentaje de utilización. El quinto elemento es el número 4, y está etiquetado cantidad promedio de memoria compartida en KB. Entre el quinto y el sexto elemento está un signo mas. El sexto elemento dice 1060k, y está etiquetado, Cantidad promedio de espacio de datos no compartido en KB. El séptimo elemento es el número 27, y está etiquetado, número de operaciones de entrada bloqueadas. Entre el séptimo y el octavo elementos está un signo mas. El octavo elemento dice 86io, y está etiquetado, número de operaciones de salida bloqueadas. El noveno elemento dice 47pf, y está etiquetado, fallos de página. Entre el noveno y décimo elementos está un signo mas. El décimo elemento dice 0w, y está etiquetado, número de intercambios.">
+              <image mime-type="image/png" src="../../media/graphics1-7dde.png" id="id10922558__onlineimage" height="349" width="700"/>
+            </media>
+          </figure>
+          
+          <para id="id12519090">La segunda medida promedio de uso de memoria, el <emphasis effect="italics">espacio de memoria no compartida</emphasis>, describe el almacenamiento <emphasis effect="italics">real</emphasis> dedicado a las estructuras de datos de su programa conforme se ejecuta. Este almacenamiento incluye las variables locales guardadas y las declaradas <code display="inline">COMMON</code> para <code display="inline">FORTRAN</code>, y las estáticas y externas de C. Resaltamos la palabra "real" aquí y arriba porque estos números nos hablan acerca del uso de memoria física, tomados a lo largo del tiempo. Puede ser que usted haya apartado arreglos con 1 trillón de elementos (espacio virtual), pero si su programa sólo se mueve sobre una esquina de tal espacio, sus requerimientos de memoria a tiempo de ejecución serán muy bajos.</para>
+          <para id="id15226466">Lo que no le dicen las mediciones de espacio de memoria no compartido, desafortunadamente, es la demanda pico de memoria de su programa. Una aplicación que requiere 100 MB durante 1/10 del tiempo y 1 KB el resto del tiempo parece requerir sólo 10 MB en promedio - lo cuál no es una imagen muy reveladora de los requerimientos de memoria del programa.</para>
+        </section>
+        <section id="id10803025">
+          <title>Operaciones de E/S Bloqueadas</title>
+          <para id="id12187037">Los dos datos para operaciones de <emphasis effect="italics">E/S bloqueadas</emphasis> describen primordialmente el uso de disco, aunque los dispositivos de cintas y algunos otros periféricos pueden también usarse con E/S bloqueada. Las operaciones de E/S de caracteres, como la entrada y salida de la terminal, no aparecen aquí. Un gran número de operaciones de E/S bloqueadas puede explicar un uso de CPU menor del esperado.</para>
+        </section>
+        <section id="id9791679">
+          <title>Fallos de Página e Intercambios</title>
+          <para id="id10508199">Un número inusualmente alto de <emphasis effect="italics">fallos de página</emphasis> o cualquier intercambio probablemente indica un sistema necesitado de memoria, lo cuál también puede explicar un tiempo transcurrido más largo de lo esperado. Puede ser que otros programas estén compitiendo por el mismo espacio. Y no olvide que incluso bajo condiciones óptimas, cada programa sufre de cierto número de fallos de página, como se explicó en <link document="m32733"/>. En <link document="m33728"/> se describen algunas técnicas para minimizar el número de fallos de página.</para>
+        </section>
+      </section>
+      <section id="id11390582">
+        <title>Cronometrando una Porción del Programa</title>
+        <para id="id4621330">Para algunos bancos de pruebas o esfuerzos de afinación, las medidas tomadas desde "afuera" del programa le indican a usted todo lo que necesita saber. Pero si está tratando de aislar las cifras de rendimiento de bucles o porciones de código individuales, puede que quiera incluir rutinas de cronometraje también al interior. La técnica básica es suficientemente sencilla:</para>
+        <list id="id15056053" list-type="enumerated" number-style="arabic"><item>Registrar el tiempo antes de comenzar a hacer X.</item>
+<item>Hacer X.</item>
+<item>Registrar el tiempo al completar X.</item>
+<item>Restar el tiempo inicial del tiempo final.</item>
+        </list>
+        <para id="id14457383">Si, por ejemplo, el trabajo primario de X es calcular la posición de unas partículas, divida el tiempo total para obtener un número de posiciones de partículas por segundo. Pero debe ser cuidadoso: si realiza demasiados llamados a las rutinas de cronometraje, el observador se vuelve parte del experimento. Las rutinas de cronometraje también consumen tiempo, y su sola presencia puede incrementar el número de fallos de cache de instrucciones o la paginación. Por otra parte, usted quiere que X tome una cantidad suficiente de tiempo en ejecutarse, como para que las mediciones sean útiles. Es muy importante poner atención al tiempo entre llamadas al cronómetro, porque el reloj usado por las funciones cronométricas tiene una resolución limitada. Un evento que ocurra dentro de una fracción de segundo es difícil de medir con precisión.</para>
+      </section>
+      <section id="id12000501">
+        <title>Obteniendo Información de Tiempos</title>
+        <para id="id13258440">En esta sección, discutiremos métodos para obtener varios valores de cronometraje durante la ejecución de su programa.</para>
+        <para id="id9232479">Para los programas FORTRAN, una biblioteca de funciones de cronometraje disponible en muchas máquinas se llama <emphasis effect="italics">etime</emphasis>, que toma como argumento un arreglo de dos elementos <code display="inline">REAL*4</code>, y llena las celdas con el tiempo de CPU de usuario y el tiempo de CPU de sistema, respectivamente. El valor retornado por la función es la suma de los dos. He aquí un ejemplo de cómo se usa <emphasis effect="italics">etime</emphasis> habitualmente:</para>
+        <code id="id8876252" display="block"><newline/>
+      real*4 tarray(2), etime 
+      real*4 start, finish
+    
+      start = etime(tarray)
+      finish = etime(tarray)
+    
+      write (*,*) ’Tiempo de CPU: ’, finish - start
+    </code>
+        <para id="id8979064">No todos los vendedores proporcionan una función <emphasis effect="italics">etime</emphasis>; de hecho, algunos no proporcionan rutinas de cronometraje para FORTRAN en absoluto. Pruébelo primero. Si obtiene un mensaje de símbolo indefinido cuando se enlace el programa, puede usar la siguiente rutina en C, que le proporciona la misma funcionalidad que <emphasis effect="italics">etime</emphasis>:</para>
+        <code id="id12219432" display="block"><newline/>
+      #include &lt;sys/times.h&gt;
+      #define TICKS 100.
+    
+      float etime (parts)
+      struct {
+              float user;
+              float system;
+      } *parts;
+      {
+              struct tms local;
+              times (&amp;local);
+              parts-&gt;user= (float) local.tms_utime/TICKS; 
+              parts-&gt;system = (float) local.tms_stime/TICKS; 
+              return (parts-&gt;user + parts-&gt;system);
+      }
+    </code>
+        <para id="id11599651">Hay un par de cosas que debe usted ajustar para hacerlo funcionar. Lo primero, para poder enlazar rutinas en C con rutinas en FORTRAN en su computadora, puede ser que deba agregar un guión bajo <code display="inline">(_)</code> tras el nombre de la función. Esto cambia la entrada a <code display="inline">float etime_ (parts)</code>. Además, puede que deba ajustar el parámetro <code display="inline">TICKS</code>. Asumimos que el reloj del sistema tenía una resolución de 1/100 de segundo (cierto en las máquinas Hewlett-Packard para las que se escribió esta versión de  <emphasis effect="italics">etime</emphasis>). 1/60 es muy común. En una RS-6000 el número debiera ser 1000. Puede encontrar el valor en un archivo llamado <emphasis effect="italics">/usr/include/sys/param.h</emphasis> en su máquina, o bien determinarlo empíricamente.</para>
+        <para id="id5213427">Abajo se muestra una rutina en C para recuperar la hora real, llamada <emphasis effect="italics">gettimeofday</emphasis>. Está disponible para su uso ya sea en programas C o FORTRAN, y usa paso de parámetros por valor:</para>
+        <code id="id6575480" display="block"><newline/>
+      #include &lt;stdio.h&gt;
+      #include &lt;stdlib.h&gt;
+      #include &lt;sys/time.h&gt;
+    
+      void hpcwall(double *retval)
+      {
+        static long zsec = 0; 
+        static long zusec = 0; 
+        double esec;
+        struct timeval tp;
+        struct timezone tzp;
+    
+        gettimeofday(&amp;tp, &amp;tzp);
+    
+        if ( zsec == 0 ) zsec = tp.tv_sec;
+        if ( zusec == 0 ) zusec = tp.tv_usec;
+    
+        *retval = (tp.tv_sec - zsec) + (tp.tv_usec - zusec ) * 0.000001 ;
+      }
+    
+      void hpcwall_(double *retval) { hpcwall(retval); } /* Otra convención */
+     </code>
+        <para id="id10484163">Dado que a menudo necesitará usted tanto el tiempo de CPU como la hora real, y que continuamente  estará calculando la diferencia entre sucesivas llamadas a tales rutinas, puede que quiera escribir una rutina que retorne el tiempo de reloj real y el tiempo de CPU cada vez que sea llamada, como sigue:</para>
+        <code id="id7297394" display="block"><newline/>
+            SUBROUTINE HPCTIM(WTIME,CTIME) 
+            IMPLICIT NONE
+     *
+            REAL WTIME,CTIME 
+            COMMON/HPCTIMC/CBEGIN,WBEGIN 
+            REAL*8 CBEGIN,CEND,WBEGIN,WEND 
+            REAL ETIME,CSCRATCH(2)
+     *
+            CALL HPCWALL(WEND) 
+            CEND=ETIME(CSCRATCH)
+     *
+            WTIME = WEND - WBEGIN 
+            CTIME = CEND - CBEGIN
+     *
+            WBEGIN = WEND 
+            CBEGIN = CEND 
+            END
+    </code>
+      </section>
+      <section id="id6842110">
+        <title>Utilizando la Información de Cronometraje</title>
+        <para id="id9522032">Puede usted obtener mucha información de las facilidades de cronometraje que le proporciona una máquina UNIX. No sólo puede decir cuánto tiempo lleva realizar cierto trabajo, sino también obtener indicios que le digan si la máquina está operando eficientemente, o si hay algún problema que requiera ser solucionado, tal como una memoria inadecuada.</para>
+        <para id="id10906806">Una vez que el programa está ejecutándose con todas las anomalías antes explicadas, puede usted registrar el tiempo como una línea base. Si está afinándolo, tal línea base será una referencia con la cuál podrá usted afirmar si el proceso de afinación ha mejorado mucho (o poco) las cosas. Si está realizando un banco de pruebas, puede usar dicha línea base para juzgar cuánto incremento global de rendimiento le está dando una máquina nueva. Pero recuerde observar también las otras cifras - paginación, uso de CPU, etc. ya que pueden diferir de máquina en máquina por razones que no están correlacionadas llanamente con el rendimiento de la CPU. Usted quiere asegurarse de obtener la imagen global.</para>
+      </section>
+  </content>
+</document>

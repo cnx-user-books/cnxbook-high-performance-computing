@@ -1,0 +1,17 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Notas de Cierre</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38442</md:content-id>
+  <md:title>Eliminando el Desorden - Notas de Cierre</md:title>
+  <md:abstract/>
+  <md:uuid>84f8b138-caf1-4c19-bba9-6fb9880a8a3e</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1170063886960">En este capítulo, introdujimos técnicas de afinación que ayudan a eliminar el desorden de los programas - cualquier cosa que agregue  tiempo de ejecución sin contribuir a hallar la respuesta. Hemos visto muchos ejemplos de técnicas de afinación -suficientes como para que usted se pregunte, "¿qué puede faltar?" Bueno, como veremos en los capítulos siguientes, todavía restan un par de formas en que podemos ayudar al compilador:</para>
+      <list id="id1170064066721" list-type="bulleted"><item>Encontrando más paralelismo</item>
+<item>Empleando la memoria tan eficientemente como sea posible</item>
+      </list>
+      <para id="id1170064209742">A veces ello significará realizar cambios que no son bonitos. Sin embargo, a menudo sí resultan rápidos.</para>
+  </content>
+</document>

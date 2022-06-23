@@ -1,0 +1,17 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Bifurcaciones</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38430</md:content-id>
+  <md:title>Eliminando el Desorden - Bifurcaciones</md:title>
+  <md:abstract/>
+  <md:uuid>c444ab55-2084-403f-9bf0-719ffec85913</md:uuid>
+</metadata>
+
+<content>
+      <para id="id4506594">A veces a las personas les lleva una semana tomar una decisión, así que no deberíamos quejarnos si una computadora se toma unas pocas decenas de nanosegundos para hacerlo. Sin embargo, si aparece una sentencia selectiva en alguna sección altamente visitada del código, puede que usted acabe cansado de los retrasos que produce. Hay dos enfoques básicos para reducir el impacto de estas bifurcaciones:</para>
+      <list id="id4654028" list-type="bulleted"><item>Racionalizarla.</item>
+<item>Enviarla a los suburbios computacionales. Particularmente, mandarla afuera de los bucles.</item>
+      </list>
+      <para id="id5453844"><link document="m33723"/> mostramos algunas formas fáciles de reorganizar condicionales, de forma que se ejecuten más rápidamente.</para>
+  </content>
+</document>

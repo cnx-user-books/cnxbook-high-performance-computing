@@ -1,0 +1,18 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Soporte del Lenguaje para Mejorar el Rendimiento - Notas Finales</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38337</md:content-id>
+  <md:title>Soporte del Lenguaje para Mejorar el Rendimiento - Notas Finales</md:title>
+  <md:abstract/>
+  <md:uuid>e8406b17-89e9-4412-a5cd-5f16663aaa21</md:uuid>
+</metadata>
+
+<content>
+          <para id="id1168721453947">En este capítulo, hemos cubierto algunos de los esfuerzos que se han desarrollado en el área de los lenguajes para permitir la escritura de programas para cómputo escalable. Existe una pugna entre el FORTRAN-77 puro, el FORTRAN 90, el HPF y el paso de mensajes por convertirse en la herramienta definitiva para el cómputo escalable de alto rendimiento.</para>
+      <para id="id1168722542860">Ciertamente, ha habido ejemplos de grandes éxitos tanto de FORTRAN 90 (Thinking Machines CM-5) y HPF (IBM SP y otros) como lenguajes que pueden hacer un excelente uso de los sistemas de cómputo escalables. Uno de los problemas del enfoque basado en lenguajes de alto nivel es que, en algunas ocasiones, usar un lenguaje de alto nivel abstracto en realidad <emphasis effect="italics">reduce</emphasis> la transportabilidad efectiva.</para>
+      <para id="id1168712595761">Los lenguajes están diseñados para ser transportables, pero si el vendedor de su computadora escalable particular no suporte la variante de lenguaje en la que usted ha elegido escribir su aplicación, entonces no será transportable. Incluso si el vendedor tiene disponible su lenguaje, puede que no esté afinado para generar el mejor código para su arquitectura.</para>
+      <para id="id1168720486567">Una solución estriba en comprar sus compiladores de una tercer compañía, tal como Pacific Sierra o Kuck y Asociados. Estos vendedores comercializan un compilador que se ejecuto sobre un amplio rango de sistema. Para aquellos usuarios que puedan costear tales opciones, estos compiladores proporcionan un mayor nivel de transportabilidad.</para>
+      <para id="id1168720975648">Una de las preocupaciones fundamentales es el problema del huevo y la gallina. Si los usuarios no emplean un lenguaje, los vendedores no le harán mejoras. Si todos los usuarios influyentes (con todo el dinero) usan paso de mensajes, entonces la existencia de un compilador excelente de HPF no tiene ningún valor real para esos usuarios.</para>
+      <para id="id5090062">Las buenas noticias son que tanto FORTRAN 90 como HPF proporcionan un camino hacia el cómputo escalable transportable que no requiere paso de mensajes explícito. La única pregunta es qué camino decidirán usar los usuarios.</para>
+  </content>
+</document>

@@ -1,0 +1,68 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Memoria Virtual</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38424</md:content-id>
+  <md:title>Cronometraje y Perfilado - Memoria Virtual</md:title>
+  <md:abstract/>
+  <md:uuid>fb2c8d88-b214-4d63-bd2d-0b026eb11445</md:uuid>
+</metadata>
+
+<content>
+      <para id="id13581266">Además de tener un impacto negativo en el rendimiento debido a las fallas de cache, el sistema de memoria virtual puede disminuir la velocidad de ejecución de su programa, si es demasiado grande para caber en la memoria del sistema, o está compitiendo con otros trabajos grandes por usar una memoria escasa.</para>
+      <para id="id7368669">En la mayoría de las implementaciones de UNIX, el sistema operativo descarga automáticamente al área de intercambio parte de las páginas de  aquellos programas demasiado grandes para caber en la memoria disponible. No arrojan el programa completo; sólo sucede cuando la memoria está completamente justa, o cuando su programa ha estado inactivo durante un rato. En tal caso, algunas páginas individuales se ponen en el área de intercambio para su recuperación posterior. En primer término, debe usted estar consciente de que esto está sucediendo, si es que todavía no se ha percatado. Y en segundo término, si está pasando, los patrones de acceso a memoria se tornan críticos. Cuando las referencias sean muy dispersas, su tiempo de ejecución quedará dominado completamente por la E/S a disco.</para>
+      <para id="id9092110">Si lo planea con anticipación, puede hacer que un sistema de memoria virtual trabaje para usted cuando su programa sea demasiado grande para alojarse en la memoria física de la máquina. Las técnicas son exactamente las mismas que las empleadas para afinar una aplicación sin espacio en memoria principal administrada por software, o bucles anidados. Consiste en "bloquear" las referencias a memoria, de forma que los datos consumidos en los vecinos usen una mayor porción de cada página de memoria virtual antes de regresarla a disco para hacer espacio para otra. <footnote id="id8483150">
+Examinamos las técnicas para bloqueos en el <link document=""/> Capítulo 8.</footnote></para>
+      <section id="id8682274">
+        <title>Calibrando el Tamaño de su Programa y el Tamaño de la Memoria</title>
+        <para id="id7278354">¿Cómo puede asegurar que se ha quedado sin espacio en memoria principal? Hay varias formas de comprobar la paginación en la máquina, pero tal vez la prueba más sencilla es comparar el tamaño de su programa con la cantidad de memoria disponible. Esto se hace mediante el comando <emphasis effect="italics">size</emphasis>:</para>
+        <code id="id12968510" display="block"><newline/>
+      % size myprogram
+    </code>
+        <para id="id14747602">En una máquina con UNIX Sistema V, la salida será similar a la siguiente:</para>
+        <code id="id11013922" display="block"><newline/>
+      53872 + 53460 + 10010772 = 10118104
+    </code>
+        <para id="id13191950">En un sistema derivado del UNIX de Berkeley, se verá similar a:</para>
+        <code id="id13279084" display="block"><newline/>
+      text     data      bss         hex       decimal
+      53872    53460     10010772    9a63d8    10118104
+    </code>
+        <para id="id10163830">Los tres primeros campos describen la cantidad de memoria necesaria para tres porciones distintas de su programa. La primera, el segmento de texto, contabiliza las instrucciones de máquina que forman su programa. La segunda, el segmento de datos, incluye los valores inicializados en su programa, tales como los contenidos de las sentencias de datos, bloques comunes, externos, cadenas de caracteres, etc. El tercer componente, bss (block started by symbol), usualmente es el mayor. Describe un área de datos sin inicializar en su programa. Esta área está formada de bloques comunes que no están ocupados por un bloque de datos. El último campo es la suma de las tres secciones, en bytes.<footnote id="id10181068">Advertencia: El comando <emphasis effect="italics">size</emphasis> no le da una panorámica completa si su programa aparta memoria dinámicamente, o mantiene datos en la pila. Esta área es especialmente importante para los programas en C y FORTRAN que crean arreglos grandes que no están en la sección COMMON.</footnote></para>
+        <para id="id15628909">Después, requiere saber cuánta memoria tiene su sistema. Desafortunadamente, no existe un comando UNIX estándar para eso. En los sistemas RS/6000, <emphasis effect="italics">/etc/lscfg</emphasis> se lo dice. En una máquina SGI, <emphasis effect="italics">/etc/hinv</emphasis> lo hace. Muchas implementaciones de UNIX Sistema V tienen un comando <emphasis effect="italics">/etc/memsize</emphasis>. En un derivado de Berkeley, puede teclear:</para>
+        <code id="id10168323" display="block"><newline/>
+      % ps aux
+    </code>
+        <para id="id7140898">Este comando le devuelve un listado de todos los procesos ejecutándose en la máquina. Encuentre el proceso con el valor más grande en la columna <code display="inline">%MEM</code>. Divida el valor en el campo <code display="inline">RSS</code> entre el porcentaje de memoria usado, para obtener un valor aproximado de cuánta memoria tiene su máquina:</para>
+        <code id="id14646654" display="block"><newline/>
+      memory = RSS/(%MEM/100)
+    </code>
+        <para id="id15619019">Por ejemplo, si el proceso más grande muestra un uso de memoria del 5% y un tamaño de conjunto residente (RSS, resident set size) de 840 KB, su máquina tiene 840000/(5/100) = 16 MB de memoria.<footnote id="id7017067">¡También puede usted reiniciar su máquina! Ella le dirá cuánta memoria tiene disponible al arranque.</footnote> Si la respuesta del comando <emphasis effect="italics">size</emphasis> muestra un total cercano a la cantidad de memoria que tiene, hay una buena posibilidad de que ocurra intercambio de páginas cuando lo ejecute - especialmente si está realizando otras cosas en la máquina al mismo tiempo.</para>
+      </section>
+      <section id="id15459702">
+        <title>Comprobando los Fallos de Página</title>
+        <para id="id11750399">Sus herramientas de monitoreo de rendimiento del sistema le indican si su programa está realizando intercambio de páginas. Algo de intercambio está bien; los fallos de página ocurren de manera natural conforme se ejecuta el programa. Sin embargo, sea cuidadoso si está compitiendo por los recursos del sistema con otros usuarios. La imagen que obtendrá no será la misma que cuando tenga la computadora para usted solo.</para>
+        <para id="id10162964">Para comprobar la actividad de intercambio de páginas en un sistema UNIX derivado de Berkeley, use el comando <emphasis effect="italics">vmstat</emphasis>. Comúnmente la gente lo invoca con un incremento de tiempo, de forma que reporte el intercambio de páginas a intervalos regulares:</para>
+        <code id="eip-671" display="block"><newline/>
+      % vmstat 5</code><para id="eip-620">Este comando produce una línea de salida cada cinco segundos:</para><code id="id15635822" display="block"><newline/>
+      procs     memory              page               disk       faults     cpu
+      r b w   avm   fre  re at  pi  po  fr  de  sr s0 d1 d2 d3  in  sy  cs us sy id
+      0 0 0   824 21568   0  0   0   0   0   0   0  0  0  0  0  20  37  13  0  1 98
+      0 0 0   840 21508   0  0   0   0   0   0   0  1  0  0  0 251 186 156  0 10 90
+      0 0 0   846 21460   0  0   0   0   0   0   0  2  0  0  0 248 149 152  1  9 89
+      0 0 0   918 21444   0  0   0   0   0   0   0  4  0  0  0 258 143 152  2 10 89</code>
+        <para id="id12100426">Como puede observar, produce mucha información. Para nuestros propósitos, los campos importantes son <code display="inline">avm</code>, que significa "memoria virtual activa" (<emphasis effect="italics">active virtual memory</emphasis>), <code display="inline">fre</code> o "memoria real libre" (<emphasis effect="italics">free real memory</emphasis>), y los campos <code display="inline">pi</code> y <code display="inline">po</code>, cuyos números muestran la actividad de paginación. Cuando la cantidad en <code display="inline">fre</code> cae a valores cercanos a cero, y el campo <code display="inline">po</code> muestra mucha actividad, es una indicación de que el sistema de memoria está saturándose.</para>
+        <para id="id9772066">En una máquina con SysV, la actividad de paginación puede observarse mediante el comando <emphasis effect="italics">sar</emphasis>:</para>
+        <code id="id11987546" display="block"><newline/>
+      % sar -r 5 5
+    </code>
+        <para id="id7774570">Este comando le muestra la cantidad de memoria libre y el espacio de intercambio disponible al instante. Si el valor de memoria libre está bajo, puede asumir que su programa realizará intercambio de páginas:</para>
+        <code id="id13281402" display="block"><newline/>
+      Sat Apr 18 20:42:19 
+      [r] freemem freeswap
+             4032    82144
+    </code>
+        <para id="id14135274">Como mencionamos previamente, su desea ejecutar un trabajo mayor que el tamaño de memoria que posee su máquina, debe aplicar para la actividad de intercambio de páginas el mismo consejo que aplica para la actividad de cache.<footnote id="id10971372">Por cierto, ¿está recibiendo el mensaje “Out of memory?” Si está ejecutando <emphasis effect="italics">csh</emphasis>, pruebe a teclear <code display="inline">unlimit</code> para ver si el mensaje desaparece. De otro modo, puede significar que no tiene suficiente espacio de intercambio disponible para ejecutar el trabajo.</footnote> Trate de minimizar el tamaño de incremento en los bucles de su código, y cuando no pueda, bloquear las referencias a memoria ayudará muchísimo.</para>
+        <para id="id12801827">Una nota sobre las herramientas de monitoreo de rendimiento de la memoria: debe comprobar con el vendedor de su estación de trabajo si tienen disponible alguna herramienta además de <emphasis effect="italics">vmstat</emphasis> o <emphasis effect="italics">sar</emphasis>. Puede que exista alguna herramienta mucho más sofisticada (y tal vez gráfica) que le ayude a comprender cómo es que su programa utiliza la memoria.</para>
+      </section>
+  </content>
+</document>

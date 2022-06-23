@@ -1,0 +1,20 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Qué Hace un Compilador - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38387</md:content-id>
+  <md:title>Qué Hace un Compilador - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>7d435c8b-25e9-4bae-90e0-fec20e37cf56</md:uuid>
+</metadata>
+
+<content>
+    <section id="id43199290">
+      <title>Lo que Hace un Compilador</title>
+      <para id="id43199296">El objetivo de un <emphasis effect="italics">compilador optimizador</emphasis> es la traducción eficiente de un lenguaje de alto nivel al lenguaje máquina más rápido posible, que represente con precisión al primero. Lo que hace buena a una representación es: da las respuestas correctas, y se ejecuta rápidamente.</para>
+      <para id="id43199335">Naturalmente, no importa cuán rápido se ejecute un programa si no produce las respuestas correctas.<footnote id="id43199351">Sin embargo, a menudo se troca precisión por velocidad.</footnote> Pero dada una expresión de un programa que se ejecuta correctamente, un compilador optimizador busca formas de acelerarla. En primera instancia usualmente significa simplificar el código, retirando instrucciones extrañas, y compartiendo los resultados intermedios entre sentencias. Algunas optimizaciones más avanzadas buscan reestructurar el programa, a veces incrementando el tamaño del código, aunque (con algo de fortuna) el número de instrucciones ejecutadas se reduzca.</para>
+      <para id="id43199471">Cuando llegue finalmente el momento de generar lenguaje máquina, el compilador debe saber acerca de los registros y las reglas para emitir instrucciones. Para lograr alto desempeño, requiere entender el costo de tales instrucciones y las latencias de los recursos de la máquina, tales como las filas de espera. Esto es especialmente cierto para aquellos procesadores que pueden ejecutar más de una instrucción simultáneamente. Se necesita de una mezcla balanceada de instrucciones -la proporción correcta de operaciones de punto flotante, punto fijo, memoria, saltos, etc.- para mantener a la máquina ocupada.</para>
+      <para id="id43199564">Inicialmente los compiladores eran herramientas que nos permitían escribir en algo más legible que el lenguaje ensamblador. Hoy en día rondan la inteligencia artificial, conforme toman nuestro código fuente de alto nivel y lo traducen a una versión altamente optimizada de lenguaje máquina, a través de una amplia variedad de arquitecturas uniprocesador y multiprocesador. En el área del cómputo de alto rendimiento, a menudo sucede que el compilador tiene un impacto mayor sobre el desempeño de nuestro programa que las arquitecturas del procesador o de la memoria. A lo largo de la historia del cómputo de alto rendimiento ha sucedido que, si no estábamos satisfechos con el desempeño de nuestro programa escrito en un lenguaje de alto nivel, alegremente reescribíamos todo o parte del mismo en lenguaje ensamblador. Afortunadamente, los compiladores actuales usualmente hacen este paso innecesario.</para>
+      <para id="id43008269">En este capítulo cubriremos la operación básica de los compiladores optimizadores. En un capítulo posterior cubriremos las técnicas usadas para analizar y compilar programas para arquitecturas avanzadas, tales como los sistemas paralelos o de procesamiento vectorial. Iniciaremos nuestra revisión de los compiladores, examinando cómo ha ido cambiando a lo largo del tiempo la relación entre los programadores y sus compiladores.</para>
+    </section>
+  </content>
+</document>

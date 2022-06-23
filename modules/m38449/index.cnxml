@@ -1,0 +1,46 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimización de Ciclos - Desenrollado Básico de Ciclos</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38449</md:content-id>
+  <md:title>Optimización de Ciclos - Desenrollado Básico de Ciclos</md:title>
+  <md:abstract/>
+  <md:uuid>373e59e9-389a-4675-a1b4-800b7ca59a36</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1164520658654">La forma más básica de optimización de bucles es desenrollarlos. Es algo tan básico que casi todos los compiladores actuales lo hacen automáticamente, si da la impresión de que repercutirá benéficamente. En nombre del desenrollado de bucles, se introdujo gran cantidad de desorden en los antiguos programas FORTRAN ahora cubiertos de polvo, que sólo sirve para confundir y despistar a los compiladores de hoy.</para>
+      <para id="id1164520652896">No estamos sugiriendo que deba usted desenrollar los bucles a mano. El propósito de esta sección es doble: primero, una vez que esté familiarizado con el desenrollado de bucles, podrá reconocer código que desenrolló el programador (no usted) tiempo atrás, y simplificarlo; y segundo, necesita entender los conceptos del desenrollado de bucles, de modo que cuando vea el código máquina generado, pueda reconocerlos.</para>
+      <para id="id1164520626732">El beneficio primario de desenrollar bucles, es realizar más cálculos por iteración. Al final de cada una, el valor índice debe incrementarse, probarse y bifurcar el control de regreso al inicio del ciclo, si todavía faltan iteraciones por procesar. Al desenrollar el bucle, hay menos "finales de bucle" en la ejecución de cada ciclo. Desenrollar también reduce significativamente el número total de bifurcaciones, y da al procesador más instrucciones entre ellas (i.e., incrementa el tamaño de los bloques básicos).</para>
+      <para id="id8622523">A modo de ilustración, considere el siguiente bucle. Es una sentencia simple envuelta en un ciclo:</para>
+      <code id="id8552350" display="block"><newline/>
+      DO I=1,N
+        A(I) = A(I) + B(I) * C 
+      ENDDO
+    </code>
+      <para id="id1164520652988">Usted puede desenrollar el bucle, como haremos en el ejemplo siguiente, reescribiendo las mismas operaciones mediante menos iteraciones y con menos sobrecarga en el ciclo. Imagine cómo ayudará esto en cualquier computadora. Dado que los cálculos en una iteración no dependen de los cálculos en otras, los primeros y los segundos pueden ejecutarse juntos. En un procesador superescalar, ciertas porciones de estas cuatro sentencias pueden ejecutarse en paralelo:</para>
+      <code id="id1164520302857" display="block"><newline/>
+      DO I=1,N,4
+        A(I) = A(I) + B(I) * C 
+        A(I+1) = A(I+1) + B(I+1) * C 
+        A(I+2) = A(I+2) + B(I+2) * C 
+        A(I+3) = A(I+3) + B(I+3) * C
+      ENDDO
+    </code>
+      <para id="id1164520302046">Sin embargo, este ciclo no es <emphasis effect="italics">exactamente</emphasis> el mismo que el anterior, pues se desenrolló cuatro veces, pero ¿qué pasa si <code display="inline">N</code> no es divisible entre 4? Habrá una, dos o tres iteraciones sobrantes que no se ejecutarán. Para manejar tales iteraciones extras, agregamos otro pequeño bucle para absorberlas. El ciclo extra se llama un <emphasis effect="italics">bucle precondicionante</emphasis>:</para>
+      <code id="id8503673" display="block"><newline/>
+      II = IMOD (N,4) 
+      DO I=1,II
+        A(I) = A(I) + B(I) * C 
+      ENDDO
+    
+      DO I=1+II,N,4
+        A(I)   = A(I) + B(I) * C 
+        A(I+1) = A(I+1) + B(I+1) * C 
+        A(I+2) = A(I+2) + B(I+2) * C 
+        A(I+3) = A(I+3) + B(I+3) * C
+      ENDDO
+    </code>
+      <para id="id1164521096801">El número de iteraciones requeridas en el ciclo precondicionante es el residuo de dividir el número total de iteraciones entre la cantidad de veces que se desenrolló. Si, a tiempo de ejecución, N resulta ser divisible entre 4, no habrá iteraciones sobrantes, y el ciclo precondicionante no se ejecutará.</para>
+      <para id="id1164521030394">La ejecución especulativa en las arquitecturas post RISC puede reducir o eliminar la necesidad de desenrollar un bucle que operará sobre valores que deben recuperarse de la memoria principal. Dado que las operaciones de carga pueden tomar mucho tiempo relativo a los cálculos, el ciclo se desenrolla naturalmente. Mientras que el procesador está esperando a que finalice la primera carga, puede ejecutar especulativamente tres o cuatro iteraciones del ciclo adelante de la primera carga, desenrollando efectivamente el ciclo en el Buffer de Reordenamiento de Instrucciones.</para>
+  </content>
+</document>

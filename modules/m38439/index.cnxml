@@ -1,0 +1,152 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Bifurcaciones con Ciclos</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38439</md:content-id>
+  <md:title>Eliminando el Desorden - Bifurcaciones con Ciclos</md:title>
+  <md:abstract/>
+  <md:uuid>16bc3a73-a5ad-4d1b-bbf1-04d86b6e3fc2</md:uuid>
+</metadata>
+
+<content>
+        <para id="id6477287">Los códigos numéricos usualmente gastan la mayoría de su tiempo de ejecución en ciclos, así que usted no quiere nada adentro de tales ciclos que no deba estar ahí, especialmente una sentencia selectiva. Y no sólo se trata de que las sentencias selectivas entorpezcan el trabajo con instrucciones extras; también pueden forzar un orden estricto sobre las iteraciones de un ciclo. Por supuesto, no siempre pueden evitarse tales condicionales. A veces, sin embargo, la gente las pone adentro de los ciclos para procesar eventos que pudieran manejarse por separado, o incluso ignorarse.</para>
+      <para id="id6704913">Para hacerle retroceder unos pocos años, el siguiente código muestra un ciclo con una prueba para un valor cercano a cero:</para>
+      <code id="id3134512" display="block"><newline/>
+      PARAMETER (SMALL = 1.E-20) 
+      DO I=1,N
+        IF (ABS(A(I)) .GE. SMALL) THEN 
+          B(I) = B(I) + A(I) * C
+        ENDIF 
+      ENDDO
+    </code>
+      <para id="id5848159">La idea era que si el factor, <code display="inline">A(I)</code>, era razonablemente pequeño, no se justificaba realizar la matemática en el centro del ciclo. Dado que las operaciones de punto flotante no se colocaban en filas de espera en muchas máquinas, una comparación y un salto eran más económicos; la prueba ahorraba tiempo. En un procesador CISC más antiguo o en los primeros RISC, una comparación y un salto probablemente aún ahorren tiempo. Pero en otras arquitecturas, cuesta mucho menos realizar la matemática y evitar la prueba. Eliminar la bifurcación elimina una dependencia de control y permite que el compilador ponga en fila de espera más operaciones aritméticas. Por supuesto, la respuesta puede cambiar ligeramente si se elimina la prueba. Luego se convierte en una cuestión de cuán significativa es la diferencia. He aquí otro ejemplo donde no se requiere de una bifurcación. El bucle encuentra el valor absoluto de cada elemento en un arreglo:</para>
+      <code id="id4610500" display="block"><newline/>
+      DO I=1,N
+        IF (A(I) .LT. 0.) A(I) = -A(I) 
+      ENDDO
+    </code>
+      <para id="id7520485">Pero, ¿por qué realizar la prueba? En muchas máquinas, es más rápido aplicar la operación <code display="inline">abs()</code> a cada elemento del arreglo.</para>
+      <para id="id6712685">Debemos, empero, hacerle una advertencia: si está programando en C, el valor absoluto <code display="inline">fabs()</code>, es un llamado a subrutina. En este caso particular, le conviene más mantener el condicional adentro del ciclo.<footnote id="id5901682">La representación de la máquina de un número de punto flotante comienza con un bit de signo. Si el bit es cero, el número es positivo. Si es 1, el número es negativo. La función de valor absoluto más rápida es aquella que simplemente aplique un "Y" al bit de signo. Véanse los macros en <emphasis effect="italics">/usr/include/macros.h</emphasis> y <emphasis effect="italics">/usr/include/math.h</emphasis>.</footnote></para>
+      <para id="id5938273">Aún en aquellos casos en que no pueda deshacerse del condicional, todavía quedan cosas que puede hacer para minimizar la pérdida de rendimiento. Primero, debemos aprender a reconocer cuáles condicionales dentro de los bucles pueden reestructurase y cuáles no. Las sentencias selectivas adentro de bucles caen en varias categorías:</para>
+      <list id="id6516314" list-type="bulleted"><item>Condicionales invariantes en el ciclo</item>
+<item>Condicionales dependientes del índice del ciclo</item>
+<item>Condicionales independientes del ciclo</item>
+<item>Condicionales dependientes del ciclo</item>
+<item>Reducciones</item>
+<item>Condicionales que transfieren el control</item>
+      </list>
+      <para id="id2341252">Revisémoslas una por una.</para>
+      <section id="id6404040">
+        <title>Condicionales Invariantes en el Ciclo</title>
+        <para id="id7338036">El siguiente ciclo contiene una prueba <emphasis effect="italics">invariante</emphasis>:</para>
+        <code id="id6806921" display="block"><newline/>
+      DO I=1,K
+        IF (N .EQ. 0) THEN
+          A(I) = A(I) + B(I) * C 
+        ELSE
+          A(I) = 0. 
+        ENDIF
+      ENDDO
+    </code>
+        <para id="id6550619">“Invariante” significa que el resultado siempre es el mismo. Sin importar lo que suceda con las variables <code display="inline">A</code>, <code display="inline">B</code>, <code display="inline">C</code>, e <code display="inline">I</code>, el valor de <code display="inline">N</code> no cambia, ni tampoco lo hará el resultado del resto.</para>
+        <para id="id6395163">Usted puede reestructurar el ciclo, poniendo la prueba fuera y replicando el cuerpo del ciclo dos veces - una para el caso de que la prueba sea verdadera, y la otra para el resultado falso, como en el ejemplo siguiente:</para>
+        <code id="id7473977" display="block"><newline/>
+      IF (N .EQ. 0) THEN 
+        DO I=1,K
+          A(I) = A(I) + B(I) * C 
+        ENDDO
+      ELSE
+        DO I=1,K 
+          A(I) = 0
+        ENDDO 
+      ENDIF
+    </code>
+        <para id="id7954759">El efecto en el tiempo de ejecución es dramático. No sólo hemos eliminado <code display="inline">K-1</code> copias de la prueba, también hemos asegurado que los cálculos en el centro del ciclo no tengan dependencias de control sobre la sentencia selectiva, y por tanto es mucho más fácil que el compilador lo ponga en una fila de espera.</para>
+        <para id="id8057287">Recordamos haber ayudado a alguien a optimizar un programa con ciclos que contenían condicionales similares. Comprobaban si debía imprimirse la salida del depurador adentro de cada iteración, o bien producir un ciclo altamente optimizable. No podemos culpar a la persona por no observar cuánto reducía esto la velocidad del programa. El rendimiento no era importante en ese momento. El programador sólo trataba de lograr que el código produjera respuestas correctas. Pero después, cuando comenzó a importar el rendimiento, limpiando condicionales invariantes fuimos capaces de acelerar el programa en un factor de 100.</para>
+      </section>
+      <section id="id6775051">
+        <title>Condicionales Dependientes del Indice del Ciclo</title>
+        <para id="id7928426">Para los condicionales <emphasis effect="italics">dependientes del índice del ciclo</emphasis>, la prueba es verdadera sólo para ciertos rangos de las variables usadas como índice del ciclo. Y no siempre es cierto o falso, como en otros condicionales que ya revisamos, pero cambia de acuerdo a un patrón apreciable, uno que puede usarse a nuestro favor. El siguiente ciclo tiene dos variables índice, <code display="inline">I</code> y <code display="inline">J</code>.</para>
+        <code id="id7840269" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (J .LT. I)
+            A(J,I) = A(J,I) + B(J,I) * C 
+          ELSE
+            A(J,I) = 0.0
+          ENDIF 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id8221207">Observe cómo la sentencia selectiva divide las iteraciones en dos conjuntos distintos: aquéllas en las cuáles es verdadero y aquéllas en las que es falso. Puede usted tomar ventaja de que tal cosa sea predecible, para reestructurar el bucle en varios bucles - cada uno personalizado para una partición distinta:</para>
+        <code id="id6527899" display="block"><newline/>
+      DO I=1,N
+        DO J=1,I-1
+            A(J,I) = A(J,I) + B(J,I) * C 
+        ENDDO
+        DO J=I,N
+            A(J,I) = 0.0
+        ENDDO 
+      ENDDO
+    </code>
+        <para id="id6756027">La nueva versión resultará más rápida casi siempre, con la posible excepción del caso en que <code display="inline">N</code> tenga un valor pequeño, como 3, en cuyo caso hemos creado un mayor desorden. Pero aun en tal caso, el ciclo probablemente tendrá un impacto pequeño en el tiempo total de ejecución, del que hubiera tenido si se dejaba tal como está codificado.</para>
+      </section>
+      <section id="id5911037">
+        <title>Condicionales Independientes del Ciclo</title>
+        <para id="id6564381">Sería bueno que pudiera optimizar cada ciclo, particionándolo. Pero muy a menudo, el condicional no depende directamente del valor de las variables índice. Aunque una variable índice esté involucrada en el direccionamiento de un arreglo, no crea por adelantado un patrón reconocible - por lo menos no uno que pueda usted observar cuando está escribiendo el programa. He aquí uno de tales ciclos:</para>
+        <code id="id2970370" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (B(J,I) .GT. 1.0) A(J,I) = A(J,I) + B(J,I) * C 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id6635290">NO hay mucho que pueda hacer con este tipo de condicional. Pero dado que cada iteración es independiente, puede desenrollar el ciclo, o bien realizarlo en paralelo.</para>
+      </section>
+      <section id="id8853630">
+        <title>Condicionales Dependientes del Ciclo</title>
+        <para id="id1518136">Cuando el condicional se basa en un valor que cambia con cada iteración del ciclo, al compilador no le queda más opción que ejecutar el código exactamente tal y como se escribió. Por ejemplo, el siguiente ciclo tiene una sentencia selectiva con una recursividad escalar interna:</para>
+        <code id="id4392016" display="block"><newline/>
+      DO I=1,N
+        IF (X .LT. A(I)) X = X + B(I)*2. 
+      ENDDO
+    </code>
+        <para id="id4167738">No puede usted saber en qué forma actuará la bifurcación en la siguiente iteración hasta que no haya ejecutado la actual. Para reconocer la dependencia, trate de desenrollar ligeramente el ciclo manualmente. Si no puede comenzar la segunda prueba hasta haber finalizado la primera, tiene un condicional <emphasis effect="italics">dependiente del ciclo</emphasis>. Puede que quiera revisar este tipo de bucles en busca de formas de eliminar el valor que cambia de iteración a iteración.</para>
+      </section>
+      <section id="id4513739">
+        <title>Reducciones</title>
+        <para id="id8105011">Mantenga la vista atenta en busca de ciclos en los cuales la sentencia selectiva está aplicando una función max o min a un arreglo. Se trata de una <emphasis effect="italics">reducción</emphasis>, así llamada porque reduce todo un arreglo a un resultado escalar (por cierto, el ejemplo previo también fue una reducción). De nuevo, estamos un poco por delante de nosotros mismos, pero dado que estamos hablando acerca de sentencias selectivas adentro de bucles, quiero introducir un truco para reestructurar las reducciones del tipo <code>max</code> y <code>min</code> para exponer un mayor paralelismo. El siguiente ciclo busca el valor máximo, <code>z</code>, en el arreglo <code>a</code>, recorriendo todos los elementos uno a la vez:</para>
+        <code id="id6436847" display="block"><newline/>
+      for (i=0; i&lt;n; i++)
+          z = a[i] &gt; z ? a[i] : z;
+    </code>
+        <para id="id7686028">Tal como está escrito es recursivo, como el bucle de la sección previa. Requiere usted el resultado de una iteración dada antes de que pueda proceder con la siguiente. Sin embargo, y dado que estamos buscando el mayor elemento en todo el arreglo, y dado que será el mismo elemento (esencialmente) sin importar dónde lo hallemos, podemos reestructurar el ciclo para comprobar varios elementos a la vez (asumiendo que n es divisible de forma entera entre 2, y que no incluya el ciclo precondicionante):</para>
+        <code id="id4638846" display="block"><newline/>
+      z0 = 0.;
+      z1 = 0.;
+      for (i=0; i&lt; n-1; i+=2) {
+        z0 = z0 &lt; a[i] ? a[i] : z0;
+        z1 = z1 &lt; a[i+1] ? a[i+1] : z1;
+      }
+      z = z0 &lt; z1 ? z1 : z0;
+    </code>
+        <para id="id3266634">¿Observa cómo calcula el nuevo ciclo dos valores máximos en cada iteración? Estos máximos se comparan luego uno con otro, y el ganador se convierte en el nuevo valor <emphasis effect="italics">max</emphasis> oficial. Es análogo a la ronda de semifinales en un torneo de ping-pong. El ciclo anterior consistía en dos jugadores compitiendo a la vez mientras que el resto se sentaba a su alrededor; en cambio, el nuevo ciclo ejecuta varios encuentros simultáneos. En general esta optimización en  particular no es adecuada para codificarse a mano. En los procesadores paralelos, el compilador realiza la reducción a su propio modo. Si usted lo codificó de forma similar a este ejemplo, puede que esté limitando inadvertidamente la flexibilidad del compilador en un sistema paralelo.</para>
+      </section>
+      <section id="id6252559">
+        <title>Condicionales que Transfieren el Control</title>
+        <para id="id6806573">Detengámonos por un segundo. ¿Ha notado cierta similaridad en todos los bucles hasta ahora? Sólo hemos buscado un tipo de condicional, la <emphasis effect="italics">asignación condicional</emphasis>, esto es, la reasignación de una variable basados en el resultado de la prueba. Por supuesto, no todo condicional termina en una asignación. Existen sentencias que transfieren el control de flujo, tales como llamados a subrutinas o sentencias <code display="inline">goto</code>. En el siguiente ejemplo, el programador está comprobando cuidadosamente antes de dividir entre cero:</para>
+        <para id="id7528389">Pero esta prueba tiene un impacto extremadamente negativo en el rendimiento, porque fuerza la ejecución de las iteraciones precisamente en el orden en que se escriben:</para>
+        <code id="id6701024" display="block"><newline/>
+      DO I=1,N
+        DO J=1,N
+          IF (B(J,I) .EQ. 0 ) THEN 
+            PRINT *,I,J
+            STOP 
+          ENDIF
+          A(J,I) = A(J,I) / B(J,I) 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id8011545">Evitar este tipo de pruebas es una de las razones por las cuales los diseñadores del estándar de punto flotante del IEEE agregaron las trampas (traps) en operaciones tales como dividir entre cero. El uso de trampas permite al programador dentro de una sección de código de rendimiento crítico, lograr un rendimiento máximo sin necesidad de detectar cuándo ocurre un error.</para>
+      </section>
+  </content>
+</document>

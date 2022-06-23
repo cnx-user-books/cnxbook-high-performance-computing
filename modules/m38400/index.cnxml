@@ -1,0 +1,195 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Qué Hace un Compilador - Optimizaciones Clásicas</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38400</md:content-id>
+  <md:title>Qué Hace un Compilador - Optimizaciones Clásicas</md:title>
+  <md:abstract/>
+  <md:uuid>a8db0ad8-3fff-4eb7-907a-f2ba21581f1a</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1164354692925">Una vez dividido el lenguaje intermedio en bloques básicos, hay diversas optimizaciones que pueden realizarse sobre el código de tales bloques. Algunas son muy simples y afectan a unas pocas tuplas dentro de un bloque básico. Otras mueven código de un bloque básico a otro, sin alterar los resultados del programa. Por ejemplo, a menudo resulta útil mover una cálculo desde el cuerpo de un ciclo al código que precede de forma inmediata al bucle.</para>
+      <para id="id1164354675865">En esta sección, vamos a listar por nombre las optimizaciones clásicas, e indicarle a usted para qué son. No estamos sugiriendo que <emphasis effect="italics">usted</emphasis> haga los cambios; la mayoría de lso compiladores desde mitad de la década de 1980 realizan de modo completamente automático tales optimizaciones, excepto en el nivel más bajo de optimización. Como vimos a inicios del capítulo, si comprende usted aquello que pueden (y que no pueden) hacer los compiladores, se convertirá en un mejor programador porque será capaz de jugar con las fortalezas de ellos.</para>
+      <section id="id1164354790163">
+        <title>Propagación de Copia</title>
+        <para id="id1164354859941">Para iniciar, veamos una técnica para desenredar cálculos. Échele un vistazo al siguiente segmento de código: observe los dos cálculos que involucran a <code>X</code>.</para>
+        <code id="id1164354732190" display="block"><newline/>
+      X = Y 
+      Z = 1.0 + X
+    </code>
+        <para id="id1164355205286">Tal como está escrito, la segunda sentencia requiere del resultado de la primera antes de que pueda ejecutarse -requiere usted de <code>X</code> para calcular <code>Z</code>. Las dependencias innecesarias a menudo se traducen en retrasos a tiempo de ejecución. <footnote id="id1164354726730">Este código es un ejemplo de dependencia de flujo. Describo las dependencias en detalle en <link document="m32775"/>.</footnote> Realizando algunos reacomodos, podemos hacer que la segunda sentencia sea independiente de la primera, al <emphasis effect="italics">propagar</emphasis> una copia de <code>Y</code>. El nuevo cálculo para <code>Z</code> usa el valor de <code>Y</code> directamente:</para>
+        <code id="id1164358761046" display="block"><newline/>
+      X = Y 
+      Z = 1.0 + Y
+    </code>
+        <para id="id1164354710969">Observe que dejamos intacta la sentencia <code>X=Y</code>. Puede que usted se pregunte, "¿por qué dejarla así?" El problema es que no podemos decir en qué otras partes se requiere el valor de <code>X</code>. Eso es algo que deberá decidir otro análisis. Si resulta que ninguna otra sentencia requiere del valor de <code>X</code>, la asignación se eliminará posteriormente, por medio de la remoción de código muerto.</para>
+      </section>
+      <section id="id1164354676282">
+        <title>Plegado de Constantes</title>
+        <para id="id1164354732064">Un compilador inteligente puede encontrar constantes a lo largo de su programa. Algunas de ellas son “obvias”, como aquellas definidas en las sentencias de parámetros. Otras resultan menos obvias, tales como las variables locales que nunca se redefinen. Cuando las combina en un cálculo, obtiene una <emphasis effect="italics">expresión constante</emphasis>. El pequeño programa siguiente tiene dos constantes, <code display="inline">I</code> y <code display="inline">K</code>:</para>
+        <code id="id1164354732733" display="block"><newline/>
+      PROGRAM MAIN
+      INTEGER I,K
+      PARAMETER (I = 100) 
+      K = 200
+      J = I + K 
+      END
+    </code>
+        <para id="id1164354871710">Dado que tanto <code display="inline">I</code> como <code display="inline">K</code> son constantes individualmente, la combinación de <code display="inline">I+K</code> es constante, lo cuál significa que <code display="inline">J</code> también es una constante. El compilador reduce las expresiones constantes como <code display="inline">I+K</code> a constantes, mediante una técnica llamada <emphasis effect="italics">plegado de constantes</emphasis>.</para>
+        <para id="id1164354732469">¿Cómo funciona el plegado de constantes? Puede ver que es posible examinar cada camino en el cuál puede definirse una variable en ruta hacia un bloque básico particular. Si descubre usted que todos los caminos se inician en el mismo valor, éste es constante; puede reemplazar todas las referencias a esa variable con una constante. Este reemplazo tiene un efecto de rizado a lo largo de la ruta. Si el compilador se percata de que encontró una expresión compuesta solamente por constantes, puede evaluarla a tiempo de compilación y reemplazarla por una constante. Tras varias iteraciones, el compilador habrá localizado la mayoría de las expresiones que son candidatas al plegado de constantes.</para>
+        <para id="id1164354675600">A veces un programador puede mejorar el rendimiento, al hacer al compilador consciente de los valores constantes en su aplicación. Por ejemplo, en el siguiente segmento de código:</para>
+        <code id="id1164354795885" display="block">X = X * Y 
+    </code>
+        
+        <para id="id1164354725400">el compilador generará código muy diferente a tiempo de ejecución si sabe que <code display="inline">Y</code> valía 0, 1, 2, or 175.32. Si no conoce el valor para <code display="inline">Y</code>, debe generar la secuencia de código más conservadora (no necesariamente la más rápida). Un programador puede comunicarle esos valores a través del uso de la sentencia <code display="inline">PARAMETER</code> en FORTRAN. Mediante el empleo de dicha sentencia, el compilador conoce los valores para estas constantes a tiempo de ejecución. Otro ejemplo que hemos visto es:</para>
+        <code id="id1164354700082" display="block"><newline/>
+      DO I = 1,10000
+        DO J=1,IDIM
+          ..... 
+        ENDDO
+      ENDDO
+    </code>
+        <para id="id1164354724973">Tras revisar el código, es claro que <code>IDIM</code> era uno de los valores 1, 2, or 3, dependiendo del conjunto de datos en uso. Claramente si el compilador sabía que <code>IDIM</code> valía 1, puede generar un código mucho más simple y rápido.</para>
+      </section>
+      <section id="id1164354698347">
+        <title>Remoción de Código Muerto</title>
+        <para id="id1164354698352">A menudo los programas contienen secciones de <emphasis effect="italics">código muerto</emphasis> que no tiene efecto en las respuestas, y que por tanto puede quitarse. Ocasionalmente, quien escribe el código muerto en el programa es el autor, pero es más común que sea el propio compilador quien lo hace; muchas optimizaciones producen código muerto que hay que barrer después.</para>
+        <para id="id1164354823286">Hay dos tipos de código muerto:</para>
+        <list id="id1164354823294" list-type="bulleted"><item>Instrucciones inalcanzables</item>
+<item>Instrucciones que producen resultados que jamás se usan</item>
+        </list>
+        <para id="id1164354693986">Es fácil que usted escriba código inalcanzable en su programa, al hacer que el flujo de control pase alrededor de él - permanentemente. Si el compilador puede decir que es inalcanzable, lo eliminará. Por ejemplo, es imposible alcanzar la sentencia <code display="inline">I = 4</code> en este programa:</para>
+        <code id="id1164354863849" display="block"><newline/>
+      PROGRAM MAIN
+      I = 2 
+      WRITE (*,*) I 
+      STOP
+      I = 4 
+      WRITE (*,*) I 
+      END
+    </code>
+        <para id="id1164354843699">El compilador desechará todo hasta la sentencia <code>STOP</code>, y probablemente le envíe un aviso. El código inalcanzable producido por el compilador durante la optimización se retirará silenciosamente.</para>
+        <para id="id1164354843170">Los cálculos con variables locales pueden producir resultados que nunca se usan. Al analizar la definición y usos de una variable, el compilador puede ver qué otras partes de la rutina la referencian. Por supuesto el compilador no puede decir el destino último de las variables que se pasan entre rutinas, externas o comunes, así que tales cálculos siempre se mantienen (siempre y cuando sean alcanzables).<footnote id="id1164356548634">Si un compilador realiza un análisis interprocedimental suficiente, puede incluso optimizar variables entre fronteras de rutinas. El análisis interprocedimental puede ser la perdición para los códigos de bancos de pruebas si trata de medir el tiempo de un cálculo sin usar los resultados del mismo.</footnote> En el siguiente programa, los cálculos que involucran a <code display="inline">k</code> no contribuyen en absoluto a la respuesta final, y son buenos candidatos para la eliminación de código muerto:</para>
+        <code id="id1164354700406" display="block"><newline/>
+      main ()
+      {
+        int i,k;
+        i = k = 1;
+        i += 1;
+        k += 2;
+        printf ("%d\n",i);
+      }
+    </code>
+        <para id="id1164354712934">La eliminación de código muerto a menudo produce algunos resultados sorprendentes con bancos de pruebas pobremente escritos. Véase <link target-id="m33700"/> para un ejemplo de este tipo de código.</para>
+      </section>
+      <section id="id1164354701553">
+        <title>Reducción de Intensidad</title>
+        <para id="id1164354701560">Las operaciones o expresiones tienen costos de tiempo asociados. A veces es posible reemplazar un cálculo muy caro por otro más económico. Llamamos a esto <emphasis effect="italics">reducción de intensidad</emphasis>. El siguiente fragmento de código contiene dos operaciones caras:</para>
+        <code id="id1164354866906" display="block"><newline/>
+      REAL X,Y 
+      Y = X**2
+      J = K*2
+    </code>
+        <para id="id1164354730724">En operaciones de exponenciación como la de la primera línea, el compilador generalmente incrusta una llamada a una rutina matemática de biblioteca. En dicha rutina, <code display="inline">X</code> se convierte a un logaritmo, se multiplica y luego se reconvierte. Sobre todo, elevar <code display="inline">X</code> a una potencia resulta caro -quizás tome cientos de ciclos de máquina. La clave es observar que <code display="inline">X</code> se está elevando a una potencia entera y pequeña. Una alternativa mucho más económica consiste en expresarlo como <code display="inline">X*X</code>, y pagar sólo el costo de una multiplicación. La segunda sentencia muestra la multiplicación entera de una variable <code display="inline">K</code> por 2. Sumar <code display="inline">K+K</code> da el mismo resultado, pero toma menos tiempo.</para>
+        <para id="id1164354869980">Hay muchas oportunidades para reducción de intensidad generada por el compilador; éstas son sólo dos de ellas. Veremos un caso especialmente importante cuando analicemos la simplificación de variable por inducción. Otro ejemplo de una reducción de intensidad es reemplazar las multiplicaciones de enteros potencia de dos por desplazamientos lógicos.</para>
+      </section>
+      <section id="id1164354702242">
+        <title>Renombramiento de Variables</title>
+        <para id="id1164354702248">En <link document="m33671"/>, hablamos acerca de renombrar registros. Algunos procesadores pueden tomar decisiones a tiempo de ejecución para reemplazar todas las referencias al registro 1 por referencias al registro 2, por ejemplo, para evitar cuellos de botella. El renombramiento de registros evita que las instrucciones que están reciclando los mismos registros para propósitos diferentes, tengan que esperar hasta que las instrucciones previas hayan dejado de usarlos.</para>
+        <para id="id1164354871572">La misma situación puede ocurrir en los programas - la misma variable (i.e. posición de memoria) puede reciclarse para dos propósitos no relacionados. Por ejemplo, observe la variable <code>x</code> en el siguiente fragmento:</para>
+        <code id="id1164354871599" display="block"><newline/>
+      x = y * z;
+      q = r + x + x;
+      x = a + b;
+    </code>
+        <para id="id1164354727257">Cuando el compilador reconoce que se está reciclando una variable, esto es que sus usos actual y futuros son independientes, puede sustituirla por una nueva variable para mantener los cálculos separados:</para>
+        <code id="id1164354859508" display="block"><newline/>
+      x0 = y * z;
+      q = r + x0 + x0;
+      x = a + b;
+    </code>
+        <para id="id1164354678397">El <emphasis effect="italics">renombramiento de variables</emphasis> es una técnica importante, porque deja en claro cuáles cálculos son independientes los unos de los otros, lo cuál mejora el número de cosas que pueden hacerse en paralelo.</para>
+      </section>
+      <section id="id1164354732328">
+        <title>Eliminación de Subexpresiones Comunes</title>
+        <para id="id1164354732334">Las subexpresiones son partes de expresiones más grandes. Por ejemplo, <code display="inline">A+B</code> es una subexpresión de <code display="inline">C*(A+B)</code>. Si <code display="inline">A+B</code> aparece en varios lugares, como sucede a continuación, le llamamos una <emphasis effect="italics">subexpresión común</emphasis>:</para>
+        <code id="id1164354677154" display="block"><newline/>
+      D = C * (A + B) 
+      E = (A + B)/2.
+    </code>
+        <para id="id1164354789085">En vez de calcular <code display="inline">A + B</code> dos veces, el compilador puede generar una variable temporal y usarla dondequiera que se necesite <code display="inline">A + B</code>:</para>
+        <code id="id1164354732539" display="block"><newline/>
+      temp = A + B 
+      D = C * temp 
+      E = temp/2.
+    </code>
+        <para id="id1164354701798">Algunos compiladores se esfuerzan más que otros en encontrar subexpresiones comunes. Se reconocen la mayoría de los pares, tales como <code display="inline">A+B</code>. Algunos pueden reconocer la reutilización de intrínsecos, tales como <code display="inline">SIN(X)</code>. Pero no espere que el compilador vaya mucho más allá. Subexpresiones como <code display="inline">A+B+C</code> no son computacionalmente equivalentes a formas reasociadas como <code display="inline">B+C+A</code>, aunque sean algebraicamente equivalentes. Con el fin de proporcionar resultados predecibles en los cálculos, FORTRAN debe o bien realizar las operaciones en el orden especificado por el usuario, o bien reordenarlos en una forma que garantice exactamente el mismo resultado. A veces el usuario no se preocupa de la forma en que se asocia <code display="inline">A+B+C</code>, pero el compilador no puede asumir que al usuario no le preocupa.</para>
+        <para id="id1164354691202">El cálculo de direcciones proporciona una oportunidad particularmente rica para la eliminación de subexpresiones comunes. Usted no requiere ver los cálculos en el código fuente, pues los genera el compilador. Por ejemplo, una referencia al elemento de un arreglo <code display="inline">A(I,J) </code> puede traducirse a una expresión en lenguaje intermedio tal como:</para>
+        <code id="id1164354691263" display="block"><newline/>
+      address(A) + (I-1)*sizeof_datatype(A)
+      + (J-1)*sizeof_datatype(A) * column_dimension(A)
+    </code>
+        <para id="id1164354691279">Si <code display="inline">A(I,J)</code> se usa más de una vez, tenemos múltiples copias del mismo cálculo de direcciones. La eliminación de subexpresiones comunes descubrirá y agrupará (con un poco de suerte) los cálculos redundantes.</para>
+      </section>
+      <section id="id1164354644428">
+        <title>Remoción de Código Invariante en Bucles</title>
+        <para id="id1164354644434">Es en los bucles donde los programas de cómputo de alto rendimiento gastan la mayoría de su tiempo. El compilador busca cada oportunidad que tiene de mover cálculos fuera del cuerpo de un bucle hacia el código que lo rodea. Las expresiones que no cambian después de haber ingresado al ciclo (<emphasis effect="italics">expresiones invariantes en el bucle</emphasis>) son la primera opción. El siguiente ciclo tiene dos expresiones invariantes:</para>
+        <code id="id1164354644482" display="block"><newline/>
+      DO I=1,N
+        A(I) = B(I) + C * D 
+        E = G(K)
+      ENDDO
+    </code>
+        <para id="id1164354693573">A continuación, hemos modificado las expresiones para mostrar cómo pueden moverse afuera del ciclo:</para>
+        <code id="id1164354693595" display="block"><newline/>
+      temp = C * D 
+      DO I=1,N
+        A(I) = B(I) + temp
+      ENDDO
+      E = G(K)
+    </code>
+        <para id="id1164354693641">Es posible mover el código antes o después del cuerpo del bucle. Como sucede con la eliminación de subexpresiones comunes, la aritmética de direcciones resulta un blanco particularmente importante para la técnica de movimiento de invariantes en los bucles. Las porciones que cambian lentamente en el cálculo de los índices pueden enviarse a los suburbios, para ejecutarse sólo cuando se requieran.</para>
+      </section>
+      <section id="id1164354674174">
+        <title>Simplificación de Variables de Inducción</title>
+        <para id="id1164354674181">Los ciclos pueden contener lo que se conoce como <emphasis effect="italics">variables de inducción</emphasis>. Su valor cambia como una función lineal del contador de iteraciones del ciclo. Por ejemplo, <code display="inline">K</code> es una variable de inducción en el siguiente bucle. Su valor está ligado al índice del ciclo:</para>
+        <code id="id1164354674229" display="block"><newline/>
+      DO I=1,N
+        K = I*4 + M
+         ... 
+      ENDDO
+    </code>
+        <para id="id1164354674264">La <emphasis effect="italics">simplificación de variables de inducción</emphasis> reemplaza los cálculos que involucran variables como <code display="inline">K</code> por otras más simples. Dado un punto de inicio y la primera derivada de la expresión, puede usted llegar al valor de <code display="inline">K</code> para la <emphasis effect="italics">n</emphasis>-ésima iteración, recorriendo paso a paso las <emphasis effect="italics">n-1</emphasis> iteraciones que intervienen:</para>
+        <code id="id1164354876568" display="block"><newline/>
+      K = M 
+      DO I=1,N
+        K = K + 4 
+         ... 
+      ENDDO
+    </code>
+        <para id="id1164354876617">Ambas formas del bucle no son equivalentes; la segunda no le proporciona a usted el valor de <code display="inline">K</code>, dado cualquier valor de <code display="inline">I</code>. Dado que no podemos saltar en la mitad del bucle a la <emphasis effect="italics">n</emphasis>-ésima iteración, <code display="inline">K</code> siempre toma los mismos valores que hubiera tenido si hubiéramos dejado la expresión original.</para>
+        <para id="id1164354674878">Las simplificación de variables de inducción probablemente no sea una optimización muy importante, excepto que el cálculo de direcciones de los arreglos se parece mucho al cálculo de <code display="inline">K</code> en el ejemplo anterior. Por ejemplo, el cálculo de direcciones para <code display="inline">A(I)</code> dentro de un bucle iterando sobre la variable <code display="inline">I</code> se ve más o menos así:</para>
+        <code id="id1164354674933" display="block">address = base_address(A) + (I-1) * sizeof_datatype(A)
+    </code>
+        <para id="id1164354674945">Realizar toda esta matemática es innecesario. El compilador puede crear una nueva variable de inducción para las referencias a A y simplificar el cálculo de direcciones:</para>
+        
+        <code id="eip-450" display="block"><newline/>
+      afuera del ciclo...
+      address = base_address(A) - (1 * sizeof_datatype(A))
+      dentro del ciclo...
+      address = address + sizeof_datatype(A)
+    </code>
+        
+        
+        <para id="id1164354674983">La simplificación de variables de inducción resulta especialmente útil en aquellos procesadores que pueden incrementar automáticamente un registro cada vez que se utiliza un apuntador para una referencia a memoria. Mientras se recorre el ciclo paso a paso, tanto la referencia a memoria como la aritmética de direcciones pueden exprimirse en una sola instrucción -un gran ahorro.</para>
+      </section>
+      <section id="id1164354864773">
+        <title>Generación de Código Objeto</title>
+        <para id="id1164354864780">La precompilación, los análisis lexicográfico y sintáctico y muchas técnicas de optimización son a menudo transportables, pero la generación de código es muy específica del procesador destino. En cierta forma es en esta fase donde los compiladores desquitan su precio, en los sistemas RISC de un solo procesador.</para>
+        <para id="id1164354864812">Cualquier cosa que no se haga en hardware debe realizarse en software. Ello significa que si el procesador no puede resolver conflictos de recursos, tales como la sobreutilización de un registro o fila de procesamiento, el compilador deberá hacerse cargo del asunto. Permitir que el compilador se ocupe de ello no es necesariamente malo, más bien es una decisión de diseño. Un compilador complicado y un hardware simple y rápido pueden tener una alta relación costo/beneficio para ciertas aplicaciones. Dos procesadores que se encuentran en los extremos de este espectro son el MIPS R2000 y el HP PA-8000. El primero depende fuertemente del compilador para planificar las instrucciones y distribuir los recursos equitativamente. El segundo administra ambas cosas a tiempo de ejecución, aunque ambos dependan del compilador para proporcionar una mezcla de instrucciones equitativa.</para>
+        <para id="id1164354710140">En todas las computadoras, la selección de registros es un reto porque, dependiendo de su número, los registros son recursos preciosos. Usted quiere asegurarse que las variables más activas residan permanentemente en los registros, a expensas de otras. En aquellas máquinas sin renombramiento de registros (véase <link document="m33671"/>), usted debe asegurarse que el compilador no trate de reciclar los registros demasiado rápido, o de otra forma el procesador tendrá que retrasar los cálculos, en espera de que alguno de ellos se libere.</para>
+        <para id="id1164354710229">Algunas instrucciones del repertorio también hacen que su compilador no tenga que ejecutar otras. Ejemplo de esto son el autoincremento de los registros que se usan como índices de arreglos, o el uso de asignaciones condicionales en vez de bifurcaciones. Ambas ahorran al procesador realizar cálculos extras, produciendo un flujo de instrucciones más compacto.</para>
+        <para id="id1164354710291">Finalmente, están las oportunidades para incrementar el paralelismo. Los programadores generalmente piensan serialmente, especificando pasos en sucesión lógica. Desafortunadamente, el código fuente serial produce código objeto serial. Un compilador que aspire a usar eficientemente el paralelismo del procesador, deberá ser capaz de mover instrucciones y encontrar operaciones que puedan realizarse simultáneamente. Este es uno de los mayores retos de los creadores de compiladores actualmente. Conforme los diseños superescalares y de <emphasis effect="italics">tamaño de instrucción muy grande</emphasis> (VLIW, Very Long Instruction Word) se vuelven capaces de ejecutar más instrucciones por ciclo de reloj, el compilador tendrá que excavar más profundamente en busca de operaciones que puedan ejecutarse a la vez.</para>
+      </section>
+  </content>
+</document>

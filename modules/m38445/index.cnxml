@@ -1,0 +1,23 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimización de Ciclos - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38445</md:content-id>
+  <md:title>Optimización de Ciclos - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>f60bcab8-e5d3-4dc8-80db-47cbb47053c0</md:uuid>
+</metadata>
+
+<content>
+    <para id="id1164271723194">En prácticamente todas las aplicaciones de alto rendimiento, es en los bucles donde se gasta la mayoría del tiempo de ejecución. <link document="m33720"/> examinamos formas en las que los desarrolladores de la aplicación introdujeron desorden en los bucles, posiblemente haciéndolos ejecutarse más lento de lo necesario. En este capítulo nos enfocaremos en técnicas para mejorar el rendimiento de tales ciclos "libres de desorden". A veces el compilador es lo suficientemente inteligente para generar las versiones más rápidas de los bucles, y otras veces nos veremos en la necesidad de reescribirlos manualmente para ayudarle.</para>
+    <para id="id2519815">Es importante recordar que las modificaciones que hagamos para mejorar el rendimiento del compilador, provocan otro desorden en el compilador. Cuando hace usted modificaciones en nombre del rendimiento, debe asegurarse que éstas realmente ayudan, probando el rendimiento con y sin ellas. También, cuando se mueva a otra arquitectura, necesita asegurarse que cualquier modificación hecha no perjudique al rendimiento. Por esta razón, debe elegir sabiamente las modificaciones que haga en pos del rendimiento.  También debe dejar intacta la versión original (simple) del código, para probarla en nuevas arquitecturas. Si nota que el beneficio derivado de las modificaciones es pequeño, muy probablemente deba mantener el código en su versión más simple y clara.</para>
+    <para id="id1164259856608">Revisaremos varias técnicas de optimización de bucles diferentes, incluyendo:</para>
+    <list id="id1164242286986" list-type="bulleted"><item>Desenrollado de bucles</item>
+<item>Optimización de bucles anidados</item>
+<item>Intercambio de bucles</item>
+<item>Optimización de las referencias a memoria</item>
+<item>Bloqueo</item>
+<item>Soluciones fuera del núcleo</item>
+    </list>
+    <para id="id1164242492626">Tal vez algún día sea posible que un compilador realice todas estas optimizaciones de bucles automáticamente. Es normal que el desenrollado de bucles se realice como parte de las optimizaciones de un compilador normal. Otras puede que deban incluirse mediante opciones explícitas del compilador al invocarlo. Cuando contemple hacer cambios manualmente, observe cuidadosamente cuáles de tales optimizaciones hace el compilador automáticamente. Y ejecute algunas pruebas para determinar si las optimizaciones del compilador son tan buenas como aquellas realizadas a mano.</para>
+  </content>
+</document>

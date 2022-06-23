@@ -1,0 +1,18 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Eliminando el Desorden - Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38428</md:content-id>
+  <md:title>Eliminando el Desorden - Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>fd32d6c1-23d2-4173-8423-3628ee813349</md:uuid>
+</metadata>
+
+<content>
+    <para id="id12621048">Hemos visto el código desde el punto de vista del compilador, y cómo perfilar código para encontrar las zonas problemáticas. Esta información es buena, pero si aún no está satisfecho con el rendimiento de cierto código, seguro piensa qué más hacer con él. Una posibilidad es que su código sea demasiado obtuso para que el compilador pueda optimizarlo apropiadamente: código excesivo, excesiva modularización o incluso "mejoras" debidas a procesos de optimización previos pueden desordenar su código y confundir a los compiladores. Se considera desorden a todo aquello que contribuye al tiempo de ejecución sin contribuir a la respuesta. Viene en dos formas:</para>
+    
+    <para id="eip-45"><title>Cosas que contribuyen a la sobrecarga</title>Llamados a subrutinas, referencias indirectas a memoria, pruebas adentro de bucles, pruebas excesivas, conversiones de tipos, variables preservadas innecesariamente
+</para><para id="eip-666"><title>Cosas que restringen la flexibilidad del compilador</title>Llamados a subrutinas, referencias indirectas a memoria, pruebas adentro de bucles, apuntadores ambiguos
+    </para><para id="id15577838">No se trata de un error que algunos elementos aparezcan repetidos en ambas listas. Tanto la invocación de subrutinas como el uso de  sentencias condicionales adentro de bucles pueden perjudicarlo, al tomar mucho tiempo y generar <emphasis effect="italics">barreras</emphasis> — lugares del programa donde las instrucciones que aparecen antes no pueden entremezclarse de forma segura con las instrucciones que aparecen después, al menos no sin un gran cuidado. El objetivo de este capítulo es mostrarle cómo eliminar el desorden, de forma que pueda reestructurar todo aquello que está mal y lograr la ejecución más rápida posible. Hemos eliminado unos cuantos tópicos que debieran estar aquí, especialmente aquellos relativos a referencias a memoria, y los colocamos en capítulos posteriores donde se tratan como temas separados.</para>
+    <para id="id12100418">Antes de comenzar, queremos recordarle: conforme busca usted formas de mejorar lo que tiene, mantenga ojos y mente abiertos a la posibilidad de que pueda existir una manera fundamentalmente mejor de hacer algo -una técnica de ordenación más eficiente, un generador de números aleatorios, etc. Un algoritmo diferente puede aportarle mayor incremento de velocidad que afinar el existente. Analizar tales algoritmos está más allá del alcance de este libro, pero lo que estamos discutiendo aquí debe ayudarle a reconocer el "buen" código, o ayudarle a codificar un nuevo algoritmo que le de el mejor rendimiento.</para>
+  </content>
+</document>

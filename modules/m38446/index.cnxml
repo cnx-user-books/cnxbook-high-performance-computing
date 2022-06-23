@@ -1,0 +1,38 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Optimización de Ciclos - Conteo de Operaciones</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38446</md:content-id>
+  <md:title>Optimización de Ciclos - Conteo de Operaciones</md:title>
+  <md:abstract/>
+  <md:uuid>1beceb38-9a2f-4d42-ab00-52e832132a6d</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1167605362453">Antes de que comience a reescribir el cuerpo de un bucle, o reorganizar el orden de los bucles, debe tener alguna idea de qué hace dicho cuerpo en cada iteración. Se llama <emphasis effect="italics">conteo de operaciones</emphasis> al proceso de medir un ciclo para comprender la mezcla de operaciones. Necesitará contar el número de cargas, almacenamiento, operaciones de punto flotante, enteras, y llamados a bibliotecas por cada iteración del bucle. A partir de este conteo, puede ver cuán bien se corresponde la mezcla de operaciones de un ciclo dado con las capacidades del procesador. Por supuesto, el conteo de operaciones no garantiza que el compilador generará una representación eficiente de un ciclo.<footnote id="id1167601195172">Revise la salida en lenguaje ensamblador para estar seguro, la cuál puede estar introduciendo algo de desbordamiento. Para obtener un listado en lenguaje ensamblador en muchas máquinas, compile con la bandera <emphasis effect="bold">–S</emphasis>. En las RS/6000, utilice la bandera <emphasis effect="bold">–qlist</emphasis>.</footnote> Pero ello generalmente le proporcionará una percepción suficiente como para dirigir sus esfuerzos de afinación.</para>
+      <para id="id1167586664124">Tenga en mente que una mezcla de instrucciones balanceada para una máquina puede no estarlo para otra. Los procesadores que hay hoy día en el mercado pueden generalmente ejecutar alguna combinación de una a cuatro instrucciones por ciclo de reloj. La aritmética de direcciones a menudo queda incrustada en las instrucciones que hacen referencia a memoria. Como el compilador puede reemplazar complicados cálculos de direcciones de bucles por expresiones simples (suponiendo que el patrón de direcciones es predecible), en ocasiones puede usted ignorar la aritmética de direcciones cuando hace el conteo de operaciones.<footnote id="id1167587381037">El compilador reduce la complejidad de las expresiones de indexación del ciclo con una técnica llamada <emphasis effect="italics">simplificación de variables de inducción</emphasis>. Véase <link document="m33690"/>.</footnote></para>
+      <para id="id8839229">Revisemos unos cuantos bucles, y veamos qué podemos aprender acerca de la mezcla de instrucciones:</para>
+      <code id="id1167601192012" display="block"><newline/>
+      DO I=1,N
+        A(I,J,K) = A(I,J,K) + B(J,I,K) 
+      ENDDO
+    </code>
+      <para id="id1167586668897">Este bucle contiene una suma de punto flotante y tres referencias a memoria (dos cargas y un almacenamiento). Hay algunas expresiones complejas de indexación de arreglos, pero probablemente el compilador las simplifique y pueda ejecutarlas en el mismo ciclo que aquellas de memoria y punto flotante. Para cada iteración del ciclo, debemos incrementar la variable índice y probarla para determinar si éste se ha completado.</para>
+      <para id="id1167587330602">Una tasa 3:1 de referencias a memoria respecto a operaciones de punto flotante sugiere que podemos aspirar a por lo menos 1/3 del rendimiento pico de punto flotante al ejecutar el bucle, a menos que haya más de un camino a la memoria. Son malas noticias, pero buena información. La tasa nos dice que debiéramos considerar primero la optimización de las referencias a memoria.</para>
+      <para id="id1167609949567">El bucle de abajo contiene una suma de punto flotante y dos operaciones a memoria - una carga y un almacenamiento. El operando  <code display="inline">B(J)</code> es invariante en el bucle, así que su valor sólo requiere de cargarse una vez, antes de la entrada al bucle:</para>
+      <code id="id1167587377450" display="block"><newline/>
+      DO I=1,N
+        A(I) = A(I) + B(J) 
+      ENDDO
+    </code>
+      <para id="id1167610078076">Nuevamente, nuestro rendimiento de punto flotante está limitado, pero no tan severamente como en el ciclo anterior. La tasa de referencias a memoria respecto a operaciones de punto flotante es ahora de 2:1.</para>
+      <para id="id1167587376397">El siguiente ejemplo muestra un bucle con mejores perspectivas. Realiza multiplicaciones, a nivel de elementos, de números complejos y asigna los resultados de vuelta al primero de ellos. Hay seis operaciones a memoria (cuatro cargas y dos almacenamientos) y seis operaciones de punto flotante (dos sumas y cuatro multiplicaciones):</para>
+      <code id="id1167587374552" display="block"><newline/>
+      for (i=0; i&lt;n; i++) {
+          xr[i] = xr[i] * yr[i] - xi[i] * yi[i];
+          xi[i] = xr[i] * yi[i] + xi[i] * yr[i];
+      }
+    </code>
+      <para id="id1167587301337">Pareciera que este bucle está cercanamente balanceado para un procesador que pueda realizar el mismo número de operaciones de memoria y de punto flotante por ciclo. Sin embargo, puede que no sea así. Muchos procesadores realizan una multiplicación y una suma de punto flotante en una sola instrucción. Si el compilador es lo suficientemente bueno para reconocer que la suma-multiplicación es apropiada, este ciclo puede también verse limitado por las referencias a memoria; cada iteración se compilará en dos multiplicaciones y dos multiplicaciones-sumas.</para>
+      <para id="id1167587378947">De nuevo, el conteo de operaciones es una forma simple de estimar cuán bien se mapean los requerimientos de un ciclo en las capacidades de una máquina. En el caso de muchos bucles, a menudo encontrará usted que su rendimiento está dominado por las referencias a memoria, tal como vimos en los últimos tres ejemplos. Ello sugiere que la afinación de las referencias a memoria es muy importante.</para>
+  </content>
+</document>

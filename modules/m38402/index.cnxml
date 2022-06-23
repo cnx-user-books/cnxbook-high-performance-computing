@@ -1,0 +1,14 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Qué Hace un Compilador - Notas de Cierre</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38402</md:content-id>
+  <md:title>Qué Hace un Compilador - Notas de Cierre</md:title>
+  <md:abstract/>
+  <md:uuid>8d86d6c2-04e5-446c-ab73-c75b91b25dff</md:uuid>
+</metadata>
+
+<content>
+      <para id="id8946729">Este capítulo ha sido una introducción básica a la forma en que funciona el optimizador de código de un compilador. Sin embargo, no es lo último que diremos acerca de los compiladores. Con el objeto de realizar la vectorización, paralelización y descomposición de datos automáticamente, los compiladores adicionalmente deben analizar el código fuente. Conforme nos topemos con estos tópicos, iremos discutiendo el impacto sobre y del compilador, y cómo los programadores pueden interactuar mejor con éste.</para>
+      <para id="id8012504">En las arquitecturas RISC modernas de un solo procesador, los compiladores por lo general producen mejor código que la mayoría de los programadores humanos en ensamblador. En vez de tratar de compensar el trabajo de un compilador simplista agregando optimizaciones a mano, nosotros como programadores debemos mantener nuestros programas simples, de forma que no confundan a éste. Al entender los patrones que los compiladores son capaces de optimizar, podemos enfocarnos en escribir programas sencillos que sean transportables y comprensibles.</para>
+  </content>
+</document>

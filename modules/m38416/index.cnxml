@@ -1,0 +1,224 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Perfilado de Subrutinas</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38416</md:content-id>
+  <md:title>Cronometraje y Perfilado - Perfilado de Subrutinas</md:title>
+  <md:abstract/>
+  <md:uuid>c7e9fcc6-794b-4c27-b143-fe492d00bd9d</md:uuid>
+</metadata>
+
+<content>
+      <para id="id1167623882232">A veces va a desear más detalle que el que proporciona el cronometraje global de la aplicación, pero tal vez no tenga tiempo de modificar el código para insertar varios cientos de llamadas a <emphasis effect="italics">etime</emphasis> en su código. Los perfiles también son muy útiles cuando le han entregado un extraño programa de 20,000 líneas de código, y le han pedido que averigüe cómo funciona y luego mejore su rendimiento.</para>
+      <para id="id1167617349262">La mayoría de los compiladores proporcionan la facilidad de insertar llamadas cronométricas automáticas en su código, tanto a la entrada como a la salida de cada rutina, a tiempo de compilación. Cuando se ejecute su programa, se registrarán los tiempos de entrada y salida, y luego se volcarán en un archivo. Una herramienta separada resume los patrones de ejecución y produce un reporte que muestra el porcentaje del tiempo gastado en cada una de las rutinas que usted escribió, así como en las rutinas de biblioteca.</para>
+      <para id="id1167615535185">El perfil debe proporcionarle a usted un sentido de la forma en que se está ejecutando. Esto es, puede ver que el 10% del tiempo se gasta en la subrutina A, el 5% en la subrutina B, etc. Naturalmente, si junta todas las subrutinas deben sumar el 100% del tiempo de ejecución global. A partir de estos porcentajes puede construir usted una imagen - un <emphasis effect="italics">perfil</emphasis> — de la distribución de la ejecución cuando el programa corre. Aunque no sean representativos de alguna herramienta de perfilado en particular, los histogramas en <link target-id="id1167616191624"/> y <link target-id="id1167630064798"/> representan estos porcentajes, ordenados de izquierda a derecha, donde cada columna vertical representa una rutina diferente. Ayudan a ilustrar las diferentes formas de perfil.</para>
+      <figure id="id1167616191624"><title>Perfil Agudo - Dominado por la Rutina 1</title><media id="id1167616191624_media" alt="Esta figura es un histograma, con las rutinas en el eje horizontal y el % del tiempo en el eje vertical. Para las rutinas de valor 1, el histograma muestra un valor de % de tiempo de 65. Para las rutinas de valor 2, el histograma muestra un valor de % de tiempo de 20. Para las rutinas de valor 3, el histograma muestra un valor de % de tiempo de 10. Para las rutinas de valor 4, el histograma muestra un valor de % de tiempo de 5. Para las rutinas de valor 5, el histograma muestra un valor de % de tiempo de aproximadamente 2. Por encima de los histogramas está una curva punteada que marca la tendencia decreciente del histograma, conforme crece el número de rutinas.">
+          <image mime-type="image/png" src="../../media/graphics1-9ce2.png" id="id1167616191624__onlineimage" height="363" width="700"/>
+        </media>
+      </figure>
+      
+      <para id="id1167615487040">Un <emphasis effect="italics">perfil agudo</emphasis> nos dice que la mayoría del tiempo se está gastando en uno o dos procedimientos, y que si quiere usted mejorar el rendimiento del programa, debe enfocar sus esfuerzos en afinar dichos procedimientos. Una optimización menor en una línea de código que se ejecuta intensamente puede a veces tener un enorme efecto en el tiempo de ejecución global, dando la oportunidad correcta. Un <emphasis effect="italics">perfil plano</emphasis>,<footnote id="id1167615348767">A menudo e abusa un poco del término "perfil plano". Lo estamos usando para describir un perfil que muestra una distribución homogénea de tiempo a lo largo del programa. También verá que se emplea para marcar una diferencia de un perfil de un perfil del grafo de llamadas, como se describe más abajo.</footnote> por otra parte, le indica que el tiempo de ejecución se reparte entre muchas rutinas, y el esfuerzo gastado en optimizar cualquiera de ellas será poco benéfico para acelerar el programa. Por supuesto, también hay programas cuyo perfil de ejecución cae en algún punto intermedio.</para>
+      <figure id="id1167630064798"><title>Perfil plano - ninguna rutina predomina</title><media id="id1167630064798_media" alt="Esta figura es un histograma, con las rutinas en el eje horizontal y el % de tiempo en el eje vertical. Para las rutinas de valor 1, el histograma muestra un valor de % de tiempo de aproximadamente 22. Para las rutinas de valor 2, el histograma muestra un valor de % de tiempo de 20. Para las rutinas de valor 3, el histograma muestra un valor de % de tiempo de aproximadamente 18. Para las rutinas de valor 4, el histograma muestra un valor de % de tiempo de aproximadamente 22. Para las rutinas de valor 5, el histograma muestra un valor de % de tiempo de aproximadamente 18. Sobre el histograma se encuentra una línea punteada que marca una tendencia decreciente conforme el número de rutinas incrementa.">
+          <image mime-type="image/png" src="../../media/graphics2-dd7d.png" id="id1167630064798__onlineimage" height="368" width="700"/>
+        </media>
+      </figure>
+      
+      <para id="id1167615256723">No podemos predecir con absoluta certeza qué será lo que encuentre usted cuando perfile sus programas, pero hay algunas tendencias generales. Por ejemplo, los códigos científicos e ingenieriles construidos alrededor de soluciones matriciales a menudo exhiben perfiles muy agudos. El tiempo de ejecución está dominado por el trabajo realizado en un puñado de rutinas. Para afinar el código, necesita enfocar sus esfuerzos en tales rutinas, hasta hacerlas más eficientes. Puede que ello involucre reestructurar ciclos para exponer el paralelismo, proporcionar indicios al compilador, o reacomodar las referencias a memoria. En cualquier caso, el reto es tangible; puede ver los problemas que debe solucionar.</para>
+      <para id="id1167615502136">Por supuesto, existen límites a la mejora en tiempo de ejecución que obtendrá afinando una o dos rutinas. Una regla de oro citada frecuentemente es la <emphasis effect="italics">Ley de Amdahl</emphasis>, obtenida a partir de las observaciones realizadas en 1967 por uno de los diseñadores de la serie 360 de IBM y fundador de Amdahl Computer, Gene Amdahl. Estrictamente hablando, sus observaciones fueron acerca del potencial de rendimiento de las computadoras paralelas, pero la gente ha adaptado la Ley de Amdahl para describir otras cosas por igual. Para nuestros propósitos, se puede citar así: digamos que tiene un programa con dos partes, una que puede optimizarse hasta hacerla infinitamente rápida, y otra que no puede optimizarse en absoluto. Incluso si la porción optimizable supone como mucho el 50% del tiempo de ejecución inicial, cuando mucho será usted capaz de recortar el tiempo de ejecución total a la mitad. Esto es, su tiempo de ejecución estará dominado eventualmente por la porción que no puede optimizarse. Esto pone un límite máximo a sus expectativas de afinación.</para>
+      <para id="id1167614712741">Incluso a pesar del limitado retorno de inversión que sugiere la Ley de Amdahl, afinar un programa con un perfil agudo puede dar sus recompensas. Los programas con perfiles planos son mucho más difíciles de afinar. A menudo se trata de códigos de sistema, aplicaciones no numéricas y variedades de códigos numéricos sin soluciones matriciales. Se requiere de un enfoque de afinación global para reducir, a un nivel justificable, el tiempo de ejecución de un programa con un perfil plano. Por ejemplo, a veces puede usted optimizar el uso de la cache de instrucciones, lo cuál resulta complicado por la distribución equitativa de actividades del programa entre un gran número de rutinas. También puede ayudar a reducir la sobrecarga del llamado a subrutinas, plegando los invocados dentro de los invocadores. Ocasionalmente, puede encontrar un problema de referencia a memoria que es endémico al programa completo - y uno que puede arreglarse de un solo golpe.</para>
+      <para id="id1167615501208">Cuando estudie un perfil, puede que encuentre un porcentaje inusualmente grande de tiempo gastado en rutinas de biblioteca, tales como <code display="inline">log</code>, <code display="inline">exp</code> o <code display="inline">sin</code>. A menudo tales funciones se están realizando en rutinas de software, en vez de en línea. Puede reescribir su código para eliminar algunas de estas operaciones. Otro patrón importante que debe buscarse es aquel en el cual una rutina consume mucho más tiempo del que usted espera. Un tiempo de ejecución inesperado puede indicar que está accediendo a la memoria en un patrón que resulta malo desde el punto de vista del rendimiento, o que algún aspecto del código no puede optimizarse apropiadamente.</para>
+      <para id="id1167615568941">En cualquier caso, para obtener un perfil se requiere de una herramienta de perfilado. Uno o dos <emphasis effect="italics">perfiladores de subrutinas</emphasis> vienen de forma estándar con los ambientes de desarrollo de software de todas las máquinas UNIX. Discutiremos dos de ellos: <emphasis effect="italics">prof </emphasis> y <emphasis effect="italics">gprof</emphasis>. Además, mencionaremos unos pocos perfiladores que actúan línea por línea. Los perfiladores de subrutina pueden proporcionarle a usted una vista global general acerca de dónde está consumiéndose el tiempo. Probablemente deba comenzar con <emphasis effect="italics">prof</emphasis>, si lo tiene (lo cuál es común en muchas máquinas). De otra forma, use <emphasis effect="italics">gprof</emphasis>. Después de eso, puede moverse a un perfilador de línea por línea, si requiere conocer cuáles sentencias requieren de más tiempo.</para>
+      <section id="id1167615576249">
+        <title>prof</title>
+        <para id="id1167615451950"><emphasis effect="italics">prof</emphasis> es la herramienta de perfilado más común en UNIX. En cierto sentido, es una extensión del compilador, enlazador y de las bibliotecas de código objeto, más unas pocas utilidades extras, de forma que es difícil hallar una sola cosa y decir "esto es lo que perfila su código.” <emphasis effect="italics">prof</emphasis> trabaja muestreando periódicamente el contador de programa conforme se ejecuta su aplicación. Para permitir el perfilado, usted debe recompilarla y re-enlazarla usando la bandera <code display="inline">–p</code>. Por ejemplo, si su programa tiene dos módulos, <emphasis effect="italics">stuff.c</emphasis> y <emphasis effect="italics">junk.c</emphasis>, 
+requiere compilar y enlazar de acuerdo al código siguiente:</para>
+        <code id="id1167617838232" display="block"><newline/>
+      % cc stuff.c -p -O -c
+      % cc junk.c -p -O -c
+      % cc stuff.o junk.o -p -o stuff
+    </code>
+        <para id="id1167617329945">Esto crea un binario <emphasis effect="italics">stuff</emphasis> que está listo para el perfilado. Usted no requiere hacer nada especial para ejecutarlo. Sólo trátelo normalmente, tecleando <code display="inline">stuff</code>. Como se están recolectando las estadísticas a tiempo de ejecución, toma un poco más de lo usual en ejecutarse. <footnote id="id1167612595912">Recuerde: el código con el perfilado activo toma más en ejecutarse. Debe recompilar y re-enlazar el programa completo <emphasis effect="italics">sin</emphasis> la bandera <code display="inline">–p</code> cuando haya finalizado el perfilado.</footnote> Una vez completado, habrá un nuevo archivo llamado <emphasis effect="italics">mon.out</emphasis> en el directorio donde lo ejecutó. Este archivo contiene la historia de <emphasis effect="italics">stuff</emphasis> en forma binaria, así que no puede observarla directamente. Use la utilidad <emphasis effect="italics">prof </emphasis> para leer <emphasis effect="italics">mon.out</emphasis> y crear un perfil de <emphasis effect="italics">stuff</emphasis>. Por defecto, la información se escribe a su pantalla porque es la salida estándar, aunque puede redirigirla fácilmente a un archivo:</para>
+        <code id="id1167615587911" display="block"><newline/>
+      % prof stuff &gt; stuff.prof
+    </code>
+        <para id="id1167612696568">Para poder explorar cómo funciona el comando <emphasis effect="italics">prof</emphasis>, hemos creado la siguiente aplicación, <emphasis effect="italics">bucles.c</emphasis>, que es pequeña y ridícula. Contiene una rutina principal y tres subrutinas para las cuáles puede usted predecir la distribución de tiempo, con sólo observar el código.</para>
+        <code id="id1167612618648" display="block"><newline/>
+      main () {
+          int l;
+          for (l=0;l&lt;1000;l++) {
+              if (l == 2*(l/2)) foo ();
+              bar();
+              baz();
+          }
+      }
+      foo (){
+          int j;
+          for (j=0;j&lt;200;j++)
+      }
+      bar () {
+          int i;
+          for (i=0;i&lt;200;i++);
+      }
+      baz () {
+          int k;
+          for (k=0;k&lt;300;k++);
+      }
+    </code>
+        <para id="id1167614668507">Nuevamente, debe compilar y enlazar <emphasis effect="italics">bucles</emphasis> con la bandera <code display="inline">–p</code>, ejecutar el programa, y luego ejecutar la utilidad <emphasis effect="italics">prof</emphasis> para extraer un perfil, tal como sigue:</para>
+        <code id="id1167614433333" display="block"><newline/>
+      % cc bucles.c -p -o bucles
+      % ./bucles
+      % prof bucles &gt; bucles.prof
+    </code>
+        <para id="id1167615347549">El siguiente ejemplo muestra cómo debe verse <emphasis effect="italics">bucles.prof</emphasis>. Hay seis columnas.</para>
+        <code id="eip-453" display="block"><newline/>
+      %Time Seconds Cumsecs #Calls msec/call Name
+       56.8    0.50    0.50   1000    0.500  _baz
+       27.3    0.24    0.74   1000    0.240  _bar
+       15.9    0.14    0.88    500    0.28   _foo 
+        0.0    0.00    0.88      1    0.     _creat
+        0.0    0.00    0.88      2    0.     _profil
+        0.0    0.00    0.88      1    0.     _main
+        0.0    0.00    0.88      3    0.     _getenv
+        0.0    0.00    0.88      1    0.     _strcpy
+        0.0    0.00    0.88      1    0.     _write</code>
+        <para id="id1167615611691">Las columnas pueden describirse como sigue:</para>
+        <list id="id1167614931721" list-type="bulleted"><item><code display="inline">%Time</code> Porcentaje de tiempo de CPU consumido por esta rutina</item>
+<item><code display="inline">Seconds</code> Tiempo de CPU consumido por esta rutina</item>
+<item><code display="inline">Cumsecs</code> Un acumulado del tiempo consumida por esta rutina y todas las que la preceden en la lista</item>
+<item><code display="inline">Calls</code> El número de veces que fue llamada esta rutina en particular</item>
+<item><code display="inline">msec/call</code> Segundos divididos entre el número de llamadas, dando el promedio de tiempo tomado por cada invocación de la rutina</item>
+<item><code display="inline">Name</code> El nombre de esta rutina</item>
+        </list>
+        <para id="id1167615154588">Las tres rutinas superiores listadas son del propio <emphasis effect="italics">bucles.c</emphasis>. Puede observar una entrada que representa a la rutina principal (main), ubicada en la segunda mitad de la lista. Dependiendo del vendedor, los nombres de las rutinas pueden contener caracteres de guión bajo como prefijo o sufijo, y siempre habrá listadas algunas rutinas que usted no reconozca. Son contribuciones de la biblioteca C y posiblemente de las bibliotecas de FORTRAN, si está usando este lenguaje. El perfilado también introduce algo de sobrecarga en la ejecución, que a menudo se muestra como una o dos subrutinas en la salida de <emphasis effect="italics">prof</emphasis>. En este caso, la entrada llamada <code display="inline">_profil</code> representa el código insertado por el enlazador para recolectar los datos de perfilado a tiempo de ejecución.</para>
+        <para id="id1167614415864">Si fuera nuestra intención afinar <emphasis effect="italics">bucles</emphasis>, deberíamos considerar que un perfil como el mostrado en la figura superior es un buen signo. La primera rutina en la lista toma 50% del tiempo, así que cuando menos hay una posibilidad de que hagamos algo con ella que pueda tener un impacto significativo en el rendimiento global. (Por supuesto, con un programa tan trivial como <emphasis effect="italics">bucles</emphasis>, hay mucho que podemos hacer, puesto que <emphasis effect="italics">bucles</emphasis> no hace nada.)</para>
+      </section>
+      <section id="id1167614486234">
+        <title>gprof</title>
+        <para id="id1167614768094">Así como es importante conocer cómo se distribuye el tiempo durante la ejecución de su programa, también es valioso ser capaz de decir quién invocó a quién en la lista de rutinas. Imagine, por ejemplo, si algo etiquetado como <code display="inline">_exp</code> aparece posicionado alto en la lista de salida de prof. Usted puede decir: "Mmmm, no recuerdo haber invocado a nada llamado <code display="inline">exp()</code>. ¡No tengo ni idea de dónde viene!” Un árbol de llamados a subrutinas le ayudará a encontrarlo.</para>
+        <para id="id1167615552991">Puede pensarse en las subrutinas y funciones como miembros de un árbol familiar. En la parte más alta del árbol, o raíz, está una rutina que precede a la rutina principal que usted codificó en su aplicación; es quien llama a su rutina principal, que a su vez llama a otras, y así sucesivamente, descendiendo hasta los nodos hoja del árbol. El nombre apropiado para este árbol es un <emphasis effect="italics">grafo de llamadas</emphasis>.<footnote id="id1167614558211">No tiene por qué ser un árbol. Cualquier subrutina puede tener más de un padre. Es más, las rutinas recursivas introducen ciclos en el grafo, durante los cuales los hijos llaman a uno de sus padres.</footnote> La relación entre rutinas y nodos en el grafo es uno de padres e hijos. Nos referimos a los nodos separados por más de un salto como ancestros y descendientes.</para>
+        <para id="id1167615235527">La Figura 6-4 muestra gráficamente la clase de grafo de llamadas que puede verse en una aplicación pequeña. <code display="inline">main</code> es el padre o ancestro de la mayoría de las demás rutinas. <code display="inline">G</code> tiene dos padres, <code display="inline">E</code> y <code display="inline">C</code>. Otra rutina, <code display="inline">A</code>, no parece tener ningún ancestro o descendiente. Este problema puede suceder cuando no se compilan las rutinas con el perfilado activo, o cuando no han sido invocadas - tal como pudiera ser el caso si <code display="inline">A</code> fuera un manejador de excepciones.</para>
+        <para id="id1167614569055">El software de perfilado de UNIX que puede extraer esta clase de información se llama <emphasis effect="italics">gprof</emphasis>. Replica las habilidades de <emphasis effect="italics">prof</emphasis>, además de proporcionar un perfil de grafo de llamados, de forma que pueda usted observar quién llama a quién, y cuán frecuentemente. El perfil del grafo de llamadas es útil si está tratando de averiguar cómo trabaja un fragmento de código, o de dónde proviene una rutina desconocida, o si está buscando candidatos para hacer una subrutina en línea.</para>
+        <para id="id1167613972096">Para usar el perfilado del grafo de llamados, usted debe seguir los mismos pasos que con <emphasis effect="italics">prof</emphasis>, excepto que la bandera <code display="inline">–pg</code> se sustituye por la bandera <code display="inline">–p</code>.<footnote id="id1167612661184">En las máquinas HP, la bandera es <code display="inline">–G</code>.</footnote> Adicionalmente, cuando llega el momento de producir el perfil, debe usted usar el programa de utilidad <emphasis effect="italics">gprof</emphasis> en vez de <emphasis effect="italics">prof</emphasis>. Una diferencia más es que el nombre del archivo de estadísticas es <emphasis effect="italics">gmon.out</emphasis> en vez de <emphasis effect="italics">mon.out</emphasis>:</para>
+        <code id="id1167615483734" display="block"><newline/>
+      % cc -pg stuff.c -c
+      % cc stuff.o -pg -o stuff
+      % stuff
+      % gprof stuff &gt; stuff.gprof
+    </code>
+        <figure id="id1167615387546"><title>Grafo de llamadas simple</title><media id="id1167615387546_media" alt="Esta figura es un diagrama de flujo. En la parte superior del mismo hay una caja, etiquetada Main. A partir de esta caja hay dos líneas, una conectada a una caja etiquetada B, y la otra conectada a una caja etiquetada C. De la caja B salen dos lineas, una conectada auna caja etiquetada D, y la otra conectada a una caja etiquetada E. De la caja E sale una línea conectada a una caja etiquetada G. Desde la caja C hay una línea conectada a la misma caja G. A la derecha del diagrama de flujo está una caja etiquetada A, sin conexiones.">
+            <image mime-type="image/png" src="../../media/graphics3-7ef4.png" id="id1167615387546__onlineimage" height="391" width="700"/>
+          </media>
+        </figure>
+        
+        
+        <para id="eip-456">La salida de <code>gprof</code> se divide en tres secciones:</para><list id="id1167627410813" list-type="bulleted"><item>Perfil del grafo de llamadas</item>
+<item>Perfil de cronometraje</item>
+<item>Índice</item>
+        </list>
+        <para id="id1167615599337">La primera sección es textualmente el mapa del grafo de llamadas. La segunda lista las subrutinas, el porcentaje de tiempo dedicado a cada una, el número de llamadas, etc. (similar a <emphasis effect="italics">prof</emphasis> ). La tercera sección es una referencia cruzada, de forma que pueda usted localizar las rutinas por número, en vez de por nombre. Esta sección resulta especialmente útil en aplicaciones grandes, porque las rutinas se ordenan basadas en la cantidad de tiempo que emplean, y puede resultar difícil localizar una en particular buscando su nombre. Inventemos otra aplicación trivial para ilustrar cómo funciona <emphasis effect="italics">gprof</emphasis>. <link target-id="id1167616187270"/> muestra una pequeña pieza de código FORTRAN, junto con un diagrama que indica cómo están conectadas las rutinas. Tanto la subrutina <code display="inline">A</code> como la <code display="inline">B</code> son invocadas por <code display="inline">MAIN</code>, y, a su vez, cada una llama a <code display="inline">C</code>. El siguiente ejemplo muestra una sección de la salida del perfil del grafo de llamadas de  <emphasis effect="italics">gprof</emphasis>:<footnote id="id1167615219435">Con el fin de no consumir demasiado espacio, recortamos la sección más relevante para nuestra discusión y la incluimos en este ejemplo. Hay mucho más, incluyendo llamados a rutinas de configuración y sistema, del tipo de las que ve cuando ejecuta <emphasis effect="italics">gprof</emphasis>.</footnote></para>
+        <figure id="id1167616187270"><title>FORTRAN example</title><media id="id1167616187270_media" alt="This figure is a flow chart. The top of the flowchart is a box labeled, Main.  To the side of the Main box are four lines of code. Line one reads, program main. Line two reads, call a. Line three reads, call b. Line four reads, end. From this box are two lines, one connected to a box labeled, A, and the other connected to a box labeled, B. To the side of the A box are five lines of code. Line one reads, subroutine a. Line two reads, call c. Line three reads, do 10 i=1, 5000000. Line four reads, 10 continue. Line five reads, end. To the side of the B box are five lines of code. Line one reads, subroutine b. Line two reads, call c. Line three reads, do 10 i=1,10000000. Line four reads, 10 continue. Line five reads, end. Connected to the bottom of both box A and box B are arrows that point at a box labeled, C. To the side of the C box are four lines of code. Line one reads, subroutine c. Line two reads, do 10 i=1,5000000. Line three reads, 10 continue. Line four reads, end.">
+            <image mime-type="image/png" src="../../media/graphics4-ab31.png" id="id1167616187270__onlineimage" height="428" width="699"/>
+          </media>
+        </figure>
+        
+        <code id="id1167615470278" display="block"><newline/>
+                                          called/total      parents
+      index  %time     self descendants   called+self   name       index 
+                                          called/total      children
+    
+        ....                       ....                         ....
+    
+                       0.00          8.08      1/1          _main [2] 
+      [3]    99.9      0.00          8.08      1        _MAIN_ [3]
+                       3.23          1.62      1/1          _b_ [4]
+                       1.62          1.62      1/1          _a_ [5]
+    
+      -----------------------------------------------
+    
+                       3.23          1.62      1/1          _MAIN_ [3] 
+      [4]    59.9      3.23          1.62      1        _b_ [4]
+                       1.62          0.00      1/2          _c_ [6]
+    
+      -----------------------------------------------
+    
+                       1.62          1.62      1/1          _MAIN_ [3] 
+      [5]    40.0      1.62          1.62      1        _a_ [5]
+                       1.62          0.00      1/2          _c_ [6]
+    
+      -----------------------------------------------
+    
+                       1.62          0.00      1/2          _a_ [5]
+                       1.62          0.00      1/2          _b_ [4] 
+      [6]    39.9      3.23          0.00      2        _c_ [6]
+    </code>
+        
+        <para id="eip-737">Emparedada entre cada conjunto de líneas punteadas está la información que describe una rutina dada y su relación respecto a padres e hijos. Es fácil decir qué rutina representa cada bloque, porque el mismo está desplazado más a la izquierda que los otros. Los padres se listan arriba, los hijos abajo. Como sucedió con <code>prof</code>, se agregaron guiones bajos a las etiquetas.<footnote id="eip-id1170457275000">Puede que haya observado que hay dos rutinas principales: <code>_MAIN_</code> y <code>_main</code>. En un programa FORTRAN, <code>_MAIN_</code> es la verdadera rutina principal, que es invocada como una subrutina por <code>_main</code>, que proporciona una biblioteca del sistema a tiempo de enlace. Cuando perfila usted código en C, no verá <code>_MAIN_</code>.</footnote> A continuación se muestra una descripción de cada una de las columnas:</para><list id="id1167615218971" list-type="bulleted"><item><code display="inline">index</code> Observará que cada nombre de rutina tiene asociado un número entre corchetes (<code display="inline">[n]</code>). Se trata de una referencia cruzada para ubicar rutina en cualquier parte del perfil. Si, por ejemplo, está usted buscando en el bloque que describe <code display="inline">_MAIN_</code> y quiere saber más acerca de sus hijos, digamos <code display="inline">_a_</code>, puede encontrarlo recorriendo hacia abajo la parte izquierda de la página en busca de su índice, <code display="inline">[5]</code>.</item>
+<item><code display="inline">%time</code> El significado del campo <code display="inline">%time</code> es un poco diferente del que tiene para <emphasis effect="italics">prof</emphasis>. En este caso describe el porcentaje de tiempo gastado en esta rutina <emphasis effect="italics">mas</emphasis> el tiempo gastado en todos sus hijos. Le proporciona una forma rápida de determinar dónde encontrar las partes más ocupadas del grafo de llamadas.</item>
+<item><code display="inline">self</code> Listado en segundos, la columna <code display="inline">self</code> tiene diferentes significados para los padres, la rutina en cuestión y sus hijos. Comenzando con la entrada central -la rutina misma- el valor <code display="inline">self</code> muestra cuánto tiempo global se dedicó a la rutina. En el caso de <code display="inline">_b_</code>, por ejemplo, esta cantidad fue de 3.23 segundos.  
+<newline/>
+Cada entrada en la columna <code display="inline">self</code> muestra la cantidad de tiempo que puede atribuirse a llamadas desde los padres. Si observa la rutina <code display="inline">_c_</code>, por ejemplo, verá que consumió un tiempo total de 3.23 segundos. Pero note que tuvo dos padres: 1.62 segundos del tiempo se pueden atribuir a llamadas provenientes de <code display="inline">_a_</code>, y 1.62 segundos a las de <code display="inline">_b_</code>.
+<newline/>
+Para el hijo, la cantidad <code display="inline">self</code> muestra cuánto tiempo se gastó ejecutando cada hijo, debido a llamadas provenientes de esta rutina. Los hijos pueden haber consumido más tiempo global, pero el único tiempo contabilizado es aquél atribuíble a llamadas desde esta subrutina. Por ejemplo, <code display="inline">_c_</code> acumuló 3.23 segundos globales, pero si observa en el bloque describiendo <code display="inline">_b_</code>, verá a <code display="inline">_c_</code> listada como un hijo con sólo 1.62 segundos. Este fue el tiempo total gastado ejecutando <code display="inline">_c_</code> del lado de <code display="inline">_b_</code>.</item>
+<item><code display="inline">descendants</code> Como ocurren con la columna <code display="inline">self</code>, los vaores en la columna de descendientes tienen diferentes significados para la rutina, sus padres y los hijos. Para la rutina misma, muestra el número de segundos gastados en todos sus descendientes.
+<newline/>
+Para los padres de la rutina, esta columna describe cuánto tiempo gastado por la rutina puede trazarse a partir de llamadas realizadas por cada padre. Observando nuevamente la rutina <code display="inline">_c_</code>, puede observar que de su tiempo total, 3.23 segundos, 1.62 segundos son atribuíbles a cada uno de sus padres, <code display="inline">_a_</code> y <code display="inline">_b_</code>.
+<newline/>
+Para los hijos, la columna de descendientes muestra cuánto del tiempo de los hijos puede atribuirse a llamadas realizadas desde esta rutina. El hijo puede haber acumulado más tiempo global, pero aquí sólo se despliega el tiempo asociado con llamadas desde esta rutina.</item>
+<item><code display="inline">calls</code> La columna <code display="inline">calls</code> muestra el número de veces que se invocó cada rutina, así como la distribución de dichas llamadas asociadas tanto con padres como con hijos. Comenzando con la rutina misma, la cantidad en la columna <code display="inline">calls</code> muestra el número total de entradas a la rutina. En situaciones donde la rutina se invoca a sí misma, también observará usted un <emphasis effect="italics">+n</emphasis> agregado inmediatamente, mostrando que se realizaron <emphasis effect="italics">n</emphasis> llamadas recursivas adicionales.
+<newline/>
+Las cantidades de padres e hijos se expresan como tasas. Para los padres, la tasa <emphasis effect="italics">m/n</emphasis> debe leerse como “de las <emphasis effect="italics">n</emphasis> veces que se invocó la rutina, <emphasis effect="italics">m</emphasis> vinieron de su padre.” Para el hijo, debe leerse como "de las <emphasis effect="italics">n</emphasis> veces que fue invocado este hijo, <emphasis effect="italics">m</emphasis> provinieron de esta rutina.”</item>
+        </list>
+      </section>
+      <section id="id1167614480456">
+        <title>Perfil Plano de gprof</title>
+        <para id="id1167612592954">Como mencionamos previamente, <emphasis effect="italics">gprof</emphasis> también produce un perfil de cronometraje (también conocido como un perfil "plano", un término algo confuso) similar al que produce <emphasis effect="italics">prof</emphasis>. Unos pocos campos son diferentes de <emphasis effect="italics">prof</emphasis>, y también hay algo de información extra, así que será de ayuda explicarlo brevemente. El siguiente ejemplo muestra unas pocas de las primeras líneas de un perfil plano de <emphasis effect="italics">gprof</emphasis> para el programa <emphasis effect="italics">stuff</emphasis>. Reconocerá del programa original las tres rutinas superiores. Las otras son funciones de biblioteca incluidas a tiempo de enlace.</para>
+        <code id="id1167615245907" display="block"><newline/>
+      %    cumulative     self              self     total
+     time    seconds     seconds    calls  ms/call  ms/call  name
+     39.9       3.23        3.23        2  1615.07  1615.07  _c_ [6]
+     39.9       6.46        3.23        1  3230.14  4845.20  _b_ [4]
+     20.0       8.08        1.62        1  1620.07  3235.14  _a_ [5]
+      0.1       8.09        0.01        3     3.33     3.33  _ioctl [9]
+      0.0       8.09        0.00       64     0.00     0.00  .rem [12]
+      0.0       8.09        0.00       64     0.00     0.00  _f_clos [177]
+      0.0       8.09        0.00       20     0.00     0.00  _sigblock [178]
+      ...        ....       ....       .         .       .       ......
+    </code>
+        <para id="id1167614362301">He aquí el significado de cada columna:</para>
+        <list id="id1167612704108" list-type="bulleted"><item><code display="inline">%time</code> Nuevamente, vemos un campo que describe el tiempo de ejecución de cada rutina, como un porcentaje del tiempo global del programa. Como puede usted esperar, todas las entradas esta columna deben totalizar (aproximadamente) un 100%.</item>
+<item><code display="inline">cumulative</code> seconds. Para una rutina dada, la columna llamada "segundos acumulados" hace un recuento de la suma del tiempo de ejecución ejecución tomado por todas las rutinas precedentes, más el tiempo propio. Conforme la vaya revisando hacia abajo, verá que los números se aproximan asintóticamente al tiempo total del programa.</item>
+<item><code display="inline">self</code> seconds La contribución individual de cada rutina al tiempo total de ejecución.</item>
+<item><code display="inline">calls</code> El número de veces que fue invocada esta rutina en particular.</item>
+<item><code display="inline">self ms/call</code> Los segundos gastados adentro de la rutina, dividido entre el número de llamadas. Ello nos da una duración promedio del tiempo tomado por cada invocación a la rutina. La cantidad está medida en milisegundos.</item>
+<item><code display="inline">total ms/call</code> Los segundos gastados adentro de la rutina más sus descendientes, dividido entre el número de llamados.</item>
+<item><code display="inline">name</code> El nombre de la rutina. Observe que de nuevo aparece aquí el número de referencia cruzada.</item>
+        </list>
+      </section>
+      <section id="id1167617573991">
+        <title>Acumulando los Resultados de Varias Corridas de gprof</title>
+        <para id="id1167615422193">Es posible acumular estadísticas provenientes de múltiples corridas, de forma que obtenga usted una instantánea del comportamiento del programa con una variedad de conjuntos de datos. Por ejemplo, digamos que quiere usted perfilar una aplicación - llamémosla <emphasis effect="italics">bar</emphasis> — con tres conjuntos de datos distintos. Puede realizar las corridas separadamente, guardando los archivos <emphasis effect="italics">gmon.out</emphasis> conforme las ejecuta, y luego combinar los resultados en un solo perfil al terminar:</para>
+        <code id="id1167615599105" display="block"><newline/>
+      % f77 -pg bar.f -o bar
+      % bar &lt; data1.input
+      % mv gmon.out gmon.1
+      % bar &lt; data2.input
+      % mv gmon.out gmon.2
+      % bar &lt; data3.input
+      % gprof bar -s gmon.1 gmon.2 gmon.out &gt; gprof.summary.out
+    </code>
+        <para id="id1167613941429">En el perfil de ejemplo, cada corrida crea un nuevo archivo <emphasis effect="italics">gmon.out</emphasis> que luego renombramos para que no sea encimado por el siguiente. Al final, <emphasis effect="italics">gprof</emphasis> combina la información de cada uno de los archivos de datos para producir un perfil sumario de <emphasis effect="italics">bar</emphasis> en el archivo <emphasis effect="italics">gprof.summary.out</emphasis>. Adicionalmente (aunque no se muestra aquí), <emphasis effect="italics">gprof</emphasis> crea un archivo llamado <emphasis effect="italics">gmon.sum</emphasis> que contiene los datos mezclados a partir de los tres archivos de datos originales. <emphasis effect="italics">gmon.sum</emphasis> tiene el mismo formato que <emphasis effect="italics">gmon.out</emphasis>, de forma que pueda usted usarlo como entrada para producir otros perfiles mezclados si así lo requiere.</para>
+        <para id="id1167615163681">Al menos en forma, la salida del perfil mezclado luce exactamente igual que el de una corrida individual. Pero hay un par de cosas interesantes que debemos señalar. Por un lado, la rutina <code display="inline">main</code> parece haber sido invocada más de una vez - de hecho, una vez por cada corrida. Además, dependiendo de la aplicación, las múltiples ejecuciones tienden o bien a suavizar el contorno del perfil, o bien a exagerar sus características. Puede imaginar cómo es que esto sucede. Si se está invocando constantemente una única rutina, mientras que las otras vienen y van conforme cambian los datos de entrada, ésta toma una importancia creciente en sus esfuerzos de afinación.</para>
+      </section>
+      <section id="id1167614757306">
+        <title>Unas Pocas Palabras Acerca de la Exactitud</title>
+        <para id="id1167614433798">En aquellos procesadores que se ejecutan a 600 MHz o más, el tiempo que transcurre entre muestras de 60 Hz y 100 Hz es una verdadera eternidad. Es más, puede que experimente usted errores de cuantificación cuando la frecuencia de muestreo es fija, como es el caso en muestras de 1/100 y 1/60 de segundo. Para usar un ejemplo exagerado, asumamos que la línea de tiempo en <link target-id="id1167614746344"/> muestra invocaciones alternadas a dos subrutinas, <code display="inline">BAR</code> y <code display="inline">FOO</code>. Las marcas cronométricas representan los puntos de muestreo del perfilado.</para>
+        <figure id="id1167614746344"><title>Errores de cuantificación al perfilar</title><media id="id1167614746344_media" alt="Esta figura es una línea compuesta por secciones alternadas de color gris claro y gris oscuro. Las secciones claras son más anchas, y están etiquetadas como bar, y las más obscuras están etiquetadas como foo.">
+            <image mime-type="image/png" src="../../media/graphics5-2fda.png" id="id1167614746344__onlineimage" height="163" width="700"/>
+          </media>
+        </figure>
+        
+        <para id="id1167623772430"><code display="inline">BAR</code> y <code display="inline">FOO</code> se ejecutan por turnos. Pero <code display="inline">BAR</code> toma más tiempo que <code display="inline">FOO</code>. Y dado que el intervalo de muestreo es muy cercano a la frecuencia en que ambas se alternan, tenemos un error de cuantificación: la mayoría de las muestras se están tomando mientras <code display="inline">FOO</code> se está ejecutando. Así, el perfil nos dice que <code display="inline">FOO</code> usa más tiempo de CPU que <code display="inline">BAR</code>.</para>
+        <para id="id1167614658647">Hemos descrito y probado los perfiladores de subrutinas reales que han estado disponibles en UNIX durante años. En muchos casos, los vendedores tienen herramientas mucho mejores, ya sea a la venta o gratis. Si usted está haciendo un trabajo de afinación serio, pregunte a su representante de ventas qué otras herramientas le ofrece.</para>
+      </section>
+   </content>
+</document>

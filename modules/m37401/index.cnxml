@@ -1,0 +1,128 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Entendiendo el Paralelismo - Dependencias</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37401</md:content-id>
+  <md:title>Entendiendo el Paralelismo - Dependencias</md:title>
+  <md:abstract/>
+  <md:uuid>6687e1a2-4294-4d15-a438-3d213796432f</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id14034159">Imagine una orquesta sinfónica donde cada músico toque sin tomar en cuenta al director o a lo otros músicos. Al primer movimiento de la batuta del director, cada músico recorre toda su partitura. Algunos finalizan mucho antes que otros, dejan el escenario y se van a casa. La cacofonía resultante no parece música (pensándolo bien, recuerdo algo al jazz experimental), porque carece por completo de coordinación. Por supuesto, esta no es la forma en que se interpreta la música. Un programa de computadora, como una pieza musical, se teje en un telar que lo despliega conforme avanza el tiempo (aunque tal vez lo teje menos compactamente). Ciertas cosas deben suceder antes que otras, y hay una tasa de ejecución para el proceso en su conjunto.</para>
+      <para id="id11805358">En los programas de computadora, cuando un evento A debe suceder antes de otro evento B, se dice que B es <emphasis effect="italics">dependiente</emphasis> de A. Llamamos a esta relación entre ellos una dependencia. En ocasiones las dependencias se deben a cálculos o accesos a memoria, en cuyo caso les denominamos <emphasis effect="italics">dependencias de datos</emphasis>. En otras ocasiones estamos a la espera de que ocurra un salto o la salida de un ciclo, en cuyo caso les denominamos <emphasis effect="italics">dependencias de control</emphasis>. Cada tipo está presente en cada programa, sólo que en grados distintos. El objetivo es eliminar tantas de ellas como sea posible. Reacomodar el código, de forma que dos segmentos sean menos dependientes entre sí, expone el <emphasis effect="italics">paralelismo</emphasis>, o las oportunidades de hacer muchas cosas a la vez.</para>
+      <section id="id17125268">
+        <title>Dependencias de Control</title>
+        <para id="id13662796">Tal como la asignación de variables puede depender de otras asignaciones, el valor de una variable puede depender también del <emphasis effect="italics">flujo de control</emphasis> del programa. Por ejemplo, una asignación adentro de una sentencia condicional sólo puede ocurrir si la condición se evalúa como verdadera. Lo mismo puede decirse de una asignación al interior de un ciclo; si nunca se entra en dicho ciclo, ninguna sentencia en su interior se ejecutará.</para>
+        <para id="id13442158">Cuando los cálculos ocurren como consecuencia del flujo de control, decimos que se trata de una <emphasis effect="italics">dependencia de control</emphasis>,  tal como en el código que aparece más abajo y que se explica gráficamente en <link target-id="id14213666"/>. La asignación ubicada dentro del bloque condicional puede o no ejecutarse, dependiendo del resultado de la prueba <code>X .NE. 0.</code> En otras palabras, el valor de <code>Y</code> depende del flujo de control en el código a su alrededor. Nuevamente, esto puede sonarle a usted como un asunto que sólo le importa a los diseñadores de compiladores, y no a los programadores, cosa que es mayormente cierta. Pero hay veces que usted deseará mover tales instrucciones dependientes del control, para así quitar del camino costosos cálculos (suponiendo que su compilador no sea lo suficientemente inteligente para hacerlo por usted). Por ejemplo, digamos que <link target-id="id11449556"/> representa una pequeña sección de su programa. El flujo de control inicia en la parte superior y avanza a lo largo de dos decisiones. Por otro lado, digamos que hay una operación de raíz cuadrada en el punto de entrada, y que el flujo de control casi siempre inicia en la parte de arriba y baja por la rama que contiene la sentencia <code>A=0.0</code>. Ello significa que el resultado del cálculo <code>A=SQRT(B)</code> casi siempre se descargará, porque A obtiene un nuevo valor de 0.0 cada vez. Una operación de raíz cuadrada siempre es "cara", porque toma mucho tiempo en ejecutarse. El problema es que usted no puede simplemente quitarla de ahí, puesto que ocasionalmente se requiere. Sin embargo, puede quitarla del camino y continuar observando las dependencias e control, haciendo dos copias de la operación de raíz cuadrada a lo largo de la bifurcación menos recorrida, como se muestra en <link target-id="id11092092"/>. De esta forma el código <code>SQRT</code> sólo se ejecutará a lo largo de tales rutas cuando realmente se requiera.</para>
+        <figure id="id14213666"><title>Dependencia de control</title><media id="id14213666_media" alt="Esta figura es una caja conteniendo cuatro líneas de código, con una flecha que va del centro de una línea al inicio de la siguiente.">
+            <image mime-type="image/png" src="../../media/graphics1-26ee.png" id="id14213666__onlineimage" height="207" width="600"/>
+          </media>
+        <!--Figure 9-1--></figure>
+        
+        <figure id="id11449556"><title>Una pequeña sección de nuestro programa</title><media id="id11449556_media" alt="Esta figura muestra una línea etiquetada A = SQRT(B) que se bifurca en dos puntos, con una rama etiquetada A = 0.0.">
+            <image mime-type="image/png" src="../../media/graphics2-2483.png" id="id11449556__onlineimage" height="299" width="600"/>
+          </media>
+        <!--Figure 9-2--></figure>
+        
+        <para id="id21439340">Esta clase de planificación de instrucciones irá apareciendo en los compiladores (e incluso en el hardware) más y más conforme pase el tiempo. Una variante de esta técnica es calcular los resultados que se requieran en aquellos momentos donde haya una brecha en el flujo de instrucciones (debido a las dependencias), usando así algunos ciclos sobrantes, que de otro modo se desperdiciarían.</para>
+        <para id="id20123391">
+          <figure id="id11092092"><title>La operación cara se movió, de forma que se ejecute pocas veces</title><media id="id11092092_media" alt="Esta figura muestra una línea con bifurcaciones en dos puntos, con una rama etiquetada A = 0.0, y las otras dos etiquetadas A = SQRT(B).">
+              <image mime-type="image/png" src="../../media/graphics3-1fcd.png" id="id11092092__onlineimage" height="299" width="600"/>
+            </media>
+          <!--Figure 9-3--></figure>
+        </para>
+        
+      </section>
+      <section id="id4204732">
+        <title>Dependencia de Datos</title>
+        <para id="id14264718">Un cálculo que está ligado en cierta forma con uno previo, se dice que presenta dependencia de los datos con respecto a este último. En el código siguiente, el valor de <code>B</code> es dependiente de los datos con respecto de <code>A</code>. Ello se debe a que no puede usted calcular <code>B</code> hasta que el valor de <code>A</code> esté disponible:</para>
+        
+        <code id="id19912681" display="block"><newline/>
+      A = X + Y + COS(Z) 
+      B = A * C 
+    </code>
+        <para id="id14320676">Esta dependencia es fácil de reorganizar, pero otras no lo son tanto. En otras ocasiones, deberá usted ser cuidadoso de no reescribir una variable con un nuevo valor antes de que otro cálculo haya terminado de usar el valor previo. Podemos agrupar todas las dependencias de datos en tres categorías: (1) dependencias del flujo, (2) antidependencias, y (3) dependencias de la salida. <link target-id="id15690950"/> contiene algunos ejemplos sencillos que demuestran cada tipo de dependencia. En cada ejemplo, usamos una flecha que inicia en el origen de la dependencia, y termina en la sentencia que debe retrasarse por causa de la dependencia. El problema clave en cada una de esas dependencias, es que la segunda sentencia no puede ejecutarse hasta que se haya completado la primera. Obviamente en el ejemplo de dependencia de salida en particular, el primer cálculo es código muerto y puede eliminarse, a menos que intervenga algún código que requiera de esos valores. Hay otras técnicas para eliminar ya sean las dependencias de salida o las antidependencias. El siguiente ejemplo contiene una dependencia de flujo seguida por una dependencia de salida:</para>
+        
+        <figure id="id15690950"><title>Tipos de dependencias de datos</title><media id="id15690950_media" alt="Esta figura muestra tres cajas, etiquetadas dependencia de flujo, antidependencia y dependencia de salida. La dependencia de flujo muestra flechas moviendo las variables A y B a la derecha entre tres ecuaciones. La antidependencia muestra movimiento de sólo la variable A hacia la izquierda. La dependencia de salida muestra movimiento directamente hacia abajo sobre las tres ecuaciones para la variable A.">
+            <image mime-type="image/png" src="../../media/graphics4-5284.png" id="id15690950__onlineimage" height="184" width="600"/>
+          </media>
+        <!--Figure 9-4--></figure>
+        
+        <code id="id10834938" display="block"><newline/>
+      X = A / B 
+      Y = X + 2.0
+      X = D - E 
+    </code>
+        <para id="id15728362">Aunque no podamos eliminar la dependencia de flujo, sí podemos lograrlo con la dependencia de salida agregando una variable nueva:</para>
+        
+        <code id="id20181583" display="block"><newline/>
+      Xtemp = A/B
+      Y = Xtemp + 2.0
+      X = D - E 
+    </code>
+        <para id="id20001592">Conforme crece el número de sentencias e interacciones entre ellas, necesitamos una forma mejor de identificar y procesar tales dependencias.<link target-id="id20827602"/> muestra cuatro sentencias con cuatro dependencias.</para>
+        
+        <para id="id20203686">
+          <figure id="id20827602"><title>Dependencias múltiples</title><media id="id20827602_media" alt="Esta figura muestra una caja conteniendo cuatro ecuaciones, X = A + B, D = X * 17, A = B + C, y X = C + E. Hay flechas entre ciertas variables en cada ecuación, y las ecuaciones están etiquetadas de arriba hacia abajo, flujo, anti, anti y salida.">
+              <image mime-type="image/png" src="../../media/graphics5-7795.png" id="id20827602__onlineimage" height="289" width="600"/>
+            </media>
+          <!--Figure 9-5:--></figure>
+        </para>
+        
+        <para id="id9410768">Ninguna de las instrucciones, de la segunda hasta la cuarta, pueden iniciarse antes de que se complete la primera instrucción.</para>
+      </section>
+      <section id="id13358979">
+        <title>Formando un GAD</title>
+        <para id="id15796682">Un método para analizar una secuencia de instrucciones, es organizarlas en un<emphasis effect="italics">grafo acíclico dirigido</emphasis> (GAD).<footnote id="id13512483">Un grafo es una colección de nodos conectados por aristas. Por dirigido nos referimos a que sólo pueden recorrerse las aristas en direcciones específicas. La palabra acíclico significa que no hay ciclos en el grafo, esto es, que no puede pasar dos veces por el mismo nodo.</footnote> Tal como las instrucciones que representa, un GAD describe todos los cálculos y relaciones entre variables. El flujo de datos en el GAD procede en una sola dirección; la mayoría de las ocasiones el GAD se construye de arriba hacia abajo. Los identificadores y las constantes se colocan en los nodos "hoja" -los que están en la parte superior. Las operaciones, posiblemente con los nombres de las variables adjuntos, se encuentran en los nodos internos. Las variables aparecen en sus estados finales en la parte inferior. Las aristas del GAD ordenan las relaciones entre las variables y las operaciones entre ellas. Todo el flujo de datos transcurre de arriba hacia abajo.</para>
+        <para id="id13509948">Para construir un GAD, el compilador toma cada tupla de lenguaje intermedio y lo mapea sobre uno o más nodos. Por ejemplo, aquellas tuplas que representan operaciones binarias, tales como suma (<code>X=A+B</code>), forman una porción del GAD con dos entradas (<code>A</code> y <code>B</code>) enlazadas por una operación (<code>+</code>). El resultado de la operación puede alimentarse a su vez en otras operaciones en el bloque básico (y el GAD), como se muestra en <link target-id="id13513092"/>.</para>
+        <para id="id9822428"><figure id="id13513092"><title>Un grafo de flujo de datos trivial</title><media id="id13513092_media" alt="Esta figura contiene una ecuación, X = A + B, y una línea conectando el punto A al punto B, y el punto X al punto B.">
+              <image mime-type="image/png" src="../../media/graphics6.png" id="id13513092__onlineimage" height="215" width="600"/>
+            </media>
+          <!--Figure 9-6--></figure>
+        </para>
+        
+        <para id="id12610976">Si se trata de un bloque de código básico, construimos nuestro GAD en el orden de las instrucciones. El GAD de para las cuatro instrucciones previas se muestra en <link target-id="id19378053"/>. Este ejemplo en particular tiene muchas dependencias, así que no hay mucha oportunidad para el paralelismo. <link target-id="id13217021"/> muestra un ejemplo más sencillo sobre cómo construir un GAD permite identificar el paralelismo.</para>
+        <para id="id14029033">A partir de este GAD, podemos determinar que las instrucciones 1 y 2 pueden ejecutarse en paralelo. Dado que vemos los cálculo que se realizan sobre los valores <code>A</code> y <code>B</code> durante el procesamiento de la instrucción 4, podemos eliminar una subexpresión común durante la construcción del GAD. Si podemos determinar que <code>Z</code> es la única variable que se usa afuera de este pequeño bloque de código, podemos asumir que el cálculo de <code>Y</code> es código muerto.</para>
+        <para id="id11337275">
+          <figure id="id19378053"><title>Un grafo de flujo de datos más complejo</title><media id="id19378053_media" alt="Esta figura contiene ecuaciones, X = A + B, D = X * 17, A = B + C, y X = C + E, y a la derecha de esas ecuaciones está un diagrama de flujo expresando tales ecuaciones juntas.">
+              <image mime-type="image/png" src="../../media/graphics7.png" id="id19378053__onlineimage" height="349" width="600"/>
+            </media>
+          <!--Figure 9-7--></figure>
+        </para>
+        
+        <para id="id18724175">Al construir el GAD, tomamos una secuencia de instrucciones y determinamos cuáles deben ejecutarse en un orden particular, y cuáles pueden ejecutarse en paralelo. Este tipo de análisis de flujo de datos es muy importante en la fase de generación de código en los procesadores superescalares. Hemos introducido el concepto de dependencias y cómo usar el flujo de datos para encontrar oportunidades de paralelismo en secuencias de código adentro de un bloque básico. También podemos usar el análisis de flujo de datos para identificar dependencias, oportunidades para el paralelismo, y código muerto al interior de bloques básicos.</para>
+      </section>
+      <section id="id14022258">
+        <title>Usos y Definiciones</title>
+        <para id="id16520841">Conforme se construye el GAD, el compilador puede crear listas de usos y <emphasis effect="italics">definiciones</emphasis> de variables, así como otra información, y aplicarlas a las optimizaciones globales a través de muchos bloques básicos tomados junto. Al revisar el GAD en <link target-id="id13217021"/>, podemos ver que las variables definidas son <code>Z</code>, <code>Y</code>, <code>X</code>, <code>C</code>, y <code>D</code>, y que las variables usadas son <code>A</code> y <code>B</code>. Al tomar en cuenta muchos bloques como uno solo, podemos decir cuan lejos alcanza la definición de una variable particular —dónde puede verse su valor. A partir de esto podemos reconocer situaciones en las cuales se descartan cálculos, lugares donde dos usos de una variable dada son completamente independientes, o dónde podemos reescribir valores residentes en registros sin tener que regresarlos a memoria. Llamamos a este tipo de investigación <emphasis effect="italics">análisis de flujo de datos</emphasis>.</para>
+        <para id="id20037272">
+          <figure id="id13217021"><title>Extracting parallelism from a DAG</title><media id="id13217021_media" alt="This figure contains equations, X = A + B, Y = B + 3, D = X * 7, C = A + B, and Z = D + C, with a flowchart to the right expressing the relationship between the equations.">
+              <image mime-type="image/png" src="../../media/graphics8.png" id="id13217021__onlineimage" height="430" width="600"/>
+            </media>
+          <!--Figure 9-8--></figure>
+        </para>
+        
+        <para id="id13742090">Para ilustrarlo, supongamos que tenemos el grafo de flujo de <link target-id="id19987392"/>. Junto a cada bloque básico hemos listado las variables que usa y las variables que define. ¿Qué nos puede decir al respecto el análisis del flujo de datos?</para>
+        <para id="id20001385">Observe que el valor de <code>A</code> se definió en el bloque <code>X</code>, pero sólo se usó en el bloque <code>Y</code>. Ello significa que <code>A</code> está muerto hasta la salida del bloque <code>Y</code> o inmediatamente antes de tomar la rama derecha al dejar <code>X</code>; ninguno de los otros bloques básicos usan el valor de A. Ello nos dice que cualesquiera recursos asociados, tales como un registro, pueden liberarse para otros usos.</para>
+        <para id="id20071726">En la <link target-id="id19987392"/> podemos ver que <code>D</code> está definida en el bloque básico <code>X</code>, pero jamás utilizada. Ello significa que los cálculos que definen a <code>D</code> pueden descartarse.</para>
+        <para id="id10520266">Algo interesante está sucediendo con la variable <code>G</code>. Tanto el bloque <code>X</code> como el <code>W</code> la utilizan, pero si observa detenidamente verá que los dos usos son distintos, significando que pueden tratarse como dos variables independientes.</para>
+        
+        <para id="id13747183">Un compilador que instrumente técnicas avanzadas para la planificación adelantada de instrucciones, debe notar que <code>W</code> es el único bloque que usa el valor de <code>E</code>, y así mover los cálculos que definen <code>E</code> fuera del bloque
+<code>Y</code> y dentro de <code>W</code>, donde se requieren.</para>
+        <figure id="id19987392"><title>Grafo de flujo para análisis de flujo de datos.</title><media id="id19987392_media" alt="Esta figura es un grafo de flujo de cuatro renglones, con una caja en cada renglón y flechas mostrando las relaciones entre las cajas, que están etiquetadas X, Y, W, y Z. A la derecha de las cajas, en sus respectivos renglones, hay listas de letras bajo categorías, Defines, y Uses.">
+            <image mime-type="image/png" src="../../media/graphics9.png" id="id19987392__onlineimage" height="389" width="600"/>
+          </media>
+        <!--Figure 9-9--></figure>
+        
+        <para id="id20019192">Además de recopilar datos acerca de las variables, el compilador también puede mantener información acerca de subexpresiones. Al examinarlas juntas, puede reconocer casos donde se hacen cálculos redundantes (a lo largo de bloques básicos), y sustituirlos por cálculos previamente realizados. Si, por ejemplo, la expresión <code>H*I</code> aparece en los bloques <code>X</code>, <code>Y</code>, y <code>W</code>, puede calcularse sólo una vez en el bloque <code>X</code>, y propagarse a los otros que la usan.</para>
+      </section>
+  </content>
+</document>

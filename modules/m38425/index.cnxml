@@ -1,0 +1,20 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Cronometraje y Perfilado - Notas de Cierre</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m38425</md:content-id>
+  <md:title>Cronometraje y Perfilado - Notas de Cierre</md:title>
+  <md:abstract/>
+  <md:uuid>1647efce-9866-4a91-b52f-342254563c3d</md:uuid>
+</metadata>
+
+<content>
+      <para id="id27929614">Hemos visto algunas de las herramientas para cronometraje y perfilado. Incluso aunque parezca que hemos cubierto mucho, hay otras clases de perfiladores que debiéramos cubrir - medidas de fallas de cache, análisis de dependencias a tiempo de ejecución, medición de operaciones de punto flotante por segundo, y varias más. Estos perfiles son buenos cuando está buscando ciertas anomalías en particular, tales como fallas de cache o uso de las líneas de espera de punto flotante. En algunas máquinas existen perfiladores para estas cantidades, pero no están ampliamente distribuidos.</para>
+      <para id="id27929727">Algo para tener en mente: cuando perfile código, a veces obtiene una visión muy limitada de la forma en que se usa el programa. Ello es especialmente cierto si puede realizar muchos tipos de análisis para muchos conjuntos distintos de datos de entrada. Trabajar con sólo uno o dos perfiles puede darle una vista distorsionada de cómo opera el código en su conjunto. Imagine el siguiente escenario: alguien le invita a dar su primer paseo en automóvil. Está sentado en el asiento del pasajero con un cuaderno y una pluma, y registra todo lo que sucede. Sus observaciones incluyen cosas tales como:</para>
+      <list id="id27929879" list-type="bulleted"><item>El radio siempre está encendido.</item>
+<item>Los limpiaparabrisas nunca se usan.</item>
+<item>El automóvil sólo se mueve hacia adelante.</item>
+      </list>
+      <para id="id27929910">El peligro es que, dado lo limitado de su óptica acerca la forma en que se opera el auto, puede que quiera desconectar la perilla de encendido y apagado del radio, quitar los limpiaparabrisas y eliminar el engranaje de reversa. ¡Ello se convertirá en una verdadera sorpresa para la siguiente persona que intente estacionar en reversa el auto en un día lluvioso! El punto es que a menos que sea usted cuidadoso al recolectar datos de <emphasis effect="italics">todos los tipos</emphasis> de usos posibles, puede que no tenga una panorámica real de cómo opera el programa. Un único perfil es bueno para afinar un banco de pruebas, pero puede olvidar algún detalle importante en una aplicación multipropósito. Peor todavía, si usted lo optimiza para un caso y lo mutila para otro, puede producir más daño que beneficio.</para>
+      <para id="id27930033">Perfilar, como hemos visto en este capítulo, es bastante mecánico. Afinar requiere de introspección. Es justo advertirle que no siempre es una actividad provechosa. A veces pone todo su empeño en una modificación inteligente que, contrariamente a lo esperado, incrementa el tiempo de ejecución. ¡Ah! ¿Qué salió mal? Dependerá usted de sus herramientas de perfilado para contestarse esta pregunta.</para>
+  </content>
+</document>

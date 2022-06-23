@@ -1,0 +1,69 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Memoria Virtual</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37225</md:content-id>
+  <md:title>Memoria Virtual</md:title>
+  <md:abstract/>
+  <md:uuid>41da03a3-b2cb-42dd-af7d-f7af3d15e95f</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+      <para id="id1164380444798">La memoria virtual desacopla las direcciones usadas por el programa (direcciones virtuales) de las direcciones donde realmente está almacenado el dato en memoria (direcciones físicas). Su programa ve sus direcciones comenzando desde 0 y avanzando hasta algún número grande, pero las direcciones físicas a las que realmente están asignadas pueden ser muy diferentes. Esto proporciona cierto grado de flexibilidad, pues permite a todos los procesos creer que tienen el sistema de memoria completo para ellos. Otro rasgo de los sistemas de memoria virtual es que dividen la memoria de sus programas en <emphasis effect="italics">páginas</emphasis> — fragmentos. Los tamaños de página varían entre 512 bytes y 1 MB o más grande, dependiendo de la máquina. Las páginas no tienen por qué estar físicamente contiguas, aunque su programa las vea de esta forma. Al estar separados en páginas, los programas son más fáciles de acomodar en memoria, o mover porciones de los mismos hacia el disco.</para>
+      <section id="id1164383932882">
+        <title>Tablas de Páginas</title>
+        <para id="id2932106">Digamos que su programa solicita una variable almacenada en la localidad 1000. En una máquina con memoria virtual, no hay una correspondencia directa entre la idea que su programa tiene acerca de dónde se encuentra la localidad 1000, y la que tiene el sistema de memoria. Para hallar dónde está almacenada realmente la variable, la dirección tiene que traducirse de virtual a física. El mapa que contiene tales traducciones se llama una <emphasis effect="italics">tabla de páginas</emphasis>. Cada proceso tiene asociadas varias tablas de páginas, correspondientes a distintas regiones, tales como los segmentos de texto y datos del programa.</para>
+        <para id="id1164380390566">Para entender cómo funciona la traducción de direciones, imagine el siguiente escenario: en algún momento su programa solicita los datos almacenados en la localidad 1000. <link target-id="id6779519"/> muestra los pasos necesarios para completar la recuperación de esos datos. Al elegir la localidad 1000, usted ha identificado en qué región de memoria recae esa referencia, y ésta identifica cuál tabla de página debe usarse. Por tanto, la localidad 1000 ayuda al procesador a elegir una entrada en la tabla. Por ejemplo, si el tamaño de página es de 512 bytes, 1000 cae en la segunda página (las páginas ocupan los rangos 0-511, 512-1023, 1024-1535, etc.)</para>
+        <para id="id1164376745740">Por tanto, la segunda entrada en la tabla debe almacenar la dirección de la página que contiene el valor en la localidad 1000.</para>
+        <para id="id1164380614096"><figure id="id6779519"><title>Mapeo de direcciones virtuales a físicas</title><media id="id6779519_media" alt="La figura uno muestra un objeto etiquetado, Tabla de Regiones de Proceso, y una flecha apuntando a la derecha, etiquetada Traducción Virtual. La flecha apunta a otro objeto etiquetado Tabla de Páginas. Al lado izquierdo del segundo objeto hay una etiqueta, Localidad 1000 de Dirección Virtual, con una flecha apuntando hacia la derecha al segundo objeto. A la derecha del segundo objeto está una flecha etiquetada Dirección Física, que apunta a la etiqueta Datos.">
+              <image mime-type="image/png" src="../../media/graphics1-66d5.png" id="id6779519__onlineimage" height="328" width="600"/>
+            </media>
+            
+          </figure>
+        </para>
+        <para id="id1164380139836">El sistema operativo almacena virtualmente las direcciones de la tabla de páginas, por lo que tendrá que realizar una traducción virtual a física para localizar la tabla en la memoria. Una traducción de virtual a física más, y finalmente tenemos la verdadera dirección de la localidad 1000. La referencia a memoria puede completarse, y el procesador puede continuar ejecutando su programa.</para>
+      </section>
+      <section id="id1164382117211">
+        <title>Buffer de Traducción de Direcciones</title>
+        <para id="id1164382040898">Como puede ver, la traducción de una dirección a través de una tabla de páginas resulta bastante complicada. Requiere dos búsquedas en tablas (tal vez tres) para encontrar nuestros datos. Si cada referencia a memoria fuera así de complicada, las computadoras con memoria virtual tendrían rendimientos pésimos. Afortunadamente, la localidad de referencias causa que las traducciones de direcciones virtuales se agrupen; un programa puede repetir el mismo mapeo de páginas virtuales millones de veces por segundo. Y allí donde tenemos un uso repetido de los mismos datos, podemos aplicar una cache.</para>
+        <para id="id1164380082625">Todas las máquinas modernas con memoria virtual tienen una cache especial llamada <emphasis effect="italics">buffer de traducción de direcciones</emphasis> (TLB por sus siglas en inglés) para la conversión de direcciones de memoria virtuales a físicas. Las dos entradas a la TLB son enteros que identifican tanto al programa que hace la solicitud a memoria, como la página virtual solicitada. Desde la salida surge un apuntador al número de página física. Ingresan direcciones virtuales, salen direcciones físicas. Las búsquedas en la tabla ocurren en paralelo con la ejecución de la instrucción, así que si la dirección de los datos está en la TLB, las referencias a la memoria ocurrirán de forma muy rápida.</para>
+        
+        <para id="id536168">Como otros tipos de caches, la TLB tiene un tamaño limitado. No contiene entradas suficientes para manejar todas las posibles traducciones de direcciones virtuales a físicas para todos los programas que pueda usted ejecutar en su computadora. Los depósitos más grandes de traducciones de direcciones se mantienen fuera en memoria, en las tablas de páginas. Si su programa solicita una traducción de dirección virtual a física, y no existe una entrada en la TLB, sufrirá usted una <emphasis effect="italics">falla TLB</emphasis>. Puede que la información requerida deba generarse (es decir, crearse una nueva página), o puede que deba recuperarse de la tabla de páginas.</para>
+        <para id="id1164377103847">La TLB es buena por la misma razón que lo son otros tipos de cahes: reducen el costo de hacer referencias a memoria. Pero como las otras caches, existen casos patológicos en los cuales la TLB puede fallar en la entrega de un valor. El caso más sencillo de construir es uno donde cada referencia a memoria que haga su programa cause una falla TLB:</para>
+        <code id="id1164385505133" display="block"><newline/>
+      REAL X(10000000) 
+      COMMON X
+      DO I=0,9999
+        DO J=1,10000000,10000
+          SUM = SUM + X(J+I) 
+        END DO
+      END DO
+    </code>
+        <para id="id1164382172055">Asumamos que el tamaño de página de la TLB de su computadora es menor a 40 KB. Cada vez que se recorre el ciclo interno en el código de ejemplo anterior, el programa solicita datos que están alejadas 4 bytes*10,000 = 40,000 bytes respecto a la última referencia. Esto es, cada referencia cae en una página de memoria diferente. Ello causa 1000 fallas TBL en el ciclo interior, repetido 1001 veces, para un total de cuando menos un millón de fallas TLB. Para hacer todavía más grave el problema, está garantizado que cada referencia cause también una falla del cache de datos. Es claro que nada debe comenzar con un ciclo como el de arriba. Pero suponiendo que el ciclo era del todo bueno para usted, la versión reestructurada del código siguiente atraviesa la memoria como un cuchillo caliente la mantequilla:</para>
+        <code id="id1164382888096" display="block"><newline/>
+      REAL X(10000000) 
+      COMMON X
+      DO I=1,10000000
+        SUM = SUM + X(I) 
+      END DO
+    </code>
+        <para id="id1164377528847">El ciclo revisado tiene saltos unitarios, y las fallas TLB ocurren sólo de modo muy ocasional. Usualmente no es necesario afinar explícitamente los programas para que hagan un buen uso de la TLB. Una vez que el programa se modifica para ser "amigable con la cache", muy probablemente se haya afinado también para ser amigable con la TLB.</para>
+        <para id="id1591292">Dado que hay beneficios de rendimiento derivados de mantener muy pequeña la TLB, a menudo cada una de sus entradas contiene un campo de longitud. Una sola entrada en la TLB puede tener cerca de un megabyte de longitud, y puede usarse para traducir direcciones almacenados en múltiples páginas de memoria virtual.</para>
+      </section>
+      <section id="id8137102">
+        <title>Fallos de Página</title>
+        <para id="id1164381787659">Cada elemento en la tabla de páginas también contiene otra información acerca de la página que representa, incluyendo banderas que indican si la traducción es válida, si la página asociada puede modificarse, y alguna información que describe cómo deben iniciarse las páginas nuevas. Aquellas referencias a páginas que no están marcadas como válidas se denominan <emphasis effect="italics">fallos de página</emphasis>.</para>
+        <para id="id1164380441346">Partiendo del peor escenario posible, digamos que su programa solicita una variable en una localidad de memoria particular. El procesador lo busca en la cache y encuentra que no está ahí (falla de cache), lo cual significa que debe cargarse desde la memoria. Lo siguiente que hace es ir a la TLB para encontrar la localidad física del dato en memoria, y descubre que o hay una entrada en la TLB (una falla TLB). Entonces trata de consultar la tabla de páginas (y rellenar nuevamente la TLB), pero encuentra que o bien no hay una entrada para esta página en particular, o que dicha página se envió a disco (ambos casos son fallos de página). Cada paso en la jerarquía de memoria ha complicado su solicitud. Debe crearse una nueva página y posiblemente, dependiendo de las circunstancias, recargarla a partir del disco.</para>
+        <para id="id8618252">Pero independientemente de que tomen mucho tiempo, los fallos de página no son errores. Incluso bajo condiciones óptimas, cada programa sufre cierto número de fallos de página. Escribir una variable por primera vez o llamar a una subrutina que no se había invocado previamente, causarán un fallo de página. Si no lo había pensado anteriormente puede parecerle sorpresivo. Existe la ilusión de que su programa completo está presente en memoria desde el inicio, pero puede que ciertas porciones jamás se carguen. No hay razón para hacerle espacio a una página a cuyos datos nunca se hace referencia, o cuyas instrucciones no se ejecutan. Sólo se crean o se traen del disco aquellas páginas que se necesitan para ejecutar el trabajo. <footnote id="id1164384308831">El término adecuado para referirse a esto es demanda de páginas.</footnote></para>
+        <para id="id1164380044953">El repositorio de páginas de memoria física está limitado, porque la memoria física también lo está, de modo que en una máquina en la que muchos programas cabildean por el espacio, ocurrirán una gran cantidad de fallos de página. Ello se debe a que las páginas de memoria física están reciclándose continuamente para otros propósitos. Sin embargo, cuando tiene la máquina sólo para usted, y hay menos demanda de memoria, las páginas asignadas tienden a mantenerse por algún tiempo. En resumen, puede usted esperar menos fallos de página en una máquina tranquila. Un truco que debe recordar, si siempre termina usted trabajando para un proveedor de computadoras: ejecute siempre benchmarks cortos dos veces. En algunos sistemas, el número de fallos de página decaerá. Ello se debe a que la segunda ejecución encuentra páginas dejadas en memoria por la primera, y usted no tiene que pagar el precio de los fallos de página nuevamente.<footnote id="id1164385516759">El dispositivo de disco identifica las páginas de texto y los números de bloque de los que procede.</footnote></para>
+        <para id="id1164380118722">El espacio de paginación (espacio de intercambio) en el disco es la última y más lenta de las piezas de la jerarquía de memoria en la mayoría de las máquinas. En el peor escenario vimos cómo puede enviarse una referencia a memoria hacia un medio más lento y con un rendimiento inferior, antes de que finalmente se satisfaga la solicitud. Si se regresa sobre sus pasos, podrá ver que el espacio de paginación en disco tiene la misma relación con la memoria principal, que ésta respecto a la cache. También se aplican las mismas clases de optimización, y la localidad de las referencias es importante. Puede ejecutar programas mayores que la memoria principal de su máquina, pero a veces a costa de una gran caída del rendimiento. Cuando revisemos las optimizaciones de memoria en <link document="m33728"/>, nos concentraremos en mantener en actividad las partes más rápidas del sistema de memoria, y evitar las más lentas.</para>
+      </section>
+  </content>
+</document>

@@ -1,0 +1,33 @@
+<document xmlns="http://cnx.rice.edu/cnxml">
+  <title>Introducción</title>
+<metadata xmlns:md="http://cnx.rice.edu/mdml">
+  <md:content-id>m37222</md:content-id>
+  <md:title>Introducción</md:title>
+  <md:abstract/>
+  <md:uuid>1543a1f2-95be-47fd-a8e4-09283fe32714</md:uuid>
+</metadata>
+<featured-links>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit below.
+       Changes to the links section in the source will not be saved. -->
+    <link-group type="supplemental">
+      <link url="http://cnx.org/content/m32709/latest/" strength="3">Acknowledgements</link>
+    </link-group>
+  <!-- WARNING! The 'featured-links' section is read only. Do not edit above.
+       Changes to the links section in the source will not be saved. -->
+</featured-links>
+<content>
+    <section id="id7236853">
+      <title>Memoria</title>
+      <para id="id1169685027859">Supongamos que cierta noche se durmió temprano y comenzó a soñar. En su sueño, tiene una máquina del tiempo y unos pocos procesadores superescalares de 4 vías a 500 MHz. Programa su máquina del tiempo para regresar a 1981, y una vez en esa época, sale y compra una IBM PC con un microprocesador Intel 8088 corriendo a 4.77 MHz. Durante buena parte del resto de esa noche, da vueltas en la cama mientras trata de adaptar el procesador a 500 MHz al zócalo del Intel 8088, usando un cautín y una navaja suiza. Justo antes de despertar, la nueva computadora finalmente funciona, y la enciende para ejecutar el benchmark Linpack<footnote id="id7989145">Véase <link document=""/>Capítulo 15, Usando Benchmarks Publicados, para detalles acerca del benchmark Linpack.</footnote> y emite un comunicado de prensa. ¿Cabe esperar que esto convierta el sueño en una pesadilla? Existe una buena posibilidad de que suceda, tal como si la noche anterior hubiese usted regresado a la Edad Media y puesto un motor a reacción a un caballo. (debe dejar de comer pizzas con doble pepperoni tan tarde en la noche).</para>
+      
+      <para id="id1169682812649">Incluso aunque pudiera acelerar los aspectos computacionales de un procesador infinitamente rápido, deberá cargar y almacenar los datos y las instrucciones desde y hacia una memoria, respectivamente. Los procesadores modernos continúan apegándose muy de cerca a este proceso infinitamente rápido. Pero el rendimiento de la memoria incrementa a una tasa mucho menor (le tomará más tiempo a la memoria volverse infinitamente rápida). Muchos de los problemas interesantes en el cómputo de alto rendimiento utilizan una gran cantidad de memoria. Conforme las computadoras se vuelven más rápidas, el tamaño de los problemas con los que tienden a operar también crece. El problema es que cuando quiere usted resolver esos problemas a altas velocidades, necesita un sistema de memoria que es grande, a la vez que rápido -un gran reto. Algunos enfoques posibles son los siguientes:</para>
+      <list id="id4550117" list-type="bulleted"><item>Cada componente del sistema de memoria puede hacerse lo suficientemente rápido, de manera individual, para responder a cada solicitud de acceso a memoria.</item>
+<item>Puede accederse a la memoria lenta en un estilo round-robin (con suerte), para lograr un efecto similar al de un sistema de memoria más rápido.</item>
+<item>Puede "ensancharse" el diseño del sistema de memoria, de modo que cada transferencia contenga muchos bytes de información.</item>
+<item>El sistema puede dividirse en porciones más rápidas y más lentas, y acomodarlas de forma que las primeras se usen más a menudo que las últimas.</item></list>
+      <para id="id7657552">De nuevo, la economía es la fuerza dominante en el negocio de las computadoras. Un sistema de memoria barato, optimizado estadísticamente se venderá mucho mejor que uno brillantemente rápido y prohibitivamente caro, de forma que la primera opción no es en realidad tal cosa. Pero estas opciones, usadas en combinación, pueden lograr una buena fracción del rendimiento que obtendría usted si cada componente fuera rápido. Hay muy  buenas posibilidades de que su estación de trabajo de alto rendimiento incorpore varias o todas de estas opciones.</para>
+      <para id="id1169682891107">Una vez decidido el sistema de memoria, hay cosas que podemos hacer mediante software para ver que se use eficientemente. Un compilador que posee cierto conocimiento sobre la distribución de la memoria y los detalles del cache, puede usarlo para optimizar su uso hasta cierto punto. El otro punto propenso a optimizarse son las aplicaciones de usuario, como veremos más adelante en este libro. Un buen patrón de acceso a memoria trabajará con, y no en contra de, los componentes del sistema.</para>
+      <para id="id1169685472060">En este capítulo discutiremos cómo trabajan las piezas de un sistema de memoria. Veremos cómo los patrones de acceso a datos e instrucciones son relevantes en el tiempo de ejecución global, especialmente conforme incrementa la velocidad de la CPU. También hablaremos un poco acerca de las implicaciones que tiene para el rendimiento, el ejecutar los programas en un ambiente de memoria virtual.</para>
+    </section>
+  </content>
+</document>
