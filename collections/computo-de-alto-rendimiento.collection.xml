@@ -1,17 +1,18 @@
-<col:collection xmlns="http://cnx.rice.edu/collxml" xmlns:md="http://cnx.rice.edu/mdml" xmlns:col="http://cnx.rice.edu/collxml" xml:lang="es-mx">
+<?xml version="1.0"?>
+<col:collection xmlns="http://cnx.rice.edu/collxml" xmlns:md="http://cnx.rice.edu/mdml" xmlns:col="http://cnx.rice.edu/collxml" xml:lang="es-mx" authors="Charles Severance ,Kevin Dowd">
   <metadata xmlns:md="http://cnx.rice.edu/mdml" mdml-version="0.5">
     <md:content-id>col11356</md:content-id>
-    <md:title>Cómputo de Alto Rendimiento</md:title>
+    <md:title>C&#xF3;mputo de Alto Rendimiento</md:title>
     <md:language>es-mx</md:language>
     <md:license url="http://creativecommons.org/licenses/by/3.0/">Creative Commons Attribution License</md:license>
     <md:uuid>69956e43-dbc8-40e6-9a9f-0ba2cf250b1a</md:uuid>
-<md:slug>computo-de-alto-rendimiento</md:slug>
-</metadata>
+    <md:slug>computo-de-alto-rendimiento</md:slug>
+  </metadata>
   <col:content>
     <col:module document="m38315"/>
     <col:module document="m37223"/>
     <col:subcollection>
-      <md:title>Arquitecturas de Cómputo Modernas</md:title>
+      <md:title>Arquitecturas de C&#xF3;mputo Modernas</md:title>
       <col:content>
         <col:subcollection>
           <md:title>Memoria</md:title>
@@ -28,7 +29,7 @@
           </col:content>
         </col:subcollection>
         <col:subcollection>
-          <md:title>Números de Punto Flotante</md:title>
+          <md:title>N&#xFA;meros de Punto Flotante</md:title>
           <col:content>
             <col:module document="m32739"/>
             <col:module document="m32741"/>
@@ -51,7 +52,7 @@
       <md:title>Programando y Afinando Software</md:title>
       <col:content>
         <col:subcollection>
-          <md:title>Qué Hace un Compilador</md:title>
+          <md:title>Qu&#xE9; Hace un Compilador</md:title>
           <col:content>
             <col:module document="m38387"/>
             <col:module document="m38391"/>
@@ -88,7 +89,7 @@
           </col:content>
         </col:subcollection>
         <col:subcollection>
-          <md:title>Optimización de Ciclos</md:title>
+          <md:title>Optimizaci&#xF3;n de Ciclos</md:title>
           <col:content>
             <col:module document="m38445"/>
             <col:module document="m38446"/>
@@ -172,7 +173,7 @@
       </col:content>
     </col:subcollection>
     <col:subcollection>
-      <md:title>Apéndices</md:title>
+      <md:title>Ap&#xE9;ndices</md:title>
       <col:content>
         <col:subcollection>
           <md:title>Appendix C: High Performance Microprocessors</md:title>
